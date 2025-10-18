@@ -12,6 +12,7 @@ build: generate-secret
 # Start the containers (after build)
 up: build
 	docker compose up -d
+	docker compose -f monitoring/docker-compose.yml up -d
 
 # i use this to gen new .env var for JWT token at compile time, just to have to re-log 
 # and make previous users JWT-cookies invalid on api
@@ -30,15 +31,18 @@ re: generate-secret
 	docker image prune -f
 	docker compose build --no-cache
 	docker compose up -d
+	docker compose -f monitoring/docker-compose.yml up -d
 
 # Stop and clean everything
 fclean:
 	docker compose down -v
+	docker compose -f monitoring/docker-compose.yml down -v
 	docker image prune -f
 	rm -rf src/front-end/node_modules
 	rm -rf src/back-end/node_modules src/back-end/package-lock.json
 	rm -rf ./vault-data
 	npm cache clean --force
+	rm -rf monitoring/es_data
 
 # View backend logs
 logs:

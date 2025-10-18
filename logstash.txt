@@ -1,0 +1,50 @@
+Using bundled JDK: /usr/share/logstash/jdk
+Sending Logstash logs to /usr/share/logstash/logs which is now configured via log4j2.properties
+[2025-10-18T23:03:35,881][WARN ][deprecation.logstash.settings] The setting `http.host` is a deprecated alias for `api.http.host` and will be removed in a future release of Logstash. Please use api.http.host instead
+[2025-10-18T23:03:35,892][INFO ][logstash.runner          ] Log4j configuration path used is: /usr/share/logstash/config/log4j2.properties
+[2025-10-18T23:03:35,893][INFO ][logstash.runner          ] Starting Logstash {"logstash.version"=>"8.15.0", "jruby.version"=>"jruby 9.4.8.0 (3.1.4) 2024-07-02 4d41e55a67 OpenJDK 64-Bit Server VM 21.0.4+7-LTS on 21.0.4+7-LTS +indy +jit [x86_64-linux]"}
+[2025-10-18T23:03:35,894][INFO ][logstash.runner          ] JVM bootstrap flags: [-Xms1g, -Xmx1g, -Djava.awt.headless=true, -Dfile.encoding=UTF-8, -Djruby.compile.invokedynamic=true, -XX:+HeapDumpOnOutOfMemoryError, -Djava.security.egd=file:/dev/urandom, -Dlog4j2.isThreadContextMapInheritable=true, -Dlogstash.jackson.stream-read-constraints.max-string-length=200000000, -Dlogstash.jackson.stream-read-constraints.max-number-length=10000, -Dls.cgroup.cpuacct.path.override=/, -Dls.cgroup.cpu.path.override=/, -Djruby.regexp.interruptible=true, -Djdk.io.File.enableADS=true, --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED, --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED, --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED, --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED, --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED, --add-opens=java.base/java.security=ALL-UNNAMED, --add-opens=java.base/java.io=ALL-UNNAMED, --add-opens=java.base/java.nio.channels=ALL-UNNAMED, --add-opens=java.base/sun.nio.ch=ALL-UNNAMED, --add-opens=java.management/sun.management=ALL-UNNAMED, -Dio.netty.allocator.maxOrder=11]
+[2025-10-18T23:03:35,894][INFO ][logstash.runner          ] Jackson default value override `logstash.jackson.stream-read-constraints.max-string-length` configured to `200000000`
+[2025-10-18T23:03:35,895][INFO ][logstash.runner          ] Jackson default value override `logstash.jackson.stream-read-constraints.max-number-length` configured to `10000`
+[2025-10-18T23:03:35,897][INFO ][logstash.settings        ] Creating directory {:setting=>"path.queue", :path=>"/usr/share/logstash/data/queue"}
+[2025-10-18T23:03:35,899][INFO ][logstash.settings        ] Creating directory {:setting=>"path.dead_letter_queue", :path=>"/usr/share/logstash/data/dead_letter_queue"}
+[2025-10-18T23:03:36,002][INFO ][logstash.agent           ] No persistent UUID file found. Generating new UUID {:uuid=>"63d44e09-bec3-4cd8-b04a-d85194069f50", :path=>"/usr/share/logstash/data/uuid"}
+[2025-10-18T23:03:36,207][WARN ][logstash.monitoringextension.pipelineregisterhook] xpack.monitoring.enabled has not been defined, but found elasticsearch configuration. Please explicitly set `xpack.monitoring.enabled: true` in logstash.yml
+[2025-10-18T23:03:36,207][WARN ][deprecation.logstash.monitoringextension.pipelineregisterhook] Internal collectors option for Logstash monitoring is deprecated and targeted for removal in the next major version.
+Please configure Elastic Agent to monitor Logstash. Documentation can be found at: 
+https://www.elastic.co/guide/en/logstash/current/monitoring-with-elastic-agent.html
+[2025-10-18T23:03:36,366][INFO ][logstash.licensechecker.licensereader] Elasticsearch pool URLs updated {:changes=>{:removed=>[], :added=>[http://elasticsearch:9200/]}}
+[2025-10-18T23:03:36,449][WARN ][logstash.licensechecker.licensereader] Restored connection to ES instance {:url=>"http://elasticsearch:9200/"}
+[2025-10-18T23:03:36,449][INFO ][logstash.licensechecker.licensereader] Elasticsearch version determined (8.15.0) {:es_version=>8}
+[2025-10-18T23:03:36,449][WARN ][logstash.licensechecker.licensereader] Detected a 6.x and above cluster: the `type` event field won't be used to determine the document _type {:es_version=>8}
+[2025-10-18T23:03:36,474][INFO ][logstash.monitoring.internalpipelinesource] Monitoring License OK
+[2025-10-18T23:03:36,474][INFO ][logstash.monitoring.internalpipelinesource] Validated license for monitoring. Enabling monitoring pipeline.
+[2025-10-18T23:03:36,506][INFO ][logstash.agent           ] Successfully started Logstash API endpoint {:port=>9600, :ssl_enabled=>false}
+[2025-10-18T23:03:36,653][INFO ][org.reflections.Reflections] Reflections took 68 ms to scan 1 urls, producing 138 keys and 481 values
+[2025-10-18T23:03:36,737][INFO ][logstash.javapipeline    ] Pipeline `.monitoring-logstash` is configured with `pipeline.ecs_compatibility: v8` setting. All plugins in this pipeline will default to `ecs_compatibility => v8` unless explicitly configured otherwise.
+[2025-10-18T23:03:36,753][INFO ][logstash.outputs.elasticsearchmonitoring][.monitoring-logstash] New Elasticsearch output {:class=>"LogStash::Outputs::ElasticSearchMonitoring", :hosts=>["http://elasticsearch:9200"]}
+[2025-10-18T23:03:36,753][INFO ][logstash.javapipeline    ] Pipeline `main` is configured with `pipeline.ecs_compatibility: v8` setting. All plugins in this pipeline will default to `ecs_compatibility => v8` unless explicitly configured otherwise.
+[2025-10-18T23:03:36,756][INFO ][logstash.outputs.elasticsearchmonitoring][.monitoring-logstash] Elasticsearch pool URLs updated {:changes=>{:removed=>[], :added=>[http://elasticsearch:9200/]}}
+[2025-10-18T23:03:36,757][INFO ][logstash.outputs.elasticsearch][main] New Elasticsearch output {:class=>"LogStash::Outputs::ElasticSearch", :hosts=>["//elasticsearch:9200"]}
+[2025-10-18T23:03:36,760][INFO ][logstash.outputs.elasticsearch][main] Elasticsearch pool URLs updated {:changes=>{:removed=>[], :added=>[http://elasticsearch:9200/]}}
+[2025-10-18T23:03:36,771][WARN ][logstash.outputs.elasticsearch][main] Restored connection to ES instance {:url=>"http://elasticsearch:9200/"}
+[2025-10-18T23:03:36,772][INFO ][logstash.outputs.elasticsearch][main] Elasticsearch version determined (8.15.0) {:es_version=>8}
+[2025-10-18T23:03:36,772][WARN ][logstash.outputs.elasticsearch][main] Detected a 6.x and above cluster: the `type` event field won't be used to determine the document _type {:es_version=>8}
+[2025-10-18T23:03:36,780][WARN ][logstash.outputs.elasticsearchmonitoring][.monitoring-logstash] Restored connection to ES instance {:url=>"http://elasticsearch:9200/"}
+[2025-10-18T23:03:36,781][INFO ][logstash.outputs.elasticsearchmonitoring][.monitoring-logstash] Elasticsearch version determined (8.15.0) {:es_version=>8}
+[2025-10-18T23:03:36,781][WARN ][logstash.outputs.elasticsearchmonitoring][.monitoring-logstash] Detected a 6.x and above cluster: the `type` event field won't be used to determine the document _type {:es_version=>8}
+[2025-10-18T23:03:36,787][INFO ][logstash.outputs.elasticsearch][main] Not eligible for data streams because config contains one or more settings that are not compatible with data streams: {"index"=>"ft_transcendence-%{+YYYY.MM.dd}"}
+[2025-10-18T23:03:36,787][INFO ][logstash.outputs.elasticsearch][main] Data streams auto configuration (`data_stream => auto` or unset) resolved to `false`
+[2025-10-18T23:03:36,789][INFO ][logstash.filters.json    ][main] ECS compatibility is enabled but `target` option was not specified. This may cause fields to be set at the top-level of the event where they are likely to clash with the Elastic Common Schema. It is recommended to set the `target` option to avoid potential schema conflicts (if your data is ECS compliant or non-conflicting, feel free to ignore this message)
+[2025-10-18T23:03:36,792][WARN ][logstash.javapipeline    ][.monitoring-logstash] 'pipeline.ordered' is enabled and is likely less efficient, consider disabling if preserving event order is not necessary
+[2025-10-18T23:03:36,799][INFO ][logstash.outputs.elasticsearch][main] Using a default mapping template {:es_version=>8, :ecs_compatibility=>:v8}
+[2025-10-18T23:03:36,802][INFO ][logstash.javapipeline    ][.monitoring-logstash] Starting pipeline {:pipeline_id=>".monitoring-logstash", "pipeline.workers"=>1, "pipeline.batch.size"=>2, "pipeline.batch.delay"=>50, "pipeline.max_inflight"=>2, "pipeline.sources"=>["monitoring pipeline"], :thread=>"#<Thread:0x113cdb3a /usr/share/logstash/logstash-core/lib/logstash/java_pipeline.rb:134 run>"}
+[2025-10-18T23:03:36,802][INFO ][logstash.javapipeline    ][main] Starting pipeline {:pipeline_id=>"main", "pipeline.workers"=>20, "pipeline.batch.size"=>125, "pipeline.batch.delay"=>50, "pipeline.max_inflight"=>2500, "pipeline.sources"=>["/usr/share/logstash/pipeline/logstash.conf"], :thread=>"#<Thread:0x1231ff72 /usr/share/logstash/logstash-core/lib/logstash/java_pipeline.rb:134 run>"}
+[2025-10-18T23:03:36,821][INFO ][logstash.outputs.elasticsearch][main] Installing Elasticsearch template {:name=>"ecs-logstash"}
+[2025-10-18T23:03:37,729][INFO ][logstash.javapipeline    ][.monitoring-logstash] Pipeline Java execution initialization time {"seconds"=>0.93}
+[2025-10-18T23:03:37,738][INFO ][logstash.javapipeline    ][.monitoring-logstash] Pipeline started {"pipeline.id"=>".monitoring-logstash"}
+[2025-10-18T23:03:37,746][INFO ][logstash.javapipeline    ][main] Pipeline Java execution initialization time {"seconds"=>0.94}
+[2025-10-18T23:03:37,751][INFO ][logstash.inputs.beats    ][main] Starting input listener {:address=>"0.0.0.0:5044"}
+[2025-10-18T23:03:37,755][INFO ][logstash.javapipeline    ][main] Pipeline started {"pipeline.id"=>"main"}
+[2025-10-18T23:03:37,765][INFO ][logstash.agent           ] Pipelines running {:count=>2, :running_pipelines=>[:".monitoring-logstash", :main], :non_running_pipelines=>[]}
+[2025-10-18T23:03:37,788][INFO ][org.logstash.beats.Server][main][050a03fc99380c249f6f88e00e226969312595d2b458f8bcd307b4fcdbc58600] Starting server on port: 5044

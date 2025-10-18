@@ -169,6 +169,17 @@ fastify.decorate("authenticate", async function(request, reply)
     }
 });
 
+fastify.decorate('setAuthCookie', function(reply, token) {
+  const isProd = process.env.NODE_ENV === 'production';
+  reply.setCookie('token', token, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+    path : '/',
+    maxAge: 7 * 24 * 60 * 60
+  });
+  return reply;
+});
 
 // Route GET /api (pour tests uniquement)
 fastify.get('/api', async (request, reply) => {
