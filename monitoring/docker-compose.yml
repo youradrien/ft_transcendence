@@ -5,7 +5,12 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
       - "9200:9200"
     volumes:
@@ -30,15 +35,23 @@ services:
         condition: service_healthy
     networks:
       - ft_transcendence_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.15.0
     container_name: logstash
     ports:
       - "5044:5044"
+      - "9600:9600"
     volumes:
-      - ./logstash/pipeline:/usr/share/logstash/pipeline
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
       - ./logstash/config/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -52,32 +65,27 @@ services:
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.15.0
-    command: filebeat -e -strict.perms=false
     container_name: filebeat
     user: root
+    command: filebeat -e -strict.perms=false
     volumes:
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-        read_only: true
-      - type: bind
-        source: /var/lib/docker/containers
-        target: /var/lib/docker/containers
-        read_only: true
-        bind:
-          propagation: rslave
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - filebeat_data:/usr/share/filebeat/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
     depends_on:
       logstash:
         condition: service_healthy
     networks:
       - ft_transcendence_net
-    privileged: true  # Required for Docker Desktop
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
 
 volumes:
   es_data:
+    driver: local
   filebeat_data:
+    driver: local
 
 networks:
   ft_transcendence_net:

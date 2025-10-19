@@ -1,18 +1,42 @@
 # Makefile
 
 # Default target
-.PHONY: all up build re fclean logs
+.PHONY: all up build re fclean logs elk-logs elk-up elk-down elk-status
 
-all: up
+all: up elk-up
 
 # Build without cache and start the containers
 build: generate-secret
 	docker compose build --no-cache
 
-# Start the containers (after build)
 up: build
 	docker compose up -d
+
+elk-up:
 	docker compose -f monitoring/docker-compose.yml up -d
+
+elk-down:
+	docker compose -f monitoring/docker-compose.yml down
+
+
+#   - permissions Docker
+#   - santé d'elastic (port 9200)
+#   - status de Kibana (port 5601)
+#   - status de Logstash (port 9600)
+#   - présence des indices de logs
+elk-status:
+	@echo "=== Docker Permissions Check ==="
+	@ls -la /var/run/docker.sock 2>/dev/null || echo "⚠️  Warning: Cannot access /var/run/docker.sock"
+	@echo "\n=== ELK Containers ==="
+	@docker ps --filter "name=elasticsearch" --filter "name=kibana" --filter "name=logstash" --filter "name=filebeat" --format "table {{.Names}}\t{{.Status}}"
+	@echo "\n=== Elasticsearch ==="
+	@curl -s http://localhost:9200/_cluster/health?pretty || echo "❌ Elasticsearch not ready"
+	@echo "\n=== Kibana ==="
+	@curl -s http://localhost:5601/api/status 2>/dev/null | grep -o '"level":"[^"]*"' | head -1 || echo "❌ Kibana not ready"
+	@echo "\n=== Logstash ==="
+	@curl -s http://localhost:9600/_node/stats 2>/dev/null | grep -o '"status":"[^"]*"' || echo "❌ Logstash not ready"
+	@echo "\n=== Log Collection ==="
+	@curl -s "http://localhost:9200/_cat/count/ft_transcendence-*?v" 2>/dev/null || echo "❌ No indices found yet"
 
 # i use this to gen new .env var for JWT token at compile time, just to have to re-log 
 # and make previous users JWT-cookies invalid on api
@@ -25,15 +49,14 @@ generate-secret:
 	@echo "Updated JWT_SECRET in .env:"
 	@cat ./src/back-end/.env
 
-# Rebuild and restart everything fresh
 re: generate-secret
 	docker compose down -v
+	docker compose -f monitoring/docker-compose.yml down -v
 	docker image prune -f
 	docker compose build --no-cache
 	docker compose up -d
 	docker compose -f monitoring/docker-compose.yml up -d
 
-# Stop and clean everything
 fclean:
 	docker compose down -v
 	docker compose -f monitoring/docker-compose.yml down -v
@@ -42,8 +65,9 @@ fclean:
 	rm -rf src/back-end/node_modules src/back-end/package-lock.json
 	rm -rf ./vault-data
 	npm cache clean --force
-	rm -rf monitoring/es_data
 
-# View backend logs
 logs:
 	docker compose logs -f backend
+
+elk-logs:
+	docker compose -f monitoring/docker-compose.yml logs --tail=50
