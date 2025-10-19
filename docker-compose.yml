@@ -18,10 +18,13 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-        labels: "service"
     labels:
       co.elastic.logs/enabled: "true"
       co.elastic.logs/json.keys_under_root: "true"
+      co.elastic.logs/module: "nginx"
+      service.name: "frontend"
+      service.type: "web"
+      app.component: "ui"
 
   backend:
     build:
@@ -42,6 +45,9 @@ services:
       co.elastic.logs/enabled: "true"
       co.elastic.logs/json.keys_under_root: "true"
       co.elastic.logs/module: "fastify"
+      service.name: "backend"
+      service.type: "api"
+      app.component: "server"
     environment:
       - VAULT_ADDR=http://vault:8200         # 👈 point backend to the Vault container
       - VAULT_TOKEN=root                     # 👈 dev token (only in dev mode!)

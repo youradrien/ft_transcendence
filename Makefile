@@ -1,7 +1,7 @@
 # Makefile
 
 # Default target
-.PHONY: all up build re fclean logs elk-logs elk-up elk-down elk-status
+.PHONY: all up build re fclean logs elk-logs elk-up elk-down elk-status test-labels
 
 all: up elk-up
 
@@ -23,7 +23,7 @@ elk-down:
 #   - santé d'elastic (port 9200)
 #   - status de Kibana (port 5601)
 #   - status de Logstash (port 9600)
-#   - présence des indices de logs
+#   - présence des indices de logs	
 elk-status:
 	@echo "=== Docker Permissions Check ==="
 	@ls -la /var/run/docker.sock 2>/dev/null || echo "⚠️  Warning: Cannot access /var/run/docker.sock"
@@ -71,3 +71,6 @@ logs:
 
 elk-logs:
 	docker compose -f monitoring/docker-compose.yml logs --tail=50
+
+test-labels:
+	@bash monitoring/test_labels.sh
