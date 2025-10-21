@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - ft_transcendence_net
+      
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    networks:
+      - ft_transcendence_net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro                        # Disk usage and general stats
+      - /var/run:/var/run:ro                # Docker runtime and PIDs
+      - /sys:/sys:ro                        # Kernel stats
+      - /var/lib/docker/:/var/lib/docker:ro # Container metadata and disk usage
+    ports:
+      - "8080:8080"
+    networks:
+      - ft_transcendence_net
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - ft_transcendence_net
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    volumes:
+      - ./alert.manager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    ports:
+      - "9093:9093"
+    networks:
+      - ft_transcendence_net
+  
+  
+networks:
+  ft_transcendence_net:
+    external: true

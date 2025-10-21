@@ -1,0 +1,20 @@
+groups:
+  - name: container-alerts
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "A target is DOWN"
+          description: "Instance {{ $labels.instance }} is down (job: {{ $labels.job }})"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance)( irate(node_cpu_seconds_total{mode="idle"}[2m]) ) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage ({{ $labels.instance }})"
+          description: "CPU usage > 80% for more than 2 minutes on {{ $labels.instance }}"

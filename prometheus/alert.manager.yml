@@ -1,0 +1,14 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'console'
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 1h
+
+receivers:
+  - name: 'console'
+    # For now, just log alerts to stdout (you'll see them in docker logs)
+    webhook_configs:
+      - url: 'http://localhost:5001' # optional if you have a service to consume alerts, otherwise ignore

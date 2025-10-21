@@ -14,9 +14,11 @@ up: build
 
 elk-up:
 	docker compose -f monitoring/docker-compose.yml up -d
+	docker compose -f prometheus/docker-compose.yml up -d
 
 elk-down:
 	docker compose -f monitoring/docker-compose.yml down
+	docker compose -f prometheus/docker-compose.yml down
 
 
 #   - permissions Docker
@@ -52,14 +54,17 @@ generate-secret:
 re: generate-secret
 	docker compose down -v
 	docker compose -f monitoring/docker-compose.yml down -v
+	docker compose -f prometheus/docker-compose.yml down -v
 	docker image prune -f
 	docker compose build --no-cache
 	docker compose up -d
 	docker compose -f monitoring/docker-compose.yml up -d
+	docker compose -f prometheus/docker-compose.yml up -d
 
 fclean:
 	docker compose down -v
 	docker compose -f monitoring/docker-compose.yml down -v
+	docker compose -f prometheus/docker-compose.yml down -v
 	docker image prune -f
 	rm -rf src/front-end/node_modules
 	rm -rf src/back-end/node_modules src/back-end/package-lock.json
