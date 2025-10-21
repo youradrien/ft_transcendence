@@ -7,10 +7,10 @@ services:
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - bootstrap.memory_lock=true
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+    # ulimits:      # peu pas a cause de 42 mais sinon ca aide pour la memoire
+    #   memlock:
+    #     soft: -1
+    #     hard: -1
     ports:
       - "9200:9200"
     volumes:
@@ -45,7 +45,7 @@ services:
     image: docker.elastic.co/logstash/logstash:8.15.0
     container_name: logstash
     ports:
-      - "5044:5044"
+      - "5000:5000"  # CHANGED: TCP input for syslog driver (instead of 5044 for beats)
       - "9600:9600"
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
@@ -63,30 +63,13 @@ services:
       timeout: 10s
       retries: 5
 
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.15.0
-    container_name: filebeat
-    user: root
-    command: filebeat -e -strict.perms=false
-    volumes:
-      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - filebeat_data:/usr/share/filebeat/data
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    depends_on:
-      logstash:
-        condition: service_healthy
-    networks:
-      - ft_transcendence_net
-    environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
+  # REMOVED: filebeat service completely - no longer needed with syslog driver!
 
 volumes:
   es_data:
     driver: local
-  filebeat_data:
-    driver: local
+  # REMOVED: filebeat_data volume - no longer needed
 
 networks:
   ft_transcendence_net:
-    external: true
+    name: ft_transcendence_net

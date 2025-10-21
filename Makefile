@@ -3,7 +3,7 @@
 # Default target
 .PHONY: all up build re fclean logs elk-logs elk-up elk-down elk-status test-labels
 
-all: up elk-up
+all: elk-up up
 
 # Build without cache and start the containers
 build: generate-secret
@@ -14,10 +14,14 @@ up: build
 
 elk-up:
 	docker compose -f monitoring/docker-compose.yml up -d
-	docker compose -f prometheus/docker-compose.yml up -d
 
 elk-down:
 	docker compose -f monitoring/docker-compose.yml down
+
+prometheus-up:
+	docker compose -f prometheus/docker-compose.yml up -d
+
+prometheus-down:
 	docker compose -f prometheus/docker-compose.yml down
 
 
@@ -54,12 +58,12 @@ generate-secret:
 re: generate-secret
 	docker compose down -v
 	docker compose -f monitoring/docker-compose.yml down -v
-	docker compose -f prometheus/docker-compose.yml down -v
+# 	docker compose -f prometheus/docker-compose.yml down -v
 	docker image prune -f
 	docker compose build --no-cache
-	docker compose up -d
 	docker compose -f monitoring/docker-compose.yml up -d
-	docker compose -f prometheus/docker-compose.yml up -d
+	docker compose up -d
+# 	docker compose -f prometheus/docker-compose.yml up -d
 
 fclean:
 	docker compose down -v
