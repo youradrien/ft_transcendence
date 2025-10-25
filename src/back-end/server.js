@@ -4,16 +4,47 @@ const jwt = require('@fastify/jwt');
 const cors = require('@fastify/cors');
 const multipart = require ('@fastify/multipart');
 const websocket = require('@fastify/websocket');
-const fastify = require('fastify')({   logger: {
+
+// Configure Pino logger for better structured logging
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+const fastify = require('fastify')({
+  logger: isDevelopment ? {
     transport: {
       target: 'pino-pretty',
       options: {
         translateTime: 'HH:MM:ss',
         ignore: 'pid,hostname',
-        colorize : true
+        colorize: true
       }
     }
-  } });
+  } : {
+    // Production: output raw JSON for ELK
+    level: 'info',
+    serializers: {
+      req: (request) => ({
+        method: request.method,
+        url: request.url,
+        path: request.routerPath,
+        parameters: request.params,
+        headers: {
+          host: request.headers.host,
+          userAgent: request.headers['user-agent'],
+          referer: request.headers.referer
+        },
+        remoteAddress: request.ip,
+        remotePort: request.socket?.remotePort
+      }),
+      res: (reply) => ({
+        statusCode: reply.statusCode
+      })
+    }
+  },
+  // Request ID generation for tracing
+  requestIdHeader: 'x-request-id',
+  requestIdLogLabel: 'request_id',
+  disableRequestLogging: false
+});
 const { db, _INIT_DB } = require('./db.js'); // chemin relatif selon ton projet
 const bcrypt = require('bcrypt');
 const vault = require('node-vault')({
@@ -70,6 +101,37 @@ fastify.register(jwt, {
 });
 // websocket
 fastify.register(websocket);
+
+// Add request logging hook with enriched context
+fastify.addHook('onRequest', async (request, reply) => {
+  const logData = {
+    event_type: 'request_received',
+    method: request.method,
+    url: request.url
+  };
+  // Only add user_id if user is authenticated (keep it as number)
+  if (request.user?.id) {
+    logData.user_id = request.user.id;
+  }
+  request.log.info(logData);
+});
+
+// Add response logging hook
+fastify.addHook('onResponse', async (request, reply) => {
+  const logData = {
+    event_type: 'request_completed',
+    method: request.method,
+    url: request.url,
+    status_code: reply.statusCode,
+    response_time: reply.elapsedTime
+  };
+  // Only add user_id if user is authenticated (keep it as number)
+  if (request.user?.id) {
+    logData.user_id = request.user.id;
+  }
+  request.log.info(logData);
+});
+
 // routes (REST api, ws)
 fastify.register(require('./routes/users.js'));
 fastify.register(require('./routes/pong.js'));

@@ -10,7 +10,7 @@ services:
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
-      - NODE_ENV=development
+      - NODE_ENV=production
     networks:
       - ft_transcendence_net
     logging:
@@ -31,6 +31,8 @@ services:
     ports:
       - "3010:3010"
     restart: unless-stopped
+    environment:
+      - NODE_ENV=production
     networks:
       - ft_transcendence_net
     logging:

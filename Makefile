@@ -1,7 +1,7 @@
 # Makefile
 
 # Default target
-.PHONY: all up build re fclean logs elk-logs elk-up elk-down elk-status test-labels
+.PHONY: all up build re fclean logs elk-logs elk-up elk-down elk-status elk-clean test-labels
 
 all: elk-up up
 
@@ -62,8 +62,19 @@ re: generate-secret
 	docker image prune -f
 	docker compose build --no-cache
 	docker compose -f monitoring/docker-compose.yml up -d
+	@echo "⏳ Waiting for Elasticsearch to be ready..."
+	@bash -c 'for i in {1..30}; do \
+		if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then \
+			echo "✅ Elasticsearch is ready"; \
+			break; \
+		fi; \
+		sleep 1; \
+	done'
+	@echo "📋 Setting up index template..."
+	@bash monitoring/setup_template.sh 2>/dev/null || true
 	docker compose up -d
 # 	docker compose -f prometheus/docker-compose.yml up -d
+	@echo "✅ Rebuild complete! Index template is configured."
 
 fclean:
 	docker compose down -v
@@ -80,6 +91,10 @@ logs:
 
 elk-logs:
 	docker compose -f monitoring/docker-compose.yml logs --tail=50
+
+elk-clean:
+	@echo "🧹 Cleaning Elasticsearch indices..."
+	@bash monitoring/cleanup_indices.sh
 
 test-labels:
 	@bash monitoring/test_labels.sh
