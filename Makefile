@@ -72,9 +72,11 @@ re: generate-secret
 	done'
 	@echo "📋 Setting up index template..."
 	@bash monitoring/setup_template.sh 2>/dev/null || true
+	@echo "📦 Setting up ILM policy (30-days-default)..."
+	@bash monitoring/setup_ilm.sh 2>/dev/null || true
 	docker compose up -d
 # 	docker compose -f prometheus/docker-compose.yml up -d
-	@echo "✅ Rebuild complete! Index template is configured."
+	@echo "✅ Rebuild complete! Index template and ILM policy are configured."
 
 fclean:
 	docker compose down -v

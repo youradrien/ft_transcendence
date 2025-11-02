@@ -8,6 +8,27 @@
 4. **Import Dashboards**: Import our pre configured dashboards from a `.ndjson` file.
 5. **Create Alerts**: Set up alerts for critical log events. (optional)
 
+## data retention (ILM)
+
+We apply a simple Index Lifecycle Management policy to delete indices after 30 days.
+
+- The index template (`setup_template.sh`) already assigns `index.lifecycle.name: 30-days-default` to all new `ft_transcendence-*` indices.
+- Run the policy setup (done automatically by `make re`):
+
+```
+bash monitoring/setup_ilm.sh
+```
+
+This creates/updates the ILM policy `30-days-default` and attaches it to any existing `ft_transcendence-*` indices that may be missing it. New indices inherit the policy via the template.
+
+Verify in Kibana: Stack Management → Index Lifecycle Policies → `30-days-default`.
+also commands to check via curl:
+```
+curl -s http://localhost:9200/_ilm/policy/30-days-default | jq
+curl -s http://localhost:9200/_index_template/ft_transcendence_template | jq
+```
+
+
 ## explanation of components
 - **Logstash**: Processes and transforms log data before sending it to Elasticsearch.
 - **Elasticsearch**: Stores and indexes log data.
