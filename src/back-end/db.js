@@ -39,6 +39,8 @@ async function _INIT_DB() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         player1_id INTEGER NOT NULL,
         player2_id INTEGER NOT NULL,
+        p1_name TEXT,
+        p2_name TEXT,
         winner_id INTEGER NOT NULL,
         player1_score INTEGER NOT NULL,
         player2_score INTEGER NOT NULL,

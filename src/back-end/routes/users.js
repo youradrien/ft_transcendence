@@ -73,7 +73,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             const token_jwt = fastify.jwt.sign(jwt_content);
             return reply.setCookie('token', token_jwt, {
                     httpOnly: true,
-                    secure : false, // true if HTTPS
+                    secure : true, // true if HTTPS
                     sameSite : 'none',
                     path : '/'
             }).send({success: true});
@@ -128,7 +128,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             const token_jwt = fastify.jwt.sign(jwt_content);
             return reply.setCookie('token', token_jwt, {
                     httpOnly: true,
-                    secure : false, // true for HTTPS
+                    secure : true, // true for HTTPS
                     sameSite : 'none',
                     path : '/'
             }).send({success: true});
@@ -274,7 +274,30 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             return reply.status(500).send({ success: false, message: 'Internal server error' });
         }
     });
-
+    
+    // get games infos
+    fastify.get('/api/:username/games', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+        try {
+            const { username } = request.params;
+            // get id frm username
+            const user = await fastify.db.get(`SELECT id FROM users WHERE username = ?`, [username]);
+            if (!user) {
+                return reply.status(404).send({ success: false, message: 'user not-found' });
+            }
+            const games = await fastify.db.all(
+                `SELECT * FROM games
+                WHERE player1_id = ? OR player2_id = ?
+                ORDER BY played_at DESC`,
+                [user.id, user.id]
+            );
+            return reply.send({ success: true, games });
+        } catch (err) {
+            request.log.error(err);
+            return reply.status(500).send({ success: false, message: 'Internal server error' });
+        }
+    });
+    
+     
 
 
     // get all users

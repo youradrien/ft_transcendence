@@ -100,10 +100,17 @@ async function pong_routes(fastify, options)
                 {
                     setTimeout(() => {
                         // [join-back the game...]
-                        connection.socket.send(JSON.stringify({ type: 'start', roomId}));
+                        const sf = {
+                            scores: _g.scores, countdown: _g.countdown, width: _g.width, height: _g.height, 
+                            paddleWidth: _g.paddleWidth, paddleHeight: _g.paddleHeight, max_score: _g.max_score, 
+                            player_names: (_g.player_names)
+                        };
+                        connection.socket.send(JSON.stringify({ 
+                            type: 'start', 
+                            ehh: (sf)
+                        }));
                         console.log("TELL EMMM !!!!! "  + roomId) ;
                         // connection.socket.close();
-                        // start_game_loop(_g);
                     }, 5000); // 5sec to send back a start ping to player
                 }else{
                     // connection.socket.close();
@@ -135,19 +142,23 @@ async function pong_routes(fastify, options)
             p_waitingPlayers.delete(p2Id);
 
             const game_id = `${Date.now()}_${p1Id}_${p2Id}`;
-            const c = Math.floor(Math.random() * (15 - 6 + 1)) + 6; // rand int between 6 and 15
+            const c = Math.floor(Math.random() * (8 - 2 + 1)) + 2; // rand int between 8 and 2
+            // p1-p2 usernames from DB -> one query
+        
             const game = {
                 id: game_id,
                 players: [p1Id, p2Id],
                 sockets: [p1Socket, p2Socket],
                 paddles: { p1: 50, p2: 50 },
-                ball: { x: 100, y: 100, vx: 2, vy: 2 },
+                ball: { x: 100, y: 100, vx: 3.5, vy: 3.5 },
                 scores: { p1: 0, p2: 0 },
                 countdown: (c), // init at 10
-                width: 800,
+                width: 1200,
                 height: 600,
                 paddleWidth: 10,
-                paddleHeight: 80
+                paddleHeight: 80,
+                max_score: Math.floor(Math.random() * (75 - 10 + 1)) + 10, // score [10- 75]
+                player_names: ["player_1", "player_2"]
             };
             p_rooms.set(game_id, game);
 
@@ -162,6 +173,16 @@ async function pong_routes(fastify, options)
                 is_a_comeback: false,
                 countdown_v: game?.countdown
             }));
+            // thats why i put coolddown/coutdown btw
+            // (could gather more infos on both playrs)
+            const p_names = await fastify.db.all(
+                'SELECT id, username FROM users WHERE id IN (?, ?)',
+                [p1Id, p2Id]
+            );
+            const name_map = Object.fromEntries((p_names).map(r => [r.id, r.username]));
+            game.player_names = (p_names).map((obj) => 
+                name_map[obj.id] || null
+            );
 
             // randomly delay the START [8-15s] after "creaing...""
             for (let i = 0; i <= c; i++) {
@@ -170,12 +191,23 @@ async function pong_routes(fastify, options)
                     if (timeLeft > 0) {
                         game.countdown -= 1;
                     } else {
+                        const safe_game = {
+                            scores: game.scores, countdown: game.countdown, width: game.width, height: game.height, 
+                            paddleWidth: game.paddleWidth, paddleHeight: game.paddleHeight, max_score: game.max_score, 
+                            player_names: (game.player_names)
+                        };
                         // send start messages
-                        p1Socket.send(JSON.stringify({ type: 'start', role: 'p1', game_id }));
-                        p2Socket.send(JSON.stringify({ type: 'start', role: 'p2', game_id }));
+                        p1Socket.send(JSON.stringify({ 
+                            type: 'start', 
+                            role: 'p1', 
+                            ehh: safe_game}));
+                        p2Socket.send(JSON.stringify({ 
+                            type: 'start',
+                            role: 'p2', 
+                            ehh: safe_game }));
 
                         if (game) {
-                            start_game_loop(game);
+                            start_game_loop(game, fastify);
                         }
                     }
                 }, (i) * 1000); // 1 sec step
@@ -202,36 +234,55 @@ async function pong_routes(fastify, options)
         // players inputs
         connection.socket.on('message', (message) => {
             try {
-                // convert buffer -. string
                 const msg_str = message.toString('utf8'); 
                 const data = JSON.parse(msg_str);
-                if(data?.type !== "paddle_move")
-                    return ;
-                // game exists?
-                let _game = null;
-                for (const [r, game] of fastify.p_rooms.entries()) {
-                    if (Array.isArray(game.players) && game.players.includes(USER_ID)) {
-                        _game = (game);
-                        break;
+                // console.log(`Received message from user ${USER_ID}:`, data);
+                if(data?.type == "paddle_move")
+                {
+                    // convert buffer -. string
+            
+                    // game exists?
+                    let _game = null;
+                    for (const [r, game] of fastify.p_rooms.entries()) {
+                        if (Array.isArray(game.players) && game.players.includes(USER_ID)) {
+                            _game = (game);
+                            break;
+                        }
                     }
-                }
-                if (!_game){ 
-                    connection.socket.send(JSON.stringify({ type: 'error', message: 'no' }));
-                    return;
-                }
-                // user ix in dis game??
-                const ix = _game.players.indexOf(USER_ID);
-                const r = ix === 0 ? 'p1' : 'p2';
-                if (ix === -1) {
-                    return;
-                }
-                // update game state...
-                if (data.type === 'paddle_move') {
-                    _game.paddles[r] += data.direction == "up" ? -2: 2;
+                    if (!_game){ 
+                        connection.socket.send(JSON.stringify({ type: 'error', message: 'no' }));
+                        return;
+                    }
+                    // user ix in dis game??
+                    const ix = _game.players.indexOf(USER_ID);
+                    const r = ix === 0 ? 'p1' : 'p2';
+                    if (ix === -1) {
+                        return;
+                    }
+                    // update game state...
+                    //if (data.type === 'paddle_move') {
+                    _game.paddles[r] += data.direction == "up" ? -4: 4;
 
                     // clamp 
                     if (_game.paddles[r] < 0) _game.paddles[r] = 0;
                     if (_game.paddles[r] > _game.height) _game.paddles[r] = _game.height;
+                    //}
+                }
+                if(data?.type == "player_giveup")
+                {
+        
+                    // game exists?
+                    let _game = null;
+                    for (const [r, game] of fastify.p_rooms.entries()) {
+                        if (Array.isArray(game.players) && game.players.includes(USER_ID)) {
+                            _game = (game);
+                            break;
+                        }
+                    }
+                    if(_game != null)
+                    {
+                        handle_game_end(_game, "give-up", fastify, USER_ID);
+                    }
                 }
             } catch (err) {
                 console.error('Invalid message:', err);
@@ -249,7 +300,7 @@ async function pong_routes(fastify, options)
 }
 module.exports = pong_routes;
 
-const start_game_loop = (game) =>
+const start_game_loop = (game, fastify = null) =>
 {
   const interval = setInterval(() => {
         // ball physics
@@ -263,29 +314,49 @@ const start_game_loop = (game) =>
 
         // scores
         if (game.ball.x <= 0) {
-            game.scores.p2++;
+            game.scores.p2+= 8;
         } else if (game.ball.x >= game.width) {
-            game.scores.p1++;
+            game.scores.p1+= 8;
+        }
+        // detect game-ending
+        if(game.ball.x <= 0 || game.ball.x >= game.width)
+        {
+            if(game.scores.p1 >= game.max_score 
+                || game.scores.p2 >= game.max_score
+            ){
+                handle_game_end(game, "victory", fastify);
+                return; 
+            }
         }
 
         // bounce left/right
         if (game.ball.x <= 0 || game.ball.x >= game.width) {
-            game.ball.vx *= -1;
+            if(Math.abs(game.ball.vx) < 3.5){
+                game.ball.vx *= -1.15;
+            }else{
+                game.ball.vx *= -1;
+            }
         }
         // paddle collisions
         // left paddle
-        if (game.ball.x >= 20 + game.paddleWidth &&
-            game.ball.x <= 20 - game.paddleWidth &&
-            game.ball.y >= game.paddles.p2 &&
-            game.ball.y <= game.paddles.p2 + game.paddleHeight
+        if (game.ball.x <= 20 + game.paddleWidth &&
+            game.ball.x >= 20 - game.paddleWidth 
+            &&
+            game.ball.y >= game.paddles.p1 &&
+            game.ball.y <= game.paddles.p1 + game.paddleHeight
         ){
+            console.log("LEFT PADDLE HIT");
             game.ball.vx = Math.abs(game.ball.vx); // bounce right
         }
         // right paddle
         if (game.ball.x >= (game.width - 30) - game.paddleWidth &&
-            game.ball.x >= (game.width - 30) + game.paddleWidth &&
-            game.ball.y >= game.paddles.p1 &&
-            game.ball.y <= game.paddles.p1 + game.paddleHeight) {
+            game.ball.x <= (game.width - 30) + game.paddleWidth 
+            &&
+            game.ball.y >= game.paddles.p2 &&
+            game.ball.y <= game.paddles.p2 + game.paddleHeight
+            )
+            {
+                console.log("rigt PADDLE HIT:  " + game.ball.x + " vs " + (game.width - 30));
             game.ball.vx = -Math.abs(game.ball.vx); // bounce left
         }
 
@@ -305,5 +376,90 @@ const start_game_loop = (game) =>
         });
   }, 1000 / 60); // 60 FPS
   game.interval = interval;
+}
+
+// game ending: 'give_up', 'victory' or 'disconnection'
+const handle_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
+    if (!game) return;
+
+    clearInterval(game.interval);
+
+    const { scores, max_score, players, sockets, player_names } = game;
+
+    let winner = null;
+    if(reason == 'victory')
+    {
+        if (scores.p1 > scores.p2) 
+            winner = 'p1';
+        else if (scores.p2 > scores.p1) 
+            winner = 'p2';
+    }else if (reason == "give-up")
+    {
+        if(user_id)
+        {
+            // which player gave up
+            if (players[0] === user_id) winner = 'p2';
+            else if (players[1] === user_id) winner = 'p1';
+        }else
+            winner = "null";
+    }
+
+    // safety ahhhh
+    if (!sockets || !Array.isArray(sockets)) {
+        console.error("errd: sockets missing or invalid for game", game?.id);
+        return;
+    }
+
+    //write to DB ---
+    const W_id = (winner === 'p1') ?  
+        players[0] 
+        :
+        (winner === 'p2') ?  players[1] : null;
+    try {
+        await fastify.db.run(
+            `INSERT INTO games (
+                player1_id, player2_id, winner_id,
+                player1_score, player2_score,
+                p1_name, p2_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [   players[0],  players[1], (winner === 'p1') ? 1 : 2,  
+                scores.p1,  scores.p2,
+                player_names[0], player_names[1]
+            ]
+        );
+        console.log(`game ${game.id} saved to DB`);
+
+        // --- update users (wins/losses) ---
+        if (W_id){
+            await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [W_id]);
+            const L_id = (W_id === players[0]) ? players[1] : players[0];
+            await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [L_id]);
+        }
+    } catch (err) {
+        console.error("❌ Error saving game:", err);
+    }
+
+
+
+    sockets.forEach((socket, i) => {
+        if (socket.readyState === 1) {
+            const p_key = i === 0 ? 'p1' : 'p2';
+            const d = {
+                type: 'game_end',
+                reason, // so, : eerm victory, give-up
+                scores,
+                winner: winner === 'p1' ? (player_names[0]) : player_names[1],
+                looser: (winner === 'p1' || winner == 'null') ? (player_names[1]) : player_names[0],
+                player_names: (player_names),
+                you_are_winner: (winner === p_key)
+            };
+            socket.send(JSON.stringify(d));
+        }
+    });
+
+    if(fastify){
+        fastify?.p_rooms.delete(game.id);
+    }
+    console.log(`Game ${game.id} ended (${reason}) — Winner: ${winner}`);
 }
 

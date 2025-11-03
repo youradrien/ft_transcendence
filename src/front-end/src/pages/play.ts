@@ -61,6 +61,7 @@ export default class PlayPage extends Page {
       </div>
     `;
     const p_st = container.querySelector('#player-status') as HTMLParagraphElement;
+    const sgl = container.querySelector('#singleBtn') as HTMLParagraphElement;
     const r_st = container.querySelector('#rooms-status') as HTMLParagraphElement;
     const q_btn = container.querySelector('#multiBtn') as HTMLButtonElement;
     const gCounter = container.querySelector('#game-counter') as HTMLButtonElement;
@@ -118,9 +119,11 @@ export default class PlayPage extends Page {
     };
 
     // start either multiplayer or single player
-    const start_game = async (game_mode: boolean) => 
+    const start_game = async (game_mode: boolean, game_data? : object) => 
     {
         joined_game = (true);
+        const e = container.querySelector('#active-games') as HTMLElement;
+        e.innerHTML = '';
         p_st.style.display = 'none';
         r_st.style.display = 'none';
         gCounter.style.display = 'none';
@@ -128,9 +131,10 @@ export default class PlayPage extends Page {
         if(game_mode) // multiplayer
         {
           // component
-          const pong_page = new Pong("ahh", this.router, {
+          const pong_page = new Pong("pong_ahhh_page", this.router, {
             multiplayer : true,
-            socket: (socket)
+            socket: (socket),
+            game_data: (game_data)
           });
 
           // render && append 
@@ -138,25 +142,52 @@ export default class PlayPage extends Page {
 
           // For example, append to a div with id "gameArea"
           const game_area = document.querySelector('#game-area');
-          if (game_area) {
+          if (game_area)
+          {
               // del prev games
               game_area.innerHTML = '';
               game_area.appendChild(pong_container);
               q_btn.style.backgroundColor = '#cc0000ff';  // Green background
               q_btn.style.color = 'white';              // White text
               q_btn.innerText = '🔌 Disconnect';
+              sgl.style.backgroundColor = '#f5d500ff';  // Green background
+              sgl.style.color = 'black';              // White text
+              sgl.innerText = '❌ GIVE UP';
           }
       }else
       {
+        const solo_pong = new Pong("pong_ahhh_single", this.router, {
+          multiplayer : false,
+        });
+        // render && append 
+        const pong_container = await solo_pong.render();
 
+        // For example, append to a div with id "gameArea"
+        const game_area = document.querySelector('#game-area');
+        if (game_area)
+        {
+            // del prev games
+            game_area.innerHTML = '';
+            game_area.appendChild(pong_container);
+        }
+        q_btn.innerText = '- - - - -';
+        sgl.innerText = '- - - -';
       }
     };
     // (queue) btn handler
     q_btn.onclick = async () => {
       try {
         if(nahh)
+            return;
+        if(joined_game)
+        {
+            this.router.navigate("/");
             return; 
-        socket = new WebSocket('ws://localhost:3010/api/pong/ws');
+        }
+        if(!socket || socket == null)
+        {
+          socket = new WebSocket('ws://localhost:3010/api/pong/ws');
+        }
         socket.onmessage = async (msg) => {
             const data = JSON.parse(msg.data);
             const qc = container.querySelector('#queue-count') as HTMLSpanElement;
@@ -214,7 +245,8 @@ export default class PlayPage extends Page {
             }
             if(data?.type == "start")
             {
-              start_game(true);
+              // console.log(data);
+              start_game(true, data.ehh);
             }
         };
       } catch (err) {
@@ -258,7 +290,19 @@ export default class PlayPage extends Page {
     // single player btn handler
     const s = container.querySelector('#singleBtn') as HTMLButtonElement;
     s.onclick = async () => {
+      if(!joined_game)
+      {
         await start_game(false); // <-- single player pong
+      }else
+      {
+        if(socket)
+        {
+          socket.send(JSON.stringify({
+            type: "player_giveup"
+          }));
+        }
+        
+      }
     };
 
     return container;
