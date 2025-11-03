@@ -47,11 +47,27 @@ fastify.register(websocket);
 fastify.register(require('./routes/users.js'));
 fastify.register(require('./routes/pong.js'));
 
-
+// fake ahhh
+const gen_fake_games = (count = 1) => {
+    for (let i = 0; i < count; i++) {
+        const _id = `fake_${Date.now()}_${i}`;
+        const _f_game = {
+            id: _id,
+            players: [`bot_${i}_1`, `bot_${i}_2`],
+            sockets: [null, null], // no real WebSocket
+            paddles: { p1: 50, p2: 50 },
+            ball: { x: 100, y: 100, vx: 2, vy: 2 },
+            scores: { p1: Math.floor(Math.random() * 10), p2: Math.floor(Math.random() * 10) },
+            countdown: 0, // already “started”
+        };
+        fastify.p_rooms.set(_id, _f_game);
+    }
+}
 // START SERV, and link db
 const start = async () => {
     try {
       await _INIT_DB(); // ✅ DB init here <------------
+      gen_fake_games(Math.floor(Math.random() * 2)); // 
       await fastify.listen({ port: 3010, host: '0.0.0.0' });
       console.log('🚀 server is running at http://localhost:3010');
     } catch (err) {
