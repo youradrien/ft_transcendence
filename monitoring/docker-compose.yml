@@ -4,7 +4,10 @@ services:
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - ELASTIC_PASSWORD=elastic_password
+      - KIBANA_PASSWORD=kibana_password
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - bootstrap.memory_lock=true
     # ulimits:      # peu pas a cause de 42 mais sinon ca aide pour la memoire
@@ -18,7 +21,7 @@ services:
     networks:
       - ft_transcendence_net
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -u elastic:$${ELASTIC_PASSWORD} -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -28,6 +31,8 @@ services:
     container_name: kibana
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=kibana_password
     ports:
       - "5601:5601"
     depends_on:
@@ -45,13 +50,15 @@ services:
     image: docker.elastic.co/logstash/logstash:8.15.0
     container_name: logstash
     ports:
-      - "5000:5000"  # CHANGED: TCP input for syslog driver (instead of 5044 for beats)
+      - "5000:5000"  # TCP input for syslog driver (instead of 5044 for beats)
       - "9600:9600"
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
       - ./logstash/config/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
     environment:
       - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+      - LOGSTASH_ES_USER=elastic
+      - LOGSTASH_ES_PASSWORD=elastic_password
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -63,12 +70,9 @@ services:
       timeout: 10s
       retries: 5
 
-  # REMOVED: filebeat service completely - no longer needed with syslog driver!
-
 volumes:
   es_data:
     driver: local
-  # REMOVED: filebeat_data volume - no longer needed
 
 networks:
   ft_transcendence_net:

@@ -10,24 +10,24 @@
 
 ## data retention (ILM)
 
-We apply a simple Index Lifecycle Management policy to delete indices after 30 days.
+simple Index Lifecycle Management policy
 
-- The index template (`setup_template.sh`) already assigns `index.lifecycle.name: 30-days-default` to all new `ft_transcendence-*` indices.
-- Run the policy setup (done automatically by `make re`):
+- The index template (`monitoring/scripts/setup_template.sh`) assigns `index.lifecycle.name: 30-days-default` to all new `ft_transcendence-*` indices.
 
 ```
-bash monitoring/setup_ilm.sh
+# ran by our makefile
+bash monitoring/scripts/setup_ilm.sh
 ```
 
 This creates/updates the ILM policy `30-days-default` and attaches it to any existing `ft_transcendence-*` indices that may be missing it. New indices inherit the policy via the template.
 
 Verify in Kibana: Stack Management → Index Lifecycle Policies → `30-days-default`.
-also commands to check via curl:
-```
-curl -s http://localhost:9200/_ilm/policy/30-days-default | jq
-curl -s http://localhost:9200/_index_template/ft_transcendence_template | jq
-```
 
+### phases:
+
+In the beginning, indices are in the **hot** phase where they are actively written to and queried for fast access.
+After 7 days, indices move to the **warm** phase where they are optimized for cost efficiency since they are less frequently accessed.
+After 30 days, indices are moved to the **cold** phase to further reduce storage costs, and finally after 60 days they are deleted.
 
 ## explanation of components
 - **Logstash**: Processes and transforms log data before sending it to Elasticsearch.

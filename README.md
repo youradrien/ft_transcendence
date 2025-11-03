@@ -3,7 +3,7 @@ ft_transcendence
 </h1>
 
 
-#back-end
+# back-end
 -- back-end:
 - framework: fastify
 - langage: typescript (javascript with types)
@@ -19,7 +19,8 @@ ft_transcendence
 - framework: none (vanilla)
 - 
 
-
+# ELK
+ complete ELK docs in [monitoring/docs/ELK.md](monitoring/docs/ELK.md)
 
 
 # misc

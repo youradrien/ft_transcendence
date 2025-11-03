@@ -1,22 +1,21 @@
 #!/bin/bash
 
-# Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${YELLOW}📋 Creating Elasticsearch index template...${NC}"
 
-# Wait for Elasticsearch
+# Wait for Elasticsearch (with or without security)
 for i in {1..30}; do
-    if curl -s "http://localhost:9200/_cluster/health" > /dev/null 2>&1; then
-        break
-    fi
-    sleep 1
+  if curl -s -u elastic:${ELASTIC_PASSWORD:-elastic_password} "http://localhost:9200/_cluster/health" > /dev/null 2>&1; then
+    break
+  fi
+  sleep 1
 done
 
 # Create index template
-curl -X PUT "http://localhost:9200/_index_template/ft_transcendence_template" \
+curl -u elastic:${ELASTIC_PASSWORD:-elastic_password} -X PUT "http://localhost:9200/_index_template/ft_transcendence_template" \
   -H 'Content-Type: application/json' \
   -d '{
   "index_patterns": ["ft_transcendence-*"],

@@ -17,20 +17,20 @@ echo ""
 
 # Check what's in Elasticsearch
 echo "📦 Checking Elasticsearch indices:"
-curl -s "http://localhost:9200/_cat/indices/ft_transcendence-*?v&h=index,docs.count"
+curl -s -u elastic:elastic_password "http://localhost:9200/_cat/indices/ft_transcendence-*?v&h=index,docs.count"
 echo ""
 echo ""
 
 # Get a sample document to see structure
 echo "📄 Sample document structure:"
 echo "----------------------------"
-curl -s "http://localhost:9200/ft_transcendence-*/_search?size=1&pretty" | grep -A 3 -E '"(service|container|tags|message)"' | head -20
+curl -s -u elastic:elastic_password "http://localhost:9200/ft_transcendence-*/_search?size=1&pretty" | grep -A 3 -E '"(service|container|tags|message)"' | head -20
 echo ""
 echo ""
 
 # Check for service field
 echo "🏷️  Checking 'service' field aggregation:"
-curl -s "http://localhost:9200/ft_transcendence-*/_search?size=0&pretty" -H 'Content-Type: application/json' -d'{
+curl -s -u elastic:elastic_password "http://localhost:9200/ft_transcendence-*/_search?size=0&pretty" -H 'Content-Type: application/json' -d'{
   "aggs": {
     "services": {
       "terms": {
@@ -45,7 +45,7 @@ echo ""
 
 # Check for tags
 echo "🏷️  Checking 'tags' field aggregation:"
-curl -s "http://localhost:9200/ft_transcendence-*/_search?size=0&pretty" -H 'Content-Type: application/json' -d'{
+curl -s -u elastic:elastic_password "http://localhost:9200/ft_transcendence-*/_search?size=0&pretty" -H 'Content-Type: application/json' -d'{
   "aggs": {
     "tags": {
       "terms": {
@@ -60,7 +60,7 @@ echo ""
 
 # Check container names
 echo "📦 Checking container names in logs:"
-curl -s "http://localhost:9200/ft_transcendence-*/_search?size=0&pretty" -H 'Content-Type: application/json' -d'{
+curl -s -u elastic:elastic_password "http://localhost:9200/ft_transcendence-*/_search?size=0&pretty" -H 'Content-Type: application/json' -d'{
   "aggs": {
     "containers": {
       "terms": {
@@ -78,7 +78,7 @@ echo "🔍 Testing queries:"
 echo "-----------------"
 
 echo "Frontend logs count:"
-curl -s "http://localhost:9200/ft_transcendence-*/_count?pretty" -H 'Content-Type: application/json' -d'{
+curl -s -u elastic:elastic_password "http://localhost:9200/ft_transcendence-*/_count?pretty" -H 'Content-Type: application/json' -d'{
   "query": {
     "match": {
       "service": "frontend"
@@ -88,7 +88,7 @@ curl -s "http://localhost:9200/ft_transcendence-*/_count?pretty" -H 'Content-Typ
 echo ""
 
 echo "Backend logs count:"
-curl -s "http://localhost:9200/ft_transcendence-*/_count?pretty" -H 'Content-Type: application/json' -d'{
+curl -s -u elastic:elastic_password "http://localhost:9200/ft_transcendence-*/_count?pretty" -H 'Content-Type: application/json' -d'{
   "query": {
     "match": {
       "service": "backend"
@@ -98,7 +98,7 @@ curl -s "http://localhost:9200/ft_transcendence-*/_count?pretty" -H 'Content-Typ
 echo ""
 
 echo "Logs with 'frontend' tag count:"
-curl -s "http://localhost:9200/ft_transcendence-*/_count?pretty" -H 'Content-Type: application/json' -d'{
+curl -s -u elastic:elastic_password "http://localhost:9200/ft_transcendence-*/_count?pretty" -H 'Content-Type: application/json' -d'{
   "query": {
     "match": {
       "tags": "frontend"
