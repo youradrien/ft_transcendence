@@ -70,8 +70,10 @@ export default class PlayPage extends Page {
     const gCounter = container.querySelector('#game-counter') as HTMLButtonElement;
     const gJntitle = container.querySelector('#game-join-h1') as HTMLButtonElement;
     let socket: WebSocket; // <-- wsocket var
-    let aiSocket: WebSocket |  null = null;;
+    let aiSocket: WebSocket |  null = null;
     let nahh: boolean = false;
+    let currentGameMode: 'multiplayer' | 'ai' | 'single' | null = null; // Track current game mode
+
     // whole func dedicated to update active games data
     const fetch_games = async () => {
         try {
@@ -134,6 +136,7 @@ export default class PlayPage extends Page {
         gJntitle.style.display = 'none';
         if(game_mode) // multiplayer
         {
+          currentGameMode = 'multiplayer';
           // component
           const pong_page = new Pong("pong_ahhh_page", this.router, {
             multiplayer : true,
@@ -149,6 +152,7 @@ export default class PlayPage extends Page {
           if (game_area)
           {
               // del prev games
+              aiBtn.disabled = true
               game_area.innerHTML = '';
               game_area.appendChild(pong_container);
               q_btn.style.backgroundColor = '#cc0000ff';  // Green background
@@ -160,6 +164,7 @@ export default class PlayPage extends Page {
           }
       }else
       {
+        currentGameMode = 'single';
         const solo_pong = new Pong("pong_ahhh_single", this.router, {
           multiplayer : false,
         });
@@ -177,6 +182,77 @@ export default class PlayPage extends Page {
         q_btn.innerText = '- - - - -';
         sgl.innerText = '- - - -';
       }
+    };
+    aiBtn.onclick = async () => {
+        try {
+            aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
+            aiBtn.innerText = '🤖 Connecting to AI...';
+            aiBtn.disabled = true;
+            currentGameMode = 'ai'; // Set game mode to AI
+            
+            aiSocket.onmessage = async (msg) => {
+                const data = JSON.parse(msg.data);
+                
+                if (data.type === 'start') {
+                    joined_game = true;
+                    
+                    const pong_page = new Pong("ai-pong", this.router, {
+                        multiplayer: false,
+                        isaigame: true,
+                        socket: aiSocket,
+                        game_data: { max_score: 10 }
+                    });
+
+                    const pong_container = await pong_page.render();
+                    const game_area = document.querySelector('#game-area');
+                    
+                    if (game_area) {
+                        game_area.innerHTML = '';
+                        game_area.appendChild(pong_container);
+                        
+                        // Cache les autres éléments
+                        p_st.style.display = 'none';
+                        r_st.style.display = 'none';
+                        gCounter.style.display = 'none';
+                        gJntitle.style.display = 'none';
+                        q_btn.style.backgroundColor = '#cc0000ff';  // Green background
+                        q_btn.style.color = 'white';              // White text
+                        q_btn.innerText = '🔌 Disconnect';
+                        sgl.style.backgroundColor = '#f5d500ff';  // Green background
+                        sgl.style.color = 'black';              // White text
+                        sgl.innerText = '❌ GIVE UP';
+                        aiBtn.innerText = '🎮 Playing vs AI';
+                        aiBtn.style.backgroundColor = '#ff6600';
+                    }
+                }
+                
+                if (data.type === 'game_over') {
+                    alert(`Game Over! ${data.winner} wins!\nScore: ${data.scores.p1} - ${data.scores.p2}`);
+                    // Recharge la page
+                    window.location.reload();
+                }
+            };
+
+            aiSocket.onerror = (err) => {
+                console.error('AI WebSocket error:', err);
+                aiBtn.innerText = '❌ Connection failed';
+                aiBtn.disabled = false;
+            };
+            
+            aiSocket.onclose = () => {
+                console.log('AI WebSocket closed');
+                aiBtn.disabled = false;
+                aiBtn.innerText = '🤖 PLAY vs AI';
+                aiBtn.style.backgroundColor = '#ff6600';
+                currentGameMode = null; // Reset game mode
+            }
+
+        } catch (err) {
+            console.error('Failed to start AI game:', err);
+            aiBtn.innerText = '❌ Failed. Retry?';
+            aiBtn.disabled = false;
+            currentGameMode = null;
+        }
     };
     // (queue) btn handler
     q_btn.onclick = async () => {
@@ -214,7 +290,8 @@ export default class PlayPage extends Page {
                 await fetch_games();
                 // countdown.. either /actual game-countdown/ or /5s warmup time/
                 let _time_l = data?.countdown_v;
-                if(data?.is_a_comeback){
+                if(data?.is_a_comeback)
+                  {
                     aiBtn.disabled = true;
                     gJntitle.innerHTML = "JOINING BACK YOUR GAME!";
                     q_btn.style.backgroundColor = '#ffbb00ff';  // Green background
@@ -283,9 +360,12 @@ export default class PlayPage extends Page {
         r_st.innerText = `🔵 ${data?.data?.activeRooms} currently active pong room(s)...`;
         p_st.innerText = `🟢 ${online} player(s) in queue`;
         qc.innerText = String(online);
-        if(data?.data?.alr_in_game){
-            // auto click the queue-up btn
-            q_btn.click(); // <- this will trigger everythn needed by itself cuh
+        if(data?.data?.alr_in_game)
+        {
+          if (data?.data?.is_ai == true)
+            aiBtn.click();
+        else if (data?.data?.is_ai == false)
+            q_btn.click();
         }
     } catch (err) {
         const p_st = container.querySelector('#player-status') as HTMLParagraphElement;
@@ -300,89 +380,27 @@ export default class PlayPage extends Page {
         await start_game(false); // <-- single player pong
       }else
       {
-        if (aiSocket && aiSocket.readyState === WebSocket.OPEN)
+        // Check which socket to use based on current game mode
+        if (currentGameMode === 'ai' && aiSocket && aiSocket.readyState === WebSocket.OPEN)
         {
           aiSocket.send(JSON.stringify({
             type: "player_giveup"
           }));
+          aiSocket.close();
         }
-        else if(socket && socket.readyState === WebSocket.OPEN)
+        else if(currentGameMode === 'multiplayer' && socket && socket.readyState === WebSocket.OPEN)
         {
           socket.send(JSON.stringify({
             type: "player_giveup"
           }));
+          socket.close();
         }
+        // Reload page after giving up
+        setTimeout(() => window.location.reload(), 500);
       }
     };
 
-    aiBtn.onclick = async () => {
-        try {
-            aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
-            aiBtn.innerText = '🤖 Connecting to AI...';
-            aiBtn.disabled = true;
-            
-            aiSocket.onmessage = async (msg) => {
-                const data = JSON.parse(msg.data);
-                
-                if (data.type === 'start') {
-                    joined_game = true;
-                    
-                    const pong_page = new Pong("ai-pong", this.router, {
-                        multiplayer: false,
-                        isaigame: true,
-                        socket: aiSocket,
-                        game_data: { max_score: 10 }
-                    });
-
-                    const pong_container = await pong_page.render();
-                    const game_area = document.querySelector('#game-area');
-                    
-                    if (game_area) {
-                        game_area.innerHTML = '';
-                        game_area.appendChild(pong_container);
-                        
-                        // Cache les autres éléments
-                        p_st.style.display = 'none';
-                        r_st.style.display = 'none';
-                        gCounter.style.display = 'none';
-                        gJntitle.style.display = 'none';
-                        q_btn.style.backgroundColor = '#cc0000ff';  // Green background
-                        q_btn.style.color = 'white';              // White text
-                        q_btn.innerText = '🔌 Disconnect';
-                        sgl.style.backgroundColor = '#f5d500ff';  // Green background
-                        sgl.style.color = 'black';              // White text
-                        sgl.innerText = '❌ GIVE UP';
-                        aiBtn.innerText = '🎮 Playing vs AI';
-                        aiBtn.style.backgroundColor = '#ff6600';
-                    }
-                }
-                
-                if (data.type === 'game_over') {
-                    alert(`Game Over! ${data.winner} wins!\nScore: ${data.scores.p1} - ${data.scores.p2}`);
-                    // Recharge la page
-                    window.location.reload();
-                }
-            };
-
-            aiSocket.onerror = (err) => {
-                console.error('AI WebSocket error:', err);
-                aiBtn.innerText = '❌ Connection failed';
-                aiBtn.disabled = false;
-            };
-            
-            aiSocket.onclose = () => {
-                console.log('AI WebSocket closed');
-                aiBtn.disabled = false;
-                aiBtn.innerText = '🤖 PLAY vs AI';
-                aiBtn.style.backgroundColor = '#ff6600';
-            }
-
-        } catch (err) {
-            console.error('Failed to start AI game:', err);
-            aiBtn.innerText = '❌ Failed. Retry?';
-            aiBtn.disabled = false;
-        }
-    };
+  
 
     return container;
   }
