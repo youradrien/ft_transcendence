@@ -214,6 +214,7 @@ export default class PlayPage extends Page {
                 // countdown.. either /actual game-countdown/ or /5s warmup time/
                 let _time_l = data?.countdown_v;
                 if(data?.is_a_comeback){
+                    aiBtn.disabled = true;
                     gJntitle.innerHTML = "JOINING BACK YOUR GAME!";
                     q_btn.style.backgroundColor = '#ffbb00ff';  // Green background
                     q_btn.style.color = 'black';              // White text
