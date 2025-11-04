@@ -297,7 +297,110 @@ async function pong_routes(fastify, options)
             }
         });
     });
+
+    // 🤖 PONG AI WEBSOCKET
+    fastify.get('/api/pong/ai/ws', { websocket: true }, async (connection, req) => {
+        const { p_rooms } = fastify;
+        let USER_ID;
+
+        // Auth
+        try {
+            await fastify.authenticate(req);
+            USER_ID = req.user.id;
+        } catch (err) {
+            console.log('JWT verification failed:', err.message);
+            connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
+            connection.socket.close();
+            return;
+        }
+
+        console.log(`User ${USER_ID} connected to AI game`);
+
+        ///GET THE PLAYER NAME FROM THE DB
+        let username = 'Player';
+        try {
+            const user = await fastify.db.get('SELECT username FROM users WHERE id = ?', [USER_ID]);
+            username = user?.username || 'Player';
+        } catch (err) {
+            console.error('Failed to fetch username:', err);
+        }
+
+        // Crée une partie AI
+        const game_id = `ai_${Date.now()}_${USER_ID}`;
+        const AI_ID = 'AI_BOT';
+        
+        const game = {
+            id: game_id,
+            players: [USER_ID, AI_ID],  // Joueur vs AI
+            sockets: [connection.socket, null],  //
+            paddles: { p1: 50, p2: 50 },
+            ball: { x: 100, y: 100, vx: 3.5, vy: 3.5 },
+            scores: { p1: 0, p2: 0 },
+            countdown: 0,
+            width: 1200,
+            height: 600,
+            paddleWidth: 10,
+            paddleHeight: 80,
+            isAI: true,  
+            aiSpeed: 4,   //AI SPEED
+            player_names: [username, 'AI Bot']
+        };
+        p_rooms.set(game_id, game);
+         const safe_game = {
+            scores: game.scores,
+            countdown: game.countdown,
+            width: game.width,
+            height: game.height,
+            paddleWidth: game.paddleWidth,
+            paddleHeight: game.paddleHeight,
+            max_score: game.max_score,
+            player_names: game.player_names
+        };
+
+        // Envoie start immédiatement
+        connection.socket.send(JSON.stringify({ 
+            type: 'start', 
+            role: 'p1', 
+            game_id,
+            message: 'AI game started!',
+            ehh : safe_game
+        }));
+
+        // Lance le game loop AI
+        start_ai_game_loop(game, fastify);
+
+        // Input du joueur
+        connection.socket.on('message', (message) => {
+            try {
+                const data = JSON.parse(message.toString('utf8'));
+                
+                if (data.type === 'paddle_move') {
+                    game.paddles.p1 += data.direction === "up" ? -4 : 4;
+                    
+                    // Limites
+                    if (game.paddles.p1 < 0) game.paddles.p1 = 0;
+                    if (game.paddles.p1 > game.height - game.paddleHeight) 
+                        game.paddles.p1 = game.height - game.paddleHeight;
+                }
+
+                 if (data.type === 'player_giveup') {
+                    handle_game_end(game, 'give-up', fastify, USER_ID);
+                }
+            } catch (err) {
+                console.error('Invalid message:', err);
+            }
+        });
+
+        // Cleanup
+        connection.socket.on('close', () => {
+            console.log(`AI game ${game_id} ended`);
+            if (game.interval)
+                clearInterval(game.interval);
+            p_rooms.delete(game_id);
+        });
+    });
 }
+
 module.exports = pong_routes;
 
 const start_game_loop = (game, fastify = null) =>
@@ -377,6 +480,90 @@ const start_game_loop = (game, fastify = null) =>
   }, 1000 / 60); // 60 FPS
   game.interval = interval;
 }
+
+
+const start_ai_game_loop = (game, fastify = null) => {
+    const interval = setInterval(() => {
+        // Ball physics
+        game.ball.x += game.ball.vx;
+        game.ball.y += game.ball.vy;
+
+        // Bounce top/bottom
+        if (game.ball.y <= 0 || game.ball.y >= game.height) {
+            game.ball.vy *= -1;
+        }
+
+        // AI movement: follow the ball
+        const target = game.ball.y - game.paddleHeight / 2;
+        if (game.paddles.p2 < target)
+            game.paddles.p2 += game.aiSpeed;
+        else if (game.paddles.p2 > target)
+            game.paddles.p2 -= game.aiSpeed;
+
+        // Clamp AI paddle
+        if (game.paddles.p2 < 0) game.paddles.p2 = 0;
+        if (game.paddles.p2 > game.height - game.paddleHeight)
+            game.paddles.p2 = game.height - game.paddleHeight;
+
+        // Score system
+        if (game.ball.x <= 0) {
+            game.scores.p2 += 8;
+        } else if (game.ball.x >= game.width) {
+            game.scores.p1 += 8;
+        }
+
+        // Game end
+        if (game.ball.x <= 0 || game.ball.x >= game.width) {
+            if (game.scores.p1 >= game.max_score || game.scores.p2 >= game.max_score) {
+                handle_game_end(game, "victory", fastify);
+                return;
+            }
+        }
+
+        // Bounce left/right
+        if (game.ball.x <= 0 || game.ball.x >= game.width) {
+            if (Math.abs(game.ball.vx) < 3.5)
+                game.ball.vx *= -1.15;
+            else
+                game.ball.vx *= -1;
+        }
+
+        // Paddle collisions
+        // Left paddle (player)
+        if (
+            game.ball.x <= 20 + game.paddleWidth &&
+            game.ball.x >= 20 - game.paddleWidth &&
+            game.ball.y >= game.paddles.p1 &&
+            game.ball.y <= game.paddles.p1 + game.paddleHeight
+        ) {
+            game.ball.vx = Math.abs(game.ball.vx);
+        }
+
+        // Right paddle (AI)
+        if (
+            game.ball.x >= (game.width - 30) - game.paddleWidth &&
+            game.ball.x <= (game.width - 30) + game.paddleWidth &&
+            game.ball.y >= game.paddles.p2 &&
+            game.ball.y <= game.paddles.p2 + game.paddleHeight
+        ) {
+            game.ball.vx = -Math.abs(game.ball.vx);
+        }
+
+        // Broadcast game state to player
+        const socket = game.sockets[0];
+        if (socket?.readyState === 1) {
+            socket.send(JSON.stringify({
+                type: 'game_state',
+                ball: game.ball,
+                paddles: game.paddles,
+                scores: game.scores
+            }));
+        }
+    }, 1000 / 60); // 60 FPS
+
+    game.interval = interval;
+};
+
 
 // game ending: 'give_up', 'victory' or 'disconnection'
 const handle_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {

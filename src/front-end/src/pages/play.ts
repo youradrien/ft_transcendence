@@ -52,6 +52,8 @@ export default class PlayPage extends Page {
               box-shadow: 0 0 6px rgba(0,0,0,0.4);
             ">0</span>
           </div>
+
+           <button id="aiBtn" style="margin: 1rem; background-color: #ff6600;">🤖 PLAY vs AI</button>
         </div>
 
         <h1 id="game-join-h1" style="margin-bottom: 1rem; font-size: 30px;">JOINING ' '</h1>
@@ -64,6 +66,7 @@ export default class PlayPage extends Page {
     const sgl = container.querySelector('#singleBtn') as HTMLParagraphElement;
     const r_st = container.querySelector('#rooms-status') as HTMLParagraphElement;
     const q_btn = container.querySelector('#multiBtn') as HTMLButtonElement;
+    const aiBtn = container.querySelector('#aiBtn') as HTMLButtonElement;
     const gCounter = container.querySelector('#game-counter') as HTMLButtonElement;
     const gJntitle = container.querySelector('#game-join-h1') as HTMLButtonElement;
     let socket: WebSocket; // <-- wsocket var 
@@ -303,6 +306,71 @@ export default class PlayPage extends Page {
         }
         
       }
+    };
+
+    aiBtn.onclick = async () => {
+        try {
+            aiBtn.innerText = '🤖 Connecting to AI...';
+            aiBtn.disabled = true;
+
+            ///WS CREATION
+            const aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws');
+            
+            aiSocket.onmessage = async (msg) => {
+                const data = JSON.parse(msg.data);
+                
+                if (data.type === 'start') {
+                    joined_game = true;
+                    
+                    const pong_page = new Pong("ai-pong", this.router, {
+                        multiplayer: false,
+                        socket: aiSocket,
+                        game_data: { max_score: 10 }
+                    });
+
+                    const pong_container = await pong_page.render();
+                    const game_area = document.querySelector('#game-area');
+                    
+                    if (game_area) {
+                        game_area.innerHTML = '';
+                        game_area.appendChild(pong_container);
+                        
+                        // Cache les autres éléments
+                        p_st.style.display = 'none';
+                        r_st.style.display = 'none';
+                        gCounter.style.display = 'none';
+                        gJntitle.style.display = 'none';
+                        
+                        aiBtn.innerText = '🎮 Playing vs AI';
+                        aiBtn.style.backgroundColor = '#ff6600';
+                    }
+                }
+                
+                if (data.type === 'game_over') {
+                    alert(`Game Over! ${data.winner} wins!\nScore: ${data.scores.p1} - ${data.scores.p2}`);
+                    // Recharge la page
+                    window.location.reload();
+                }
+            };
+
+            aiSocket.onerror = (err) => {
+                console.error('AI WebSocket error:', err);
+                aiBtn.innerText = '❌ Connection failed';
+                aiBtn.disabled = false;
+            };
+            
+            aiSocket.onclose = () => {
+                console.log('AI WebSocket closed');
+                aiBtn.disabled = false;
+                aiBtn.innerText = '🤖 PLAY vs AI';
+                aiBtn.style.backgroundColor = '#ff6600';
+            }
+
+        } catch (err) {
+            console.error('Failed to start AI game:', err);
+            aiBtn.innerText = '❌ Failed. Retry?';
+            aiBtn.disabled = false;
+        }
     };
 
     return container;
