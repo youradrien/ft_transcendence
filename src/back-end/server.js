@@ -15,7 +15,34 @@ const fastify = require('fastify')({   logger: {
     }
   } });
 const { db, _INIT_DB } = require('./db.js'); // chemin relatif selon ton projet
+const bcrypt = require('bcrypt');
+const vault = require('node-vault')({
+   apiVersion: 'v1', // default
+  endpoint: 'http://vault:8200', // default
+  token: 'root' // optional client token; can be fetched after valid initialization of the server
+});
 
+// init vault server
+// vault.init({ secret_shares: 1, secret_threshold: 1 })
+//   .then( (result) => {
+//     var keys = result.keys;
+//     // set token for all following requests
+//     vault.token = result.root_token;
+//     // unseal vault server
+//     console.log("SUCESS UNSEALING:  " +result.root_token);
+//     return vault.unseal({ secret_shares: 1, key: keys[0] })
+//   })
+//   .catch(console.error);
+require('dotenv').config();
+vault.token = "root";
+// console.log(process.env.JWT_SECRET);
+vault.write('secret/data/hello', {data: { value: process.env.JWT_SECRET,  lease: '1s' } })
+  .then( async () => {
+    const a = await vault.read('secret/data/hello');
+    console.log(a);
+  })
+  //.then( () => vault.delete('secret/hello'))
+  .catch(console.error);
 
 // global containers, for rooms ws (accessibles depuis toutes les routes)
 fastify.decorate("p_rooms", new Map());   // game rooms -> [player1, player2]
@@ -29,9 +56,9 @@ fastify.register(cors, {
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 });
+
 // JWT
-require('dotenv').config();
-const jwtSecret = process.env.JWT_SECRET;
+const jwtSecret =  process.env.JWT_SECRET;
 fastify.register(cookie);
 fastify.register(multipart);
 fastify.register(jwt, {
@@ -79,6 +106,35 @@ start();
 // ! important cuhh
 fastify.decorate('db', (db));
 
+
+// fake ahhh users
+const gen_fake_users = async (db, count = 2) => {
+  const AVATAR_OPTIONS = [
+    'https://api.dicebear.com/9.x/adventurer/svg?seed=Sawyer',
+    'https://api.dicebear.com/9.x/adventurer/svg?seed=Sara',
+    'https://api.dicebear.com/9.x/fun-emoji/svg?seed=Christian',
+    'https://api.dicebear.com/9.x/fun-emoji/svg?seed=Aiden',
+    'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Adrian',
+    'https://api.dicebear.com/9.x/avataaars-neutral/svg?seed=Brooklynn',
+    'https://api.dicebear.com/9.x/avataaars-neutral/svg?seed=Vivian',
+    'https://api.dicebear.com/9.x/fun-emoji/svg?seed=Nolan'
+  ];
+  for (let i = 0; i < count; i++) {
+    const username = `bot_${i + 1}`;
+    const password = await bcrypt.hash('password123', 10); // random default
+    const rand_av = AVATAR_OPTIONS[Math.floor(Math.random() * AVATAR_OPTIONS.length)];
+    const wins = Math.floor(Math.random() * 42);
+    const losses = Math.floor(Math.random() * 42);
+    const elo = 1100 + (wins - losses) * 10;
+
+    await db.run(
+      `INSERT INTO users (username, password, avatar_url, wins, losses, elo, created_at, last_online)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+      [username, password, rand_av, wins, losses, elo]
+    );
+  }
+};
+gen_fake_users(db);
 
 // last time seen (user field)
 fastify.decorate('updateLastOnline', async function(userId) {

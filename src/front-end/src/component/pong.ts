@@ -10,11 +10,6 @@ export default class SinglePong extends Page {
     this.multiplayer = options?.multiplayer ?? false;
     this.socket = options?.socket;
     this.game_data = options?.game_data;
-
-    // console.log(this.socket);
-    // (this.game_data);
-    // console.log(this.multiplayer);
-    // console.log(options);
   }
 
   async render(): Promise<HTMLElement> {
@@ -77,7 +72,10 @@ export default class SinglePong extends Page {
     // [GAME] state...
     // and constants
     let g_started = false;
-    const PADDLE_WIDTH = 10, PADDLE_HEIGHT = 80, PADDLE_SPEED = 5;
+    const 
+        PADDLE_WIDTH =  this.game_data?.paddleWidth ? (this.game_data?.paddleWidth) : 10, 
+        PADDLE_HEIGHT = this.game_data?.paddleHeight ? (this.game_data?.paddleHeight) : 80, 
+        PADDLE_SPEED = 5;
     const BALL_RADIUS = 10, DEFAULT_BALL_SPEED = 5;
     const _g = {
       ball: { x: canvas.width / 2, y: canvas.height / 2, speedX: DEFAULT_BALL_SPEED, speedY: DEFAULT_BALL_SPEED },
@@ -106,16 +104,8 @@ export default class SinglePong extends Page {
       ██║     ╚██████╔╝██║ ╚████║╚██████╔╝
       ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝`;
 
-
-    // const reset_ball = (initialReset = false) => {
-    //   _g.ball.x = canvas.width / 2;
-    //   _g.ball.y = canvas.height / 2;
-    //   _g.ball.speedX = initialReset ? DEFAULT_BALL_SPEED : -_g.ball.speedX;
-    //   _g.ball.speedY = DEFAULT_BALL_SPEED;
-    // };
-
-    /*const treat_socket = async () => 
-    {*/
+    const treat_socket = async () => 
+    {
       if(!this.socket)
           return ;
       this.socket.addEventListener('message', async (msg) => {
@@ -177,9 +167,8 @@ export default class SinglePong extends Page {
             F.appendChild(e);
         } 
       });
-
-    //}
-    //treat_socket();
+    }
+    treat_socket();
 
     const update = () => {
       if(this.multiplayer)
@@ -291,14 +280,13 @@ export default class SinglePong extends Page {
     // Event Listeners
     const handleKeyEvent = (e: KeyboardEvent, isDown: boolean) => {
       if (e.key === ' ' && isDown && !g_started) {
-        /* e.preventDefault();
-        g_started = true;
+        /* 
         reset_ball(true); */
       }
-      // Check for movement keys
-      else if (e.key === 'w' || e.key === 's' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-            e.preventDefault(); // ✅ Prevent arrow keys and WASD from scrolling
-        // console.log(`Key ${e.key} is now ${isDown ? 'down' : 'up'}`);
+      // movement keys
+      else if (e.key === 'w' || e.key === 's' || e.key === 'ArrowUp' || e.key === 'ArrowDown')
+      {
+        e.preventDefault(); // ✅ Prevent arrow keys and WASD from scrolling
         (_g.keys as any)[e.key] = isDown;
       }
     };

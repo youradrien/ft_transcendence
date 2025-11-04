@@ -5,6 +5,69 @@ const { db } = require('../db.js');
 // -------------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------------
 
+const attach_socket_handler = async (socket, USER_ID, fastify) =>{
+    if( !socket ){
+        return ;
+    }
+    // players inputs
+    socket.on('message', (message) => {
+        try {
+            const msg_str = message.toString('utf8'); 
+            const data = JSON.parse(msg_str);
+            // console.log(`Received message from user ${USER_ID}:`, data);
+            if(data?.type == "paddle_move")
+            {
+                // convert buffer -. string
+        
+                // game exists?
+                let _game = null;
+                for (const [r, game] of fastify.p_rooms.entries()) {
+                    if (Array.isArray(game.players) && game.players.includes(USER_ID)) {
+                        _game = (game);
+                        break;
+                    }
+                }
+                if (!_game){ 
+                    connection.socket.send(JSON.stringify({ type: 'error', message: 'no' }));
+                    return;
+                }
+                // user ix in dis game??
+                const ix = _game.players.indexOf(USER_ID);
+                const r = ix === 0 ? 'p1' : 'p2';
+                if (ix === -1) {
+                    return;
+                }
+                // update game state...
+                //if (data.type === 'paddle_move') {
+                _game.paddles[r] += data.direction == "up" ? -4: 4;
+
+                // clamp 
+                if (_game.paddles[r] < 0) _game.paddles[r] = 0;
+                if (_game.paddles[r] > _game.height) _game.paddles[r] = _game.height;
+                //}
+            }
+            if(data?.type == "player_giveup")
+            {
+    
+                // game exists?
+                let _game = null;
+                for (const [r, game] of fastify.p_rooms.entries()) {
+                    if (Array.isArray(game.players) && game.players.includes(USER_ID)) {
+                        _game = (game);
+                        break;
+                    }
+                }
+                if(_game != null)
+                {
+                    handle_game_end(_game, "give-up", fastify, USER_ID);
+                }
+            }
+        } catch (err) {
+            console.error('Invalid message:', err);
+        }
+    });
+}
+
 async function pong_routes(fastify, options)
 {
     // PONG DATAS
@@ -82,13 +145,13 @@ async function pong_routes(fastify, options)
         console.log(`User ${USER_ID} connected via WebSocket`);
         // user is already in room?
         for (const [roomId, _g] of fastify.p_rooms.entries()) {
-            // if (players.includes(USER_ID)) {
             if (Array.isArray(_g.players) && _g.players.includes(USER_ID)) {
                 console.log(`JOIN-BACK: ${USER_ID} reconnected himself to pong room. ${roomId} and ehh: ${_g?.countdown}`);
-                // update player's socket in p_room
+                // !!! [update player's socket in p_room] !!!
                 const p_index = _g.players.indexOf(USER_ID);
                 if (p_index !== -1) {
                    _g.sockets[p_index] = (connection.socket); // <- important brr
+                   attach_socket_handler(connection.socket, USER_ID, fastify);
                 }
                 // 5s join-back... state so plyr can be ready to play..
                 connection.socket.send(JSON.stringify({ type: 'creating',
@@ -197,11 +260,11 @@ async function pong_routes(fastify, options)
                             player_names: (game.player_names)
                         };
                         // send start messages
-                        p1Socket.send(JSON.stringify({ 
+                        game.sockets[0]/*p1Socket*/.send(JSON.stringify({ 
                             type: 'start', 
                             role: 'p1', 
                             ehh: safe_game}));
-                        p2Socket.send(JSON.stringify({ 
+                        game.sockets[1]/*p2Socket*/.send(JSON.stringify({ 
                             type: 'start',
                             role: 'p2', 
                             ehh: safe_game }));

@@ -2,7 +2,7 @@ import Page from '../template/page.ts';
 
 type Player = {
   username: string;
-  avatar: string;
+  avatar_url: string;
   elo: number;
 };
 
@@ -19,7 +19,6 @@ export default class LeaderboardPage extends Page {
       if (!R.ok)
         throw new Error(`API error: ${R.status} + ${R.json()}`);
       const _data = await R.json();
-      // console.log(_data);
       return _data?.users; // Adjust this depending on how your API sends data
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error);
@@ -36,17 +35,18 @@ export default class LeaderboardPage extends Page {
       flexDirection: 'column',
       alignItems: 'center',
       padding: '40px',
-      backgroundColor: '#111',
+      backgroundColor: '#181818d1',
       color: 'white',
       fontFamily: '"Press Start 2P", cursive',
       minHeight: '70vh',
       maxHeight: '70vh',
+      borderRadius: '18px'
     });
     container.innerHTML = `
       <h1 style="font-size: 24px; margin-bottom: 30px;">LEADERBOARD</h1>
       <div id="leaderboard" style="
         width: 100%;
-        max-width: 700px;
+        max-width: 850px;
         display: flex;
         flex-direction: column;
         gap: 16px;
@@ -59,34 +59,43 @@ export default class LeaderboardPage extends Page {
     const list = container.querySelector('#leaderboard') as HTMLElement;
     const sortedPlayers = [..._playerz].sort((a, b) => b.elo - a.elo);
     sortedPlayers.forEach((player, index) => {
-      const card = document.createElement('div');
-      card.style.display = 'flex';
-      card.style.alignItems = 'center';
-      card.style.justifyContent = 'space-between';
-      card.style.padding = '16px';
-      card.style.background = '#1c1c1c';
-      card.style.border = '2px solid #333';
-      card.style.borderRadius = '6px';
-      card.style.boxShadow = '0 0 8px rgba(0, 255, 0, 0.1)';
-      card.style.transition = 'transform 0.2s ease';
-      card.innerHTML = `
+      const C = document.createElement('div');
+      C.style.display = 'flex';
+      C.style.alignItems = 'center';
+      C.style.justifyContent = 'space-between';
+      C.style.padding = '16px';
+      C.style.background = '#1c1c1c';
+      C.style.border = '2px solid #333';
+      C.style.borderRadius = '8px';
+      C.style.boxShadow = '0 0 8px rgba(0, 255, 0, 0.1)';
+      C.style.transition = 'transform 0.35s ease';
+      C.innerHTML = `
         <div style="display: flex; align-items: center; gap: 16px; cursor: crosshair;">
           <div style="font-size: 12px; color: lime; cursor: crosshair;">#${index + 1}</div>
-          <img src="${player.avatar}" alt="${player.username}" style="
-            width: 48px;
-            height: 48px;
+          <img src="${player.avatar_url}" alt="${player.username}" style="
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
             border: 2px solid white;
           " />
-          <div style="font-size: 12px;">${player.username}</div>
+          <div style="font-size: 16px;">${player.username}</div>
         </div>
-        <div style="font-size: 12px; color: #0f0; cursor: crosshair;">${player.elo}</div>
+        <div style="font-size: 13px; color: #0f0; cursor: crosshair;">${player.elo}</div>
       `;
+      // movement effect
+      C.addEventListener('mouseenter', () => {
+        C.style.transform = 'translateY(-10px) scale(1.04)';
+        C.style.boxShadow = '0 0 8px rgba(255, 255, 255, 0.4)';
+      });
+      C.addEventListener('mouseleave', () => {
+        C.style.transform = 'translateY(0) scale(1)';
+        C.style.boxShadow = '0 0 8px rgba(0, 255, 0, 0.1)';
+      });
 
-      card.addEventListener('click', () => {
+      C.addEventListener('click', () => {
         this.router.navigate(`/profile/${player.username}`);
       });
-      list.appendChild(card);
+      list.appendChild(C);
     });
 
     return container;

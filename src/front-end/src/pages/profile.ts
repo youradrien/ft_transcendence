@@ -21,11 +21,11 @@ export default class UserProfilePage extends Page {
     container.style.color = '#fff';
     container.style.fontFamily = '"Press Start 2P", cursive'; // pixel font
     container.style.minHeight = '100vh';
-    
+    let pfp = "https://avatars.githubusercontent.com/u/9919?s=200&v=4";
       
     const path = window.location.pathname; // e.g. /profile:john_doe
-    const match = path.match(/^\/profile:(.+)$/);
-    let user_api_call = match ? ("/api/profile/" + match[1]) : null;
+    const match = path.match(/^\/profile\/([^/]+)$/);
+    let user_api_call = match ? ("api/profile/" + match[1]) : null;
     if(!user_api_call){
       user_api_call = "api/me-info"
     }
@@ -38,7 +38,14 @@ export default class UserProfilePage extends Page {
         if (!response.ok) {
           throw new Error('User not found');
         }
-        USER_DATA = (await response.json())?.user;
+        USER_DATA = !match ? 
+          (await response.json())?.user
+          :
+          (await response.json());
+        console.log(USER_DATA);
+        if(USER_DATA?.avatar_url){
+          pfp = USER_DATA.avatar_url;
+        }
     } catch (error) {
       console.error('Failed to load user profile:', error);
       // document.getElementById('profile')!.innerHTML = `<p>User not found.</p>`;
@@ -64,8 +71,8 @@ export default class UserProfilePage extends Page {
         border-radius: 13px;
       ">
         <div style="display: flex; align-items: center; gap: 16px;">
-          <img src="https://avatars.githubusercontent.com/u/9919?s=200&v=4" alt="User Avatar"
-            style="width: 64px; height: 64px; border-radius: 50%; border: 2px solid #fff;" />
+          <img src="${pfp}" alt="User Avatar"
+            style="width: 72px; height: 72px; border-radius: 50%; border: 2px solid #fff;" />
           <h1 style="font-size: 28px; margin: 0; color: white;">${USER_DATA?.username}</h1>
         </div>
 
@@ -131,6 +138,7 @@ export default class UserProfilePage extends Page {
           e.style.display = 'flex';
           e.style.borderRadius = '12px';
           e.style.justifyContent = 'space-between';
+          e.style.cursor = 'pointer';
           // e.style.fontSize = '12px';
 
           const winnerName = (game.winner_id === 1 ? game.p1_name : game.p2_name);
@@ -143,6 +151,9 @@ export default class UserProfilePage extends Page {
           }else{
             if(game.player1_score != game.player2_score)
               e.style.border = '2px solid #800';
+            else
+              e.style.border = '2px solid rgba(222, 172, 33, 1)';
+  
           }
           e.innerHTML = `
             <span style="color: lime; font-size: 11px; ">${winnerName} (${w})</span>

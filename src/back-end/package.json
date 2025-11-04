@@ -23,6 +23,7 @@
     "dotenv": "^17.2.3",
     "fastify": "^4.29.1",
     "google-auth-library": "^9.15.1",
+    "node-vault": "^0.10.9",
     "nodemon": "^3.1.10",
     "pino-pretty": "^13.0.0",
     "qrcode": "^1.5.4",

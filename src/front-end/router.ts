@@ -58,20 +58,48 @@ export class Router {
       return;
     }
 
-    const renderFn = this.routes[path] || this.routes['*'];
+    let renderFn = this.routes[path];
+    // let params: Record<string, string> = {};
+
+    //no exact match, try dynamic ones
+    if (!renderFn){
+      for (const route in this.routes) {
+        if (route === '*' || !route.includes(':')) continue;
+
+        // conversion
+        // -> /profile/:username → /^\/profile\/([^/]+)$/
+        const pattern = new RegExp(
+          '^' +
+            route.replace(/:[^/]+/g, '([^/]+)') +
+            '$'
+        );
+
+        const match = path.match(pattern);
+        if (match) {
+          renderFn = this.routes[route];
+          // const paramNames = (route.match(/:([^/]+)/g) || []).map(s => s.substring(1));
+          // paramNames.forEach((name, i) => {
+          //   params[name] = match[i + 1];
+          // });
+          break;
+        }
+      }
+    }
+
+    // fallback wildcard-route
+    if (!renderFn) {
+      renderFn = this.routes['*'];
+    }
     outlet.innerHTML = '';
 
-    if (renderFn) {
-      try {
-        const element = await renderFn();
-        if (element instanceof HTMLElement) {
-          outlet.appendChild(element);
-        }
-      } catch (err) {
-        console.error('Error rendering route:', err);
+    // exact match
+    try {
+      const el = await renderFn();
+      if (el instanceof HTMLElement) {
+        outlet.appendChild(el);
       }
-    } else {
-      console.warn(`No route found for path: ${path}`);
+    } catch (err) {
+      console.error('Error rendering route:', err);
     }
   }
 }
