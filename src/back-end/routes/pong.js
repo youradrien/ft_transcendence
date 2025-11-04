@@ -334,15 +334,16 @@ async function pong_routes(fastify, options)
             players: [USER_ID, AI_ID],  // Joueur vs AI
             sockets: [connection.socket, null],  //
             paddles: { p1: 50, p2: 50 },
-            ball: { x: 100, y: 100, vx: 3.5, vy: 3.5 },
+            ball: { x: 100, y: 100, vx: 4, vy: 4 },
             scores: { p1: 0, p2: 0 },
             countdown: 0,
             width: 1200,
             height: 600,
             paddleWidth: 10,
             paddleHeight: 80,
-            isAI: true,  
-            aiSpeed: 4,   //AI SPEED
+            isAI: true, 
+            max_score:10,
+            aiSpeed: 3.5,   //AI SPEED
             player_names: [username, 'AI Bot']
         };
         p_rooms.set(game_id, game);
@@ -372,18 +373,34 @@ async function pong_routes(fastify, options)
         // Input du joueur
         connection.socket.on('message', (message) => {
             try {
-                const data = JSON.parse(message.toString('utf8'));
+                const msg_str = message.toString('utf8'); 
+                const data = JSON.parse(msg_str);
+                if(data?.type == "paddle_move")
+                {
+                    let _game = null;
+                    for (const [r, game] of fastify.p_rooms.entries()) {
+                        if (Array.isArray(game.players) && game.players.includes(USER_ID)) {
+                            _game = (game);
+                            break;
+                        }
+                    }
+                    if (!_game){ 
+                        connection.socket.send(JSON.stringify({ type: 'error', message: 'no' }));
+                        return;
+                    }
                 
-                if (data.type === 'paddle_move') {
-                    game.paddles.p1 += data.direction === "up" ? -4 : 4;
-                    
-                    // Limites
-                    if (game.paddles.p1 < 0) game.paddles.p1 = 0;
-                    if (game.paddles.p1 > game.height - game.paddleHeight) 
-                        game.paddles.p1 = game.height - game.paddleHeight;
+                    // update game state...
+                    //if (data.type === 'paddle_move') {
+                    _game.paddles.p1 += data.direction == "up" ? -4: 4;
+
+                    // clamp 
+                    if (_game.paddles.p1 < 0) _game.paddles.p1 = 0;
+                    if (_game.paddles.p1 > _game.height) _game.paddles.p1 = _game.height;
+                    //}
                 }
 
-                 if (data.type === 'player_giveup') {
+                if (data.type === 'player_giveup')
+                {
                     handle_game_end(game, 'give-up', fastify, USER_ID);
                 }
             } catch (err) {
@@ -507,9 +524,9 @@ const start_ai_game_loop = (game, fastify = null) => {
 
         // Score system
         if (game.ball.x <= 0) {
-            game.scores.p2 += 8;
+            game.scores.p2 += 1;
         } else if (game.ball.x >= game.width) {
-            game.scores.p1 += 8;
+            game.scores.p1 += 1;
         }
 
         // Game end

@@ -324,6 +324,7 @@ export default class PlayPage extends Page {
                     
                     const pong_page = new Pong("ai-pong", this.router, {
                         multiplayer: false,
+                        isaigame: true,
                         socket: aiSocket,
                         game_data: { max_score: 10 }
                     });
