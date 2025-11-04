@@ -667,3 +667,52 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     console.log(`Game ${game.id} ended (${reason}) — Winner: ${winner}`);
 }
 
+const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
+    if (!game) return;
+
+    clearInterval(game.interval);
+
+    const { scores, max_score, players, sockets, player_names } = game
+
+    let winner = null;
+    if(reason == 'victory')
+    {
+        if (scores.p1 > scores.p2) 
+            winner = 'p1';
+        else if (scores.p2 > scores.p1) 
+            winner = 'p2';
+    }
+    else if (reason == "give-up")
+        winner = 'p2'; // AI always wins if player gives up
+    
+    if (!sockets || !Array.isArray(sockets)) {
+        console.error("errd: sockets missing or invalid for game", game?.id);
+        return;
+    }
+    
+    // Only update stats for P1 (the human player), P2 is AI
+    const player_id = players[0]; // P1 is always the human player
+    
+    try {
+        await fastify.db.run(
+            `INSERT INTO games (
+                player1_id, player2_id, winner_id,
+                player1_score, player2_score,
+                p1_name, p2_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [   players[0],  null, (winner === 'p1') ? 1 : 2,  
+                scores.p1,  scores.p2,
+                player_names[0], player_names[1]
+            ]
+        );
+        console.log(`AI game ${game.id} saved to DB`);
+
+        if (winner === 'p1'){
+            await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [player_id]);
+        } else {
+            await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [player_id]);
+        }
+    } catch (err) {
+        console.error("❌ Error saving AI game:", err);
+    }
+}

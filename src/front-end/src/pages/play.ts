@@ -69,7 +69,8 @@ export default class PlayPage extends Page {
     const aiBtn = container.querySelector('#aiBtn') as HTMLButtonElement;
     const gCounter = container.querySelector('#game-counter') as HTMLButtonElement;
     const gJntitle = container.querySelector('#game-join-h1') as HTMLButtonElement;
-    let socket: WebSocket; // <-- wsocket var 
+    let socket: WebSocket; // <-- wsocket var
+    let aiSocket: WebSocket |  null = null;;
     let nahh: boolean = false;
     // whole func dedicated to update active games data
     const fetch_games = async () => {
@@ -299,23 +300,26 @@ export default class PlayPage extends Page {
         await start_game(false); // <-- single player pong
       }else
       {
-        if(socket)
+        if (aiSocket && aiSocket.readyState === WebSocket.OPEN)
+        {
+          aiSocket.send(JSON.stringify({
+            type: "player_giveup"
+          }));
+        }
+        else if(socket && socket.readyState === WebSocket.OPEN)
         {
           socket.send(JSON.stringify({
             type: "player_giveup"
           }));
         }
-        
       }
     };
 
     aiBtn.onclick = async () => {
         try {
+            aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
             aiBtn.innerText = '🤖 Connecting to AI...';
             aiBtn.disabled = true;
-
-            ///WS CREATION
-            const aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws');
             
             aiSocket.onmessage = async (msg) => {
                 const data = JSON.parse(msg.data);
@@ -342,7 +346,12 @@ export default class PlayPage extends Page {
                         r_st.style.display = 'none';
                         gCounter.style.display = 'none';
                         gJntitle.style.display = 'none';
-                        
+                        q_btn.style.backgroundColor = '#cc0000ff';  // Green background
+                        q_btn.style.color = 'white';              // White text
+                        q_btn.innerText = '🔌 Disconnect';
+                        sgl.style.backgroundColor = '#f5d500ff';  // Green background
+                        sgl.style.color = 'black';              // White text
+                        sgl.innerText = '❌ GIVE UP';
                         aiBtn.innerText = '🎮 Playing vs AI';
                         aiBtn.style.backgroundColor = '#ff6600';
                     }
