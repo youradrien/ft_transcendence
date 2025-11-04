@@ -2,6 +2,7 @@ import Page from '../template/page.ts';
 
 export default class SinglePong extends Page {
   private multiplayer: boolean;
+  private isaigame :boolean = false;
   private socket?: WebSocket;
   private game_data?: any;
 
@@ -10,6 +11,12 @@ export default class SinglePong extends Page {
     this.multiplayer = options?.multiplayer ?? false;
     this.socket = options?.socket;
     this.game_data = options?.game_data;
+    this.isaigame = options?.isaigame;
+
+    // console.log(this.socket);
+    // (this.game_data);
+    // console.log(this.multiplayer);
+    // console.log(options);
   }
 
   async render(): Promise<HTMLElement> {
@@ -97,7 +104,7 @@ export default class SinglePong extends Page {
     }
 
     const PONG_ART = 
-    `██████╗ ███████╗███╗   ██╗ ██████╗ 
+    `  ██████╗ ███████╗███╗   ██╗ ██████╗ 
       ██╔══██╗██║   ██║████╗  ██║██╔════╝ 
       ██████╔╝██║   ██║██╔██╗ ██║██║  ███╗
       ██╔═══╝ ██║   ██║██║╚██╗██║██║   ██║
@@ -171,7 +178,7 @@ export default class SinglePong extends Page {
     treat_socket();
 
     const update = () => {
-      if(this.multiplayer)
+      if(this.multiplayer || this.isaigame)
       {
         if(!this.socket)
             return;
