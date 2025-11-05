@@ -37,6 +37,7 @@ fclean:
 	docker image prune -f
 	rm -rf src/front-end/node_modules
 	rm -rf src/back-end/node_modules src/back-end/package-lock.json
+	rm -rf ./vault-data
 	npm cache clean --force
 
 # View backend logs

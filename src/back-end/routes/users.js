@@ -56,9 +56,20 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
         }
         const hashed_password = await bcrypt.hash(password, 10);
         try {
+            const AVATAR_OPTIONS = [
+                'https://api.dicebear.com/9.x/adventurer/svg?seed=Sawyer',
+                'https://api.dicebear.com/9.x/adventurer/svg?seed=Sara',
+                'https://api.dicebear.com/9.x/fun-emoji/svg?seed=Christian',
+                'https://api.dicebear.com/9.x/fun-emoji/svg?seed=Aiden',
+                'https://api.dicebear.com/9.x/adventurer-neutral/svg?seed=Adrian',
+                'https://api.dicebear.com/9.x/avataaars-neutral/svg?seed=Brooklynn',
+                'https://api.dicebear.com/9.x/avataaars-neutral/svg?seed=Vivian',
+                'https://api.dicebear.com/9.x/fun-emoji/svg?seed=Nolan'
+            ];
+            const rand_av = AVATAR_OPTIONS[Math.floor(Math.random() * AVATAR_OPTIONS.length)];
             await db.run(
-                "INSERT INTO users (username, password, created_at, last_online, level) VALUES (?, ?, datetime('now'), datetime('now'), 0)",
-                [username, hashed_password]
+                "INSERT INTO users (username, password, avatar_url, created_at, last_online, level) VALUES (?, ?, ?, datetime('now'), datetime('now'), 0)",
+                [username, hashed_password, rand_av]
             );
         } catch (err) {
             return reply.status(500).send({ success: false, error: 'db_access' });
@@ -77,7 +88,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             const token_jwt = fastify.jwt.sign(jwt_content);
             return reply.setCookie('token', token_jwt, {
                     httpOnly: true,
-                    secure : false, // true if HTTPS
+                    secure : true, // true if HTTPS
                     sameSite : 'none',
                     path : '/'
             }).send({success: true});
@@ -132,7 +143,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             const token_jwt = fastify.jwt.sign(jwt_content);
             return reply.setCookie('token', token_jwt, {
                     httpOnly: true,
-                    secure : false, // true for HTTPS
+                    secure : true, // true for HTTPS
                     sameSite : 'none',
                     path : '/'
             }).send({success: true});
@@ -283,12 +294,10 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             const u = request.user.username;
 
             const user = await db.get(
-            "SELECT id, username, wins, last_online, created_at, losses FROM users WHERE username = ?",
+            "SELECT id, username, avatar_url, wins, last_online, created_at, losses FROM users WHERE username = ?",
             [u]
             );
             console.log('JWT username:', `"${request.user.username}"`);
-            console.log(user);
-            console.log(u);
             if (!user) {
                 return reply.status(404).send({ success: false, message: 'User not found' });
             }
@@ -298,7 +307,30 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             return reply.status(500).send({ success: false, message: 'Internal server error' });
         }
     });
-
+    
+    // get games infos
+    fastify.get('/api/:username/games', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+        try {
+            const { username } = request.params;
+            // get id frm username
+            const user = await fastify.db.get(`SELECT id FROM users WHERE username = ?`, [username]);
+            if (!user) {
+                return reply.status(404).send({ success: false, message: 'user not-found' });
+            }
+            const games = await fastify.db.all(
+                `SELECT * FROM games
+                WHERE player1_id = ? OR player2_id = ?
+                ORDER BY played_at DESC`,
+                [user.id, user.id]
+            );
+            return reply.send({ success: true, games });
+        } catch (err) {
+            request.log.error(err);
+            return reply.status(500).send({ success: false, message: 'Internal server error' });
+        }
+    });
+    
+     
 
 
     // get all users
@@ -365,12 +397,10 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
         if (!isMyProfile) 
         {
             try {
-                // verifier si j'ai envoyé une demande d'ami
                 const sentRequest = await db.get(
                     "SELECT status FROM friends WHERE user_id = ? AND friend_id = ?",
                     [request.user.id, user.id]
                 );
-                // Vérifier si j'ai reçu une demande d'ami
                 const receivedRequest = await db.get(
                     "SELECT status FROM friends WHERE user_id = ? AND friend_id = ?",
                     [user.id, request.user.id]

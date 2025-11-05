@@ -47,16 +47,10 @@ export class App {
         return this.renderPage(Leaderboard, 'leaderboard-page');
     });
 
-    this.router.addRoute('/profile', async () => {
-      const path = window.location.pathname;
-      console.log(path);
-      const match = path.match(/^\/profile\/([^/]+)$/);
-      if (!match) {
-        return this.renderPage(NTFoundPage, 'not-found-page');
-      }
-      // const username = match[1];
+    this.router.addRoute('/profile/:username', async () => {
       return this.renderPage(Profile, 'profile-page');
     });
+
 
     // 🧱 catch-all fallback for unknown routes
     this.router.addRoute('*', async () => {

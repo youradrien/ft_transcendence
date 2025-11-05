@@ -7,14 +7,19 @@ export default class Header extends Page {
     container.style.flexDirection = 'column';
     container.style.alignItems = 'center';
     container.style.padding = '15px';
-    container.style.backgroundColor = '#2b2b2bff';
-    container.style.boxShadow = '0 4px 8px rgba(24, 24, 24, 1)';
+    // container.style.backgroundColor = '#2b2b2bff';
+    // container.style.boxShadow = '0 4px 8px rgba(24, 24, 24, 1)';
+        container.style.background = 'linear-gradient(180deg, #2b2b2b 0%, #1f1f1f 100%)';
+    container.style.boxShadow = '0 0 25px rgba(184, 184, 184, 0.2)';
     container.style.marginTop = '5px';
     container.style.marginLeft = 'auto';
     container.style.marginRight = 'auto';
     container.style.fontFamily = '"Press Start 2P", cursive'; // pixel font
     container.style.zIndex = '1000';
-
+    container.style.borderRadius = '18px';
+    container.style.width = '99%';
+    container.style.minWidth = '99%';
+    container.style.marginBottom = '10px';
 
     // Inject inner HTML
     container.innerHTML = `
@@ -40,6 +45,7 @@ export default class Header extends Page {
         <button id="playBtn" >Play</button>
         <button id="leaderboardBtn" >Leaderboard</button>
         <button id="friendsBtn">Friends</button>
+        <button id="friendsBtn">Tournament</button>
         <button id="logoutBtn" style="background-color: #f44336; color: white;">Logout</button>
       </div>
     `;
