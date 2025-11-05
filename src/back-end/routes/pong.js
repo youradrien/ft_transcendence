@@ -837,20 +837,10 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
         has_fastify: !!fastify
     });
 
-    if (!game) {
-        console.error('❌ [AI_GAME_END] No game object provided');
+    if (!game)
         return;
-    }
-
-    console.log('🔵 [AI_GAME_END] Game state:', {
-        players: game.players,
-        scores: game.scores,
-        player_names: game.player_names,
-        max_score: game.max_score
-    });
 
     clearInterval(game.interval);
-    console.log('✅ [AI_GAME_END] Interval cleared');
 
     const { scores, max_score, players, sockets, player_names } = game
 
@@ -861,29 +851,16 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
             winner = 'p1';
         else if (scores.p2 > scores.p1) 
             winner = 'p2';
-        console.log('🏆 [AI_GAME_END] Victory winner determined:', winner, `(P1: ${scores.p1}, P2: ${scores.p2})`);
     }
-    else if (reason == "give-up") {
-        winner = 'p2'; // AI always wins if player gives up
-        console.log('🏳️ [AI_GAME_END] Give-up, winner:', winner);
-    }
-    
-    if (!sockets || !Array.isArray(sockets)) {
-        console.error("❌ [AI_GAME_END] Sockets missing or invalid for game", game?.id);
+    else if (reason == "give-up")
+        winner = 'p2';
+    if (!sockets || !Array.isArray(sockets))
         return;
-    }
-    
-    // Only update stats for P1 (the human player), P2 is AI
-    const player_id = players[0]; // P1 is always the human player
-    console.log('🔵 [AI_GAME_END] Player ID:', player_id);
+
+    const player_id = players[0];
     
     // --- WEBSOCKET NOTIFICATION (AVANT LA DB) ---
     const socket = game.sockets[0];
-    console.log('🔵 [AI_GAME_END] Socket state:', {
-        has_socket: !!socket,
-        readyState: socket?.readyState
-    });
-
     // Envoyer le message AVANT que le socket se ferme
     if (socket && socket.readyState === 1)
     {
@@ -896,9 +873,7 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
             player_names: (player_names),
             you_are_winner: (winner === 'p1')
         };
-        console.log('📤 [AI_GAME_END] Sending game_end message:', d);
         socket.send(JSON.stringify(d));
-        console.log('✅ [AI_GAME_END] Message sent to player');
     } else {
         console.error('❌ [AI_GAME_END] Cannot send message - socket not ready (state:', socket?.readyState, ')');
     }
@@ -927,15 +902,6 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
             console.error('❌ [AI_GAME_END] Error creating/finding AI user:', err);
         }
 
-        console.log('💾 [AI_GAME_END] Insert params:', {
-            player1_id: players[0],
-            player2_id: AI_USER_ID, // 🔥 Utiliser l'ID de l'AI au lieu de null
-            winner_id: (winner === 'p1') ? 1 : 2,
-            player1_score: scores.p1,
-            player2_score: scores.p2,
-            p1_name: player_names[0],
-            p2_name: player_names[1]
-        });
 
         const insertResult = await fastify.db.run(
             `INSERT INTO games (
@@ -943,27 +909,20 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
                 player1_score, player2_score,
                 p1_name, p2_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [   players[0],  AI_USER_ID, (winner === 'p1') ? 1 : 2,  // 🔥 AI_USER_ID au lieu de null
+            [   players[0],  AI_USER_ID, (winner === 'p1') ? 1 : 2,
                 scores.p1,  scores.p2,
                 player_names[0], player_names[1]
             ]
         );
-        console.log('✅ [AI_GAME_END] Game inserted to DB:', insertResult);
         console.log(`✅ [AI_GAME_END] AI game ${game.id} saved to DB`);
 
         // Update wins/losses SEULEMENT pour le joueur humain
-        if (winner === 'p1'){
-            console.log('💾 [AI_GAME_END] Updating wins for player:', player_id);
-            const winResult = await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [player_id]);
-            console.log('✅ [AI_GAME_END] Wins updated:', winResult);
-        } else {
-            console.log('💾 [AI_GAME_END] Updating losses for player:', player_id);
-            const lossResult = await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [player_id]);
-            console.log('✅ [AI_GAME_END] Losses updated:', lossResult);
-        }
+        if (winner === 'p1')
+            await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [player_id]);
+        else
+            await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [player_id]);
     } catch (err) {
         console.error("❌ [AI_GAME_END] Error saving AI game:", err);
-        console.error("❌ [AI_GAME_END] Error stack:", err.stack);
     }
     
     // --- CLEANUP ---
