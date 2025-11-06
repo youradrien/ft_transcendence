@@ -214,7 +214,8 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             let user = await db.get("SELECT * FROM users WHERE sub_github = ?", [githubUser.id]);
             if (!user) {
                 const username = githubUser.login || `User${Math.floor(Math.random() * 100000)}`;
-                await db.run("INSERT INTO users (username, sub_github) VALUES (?, ?)", [username, githubUser.id]);
+                const profile_pic = githubUser.avatar_url;
+                await db.run("INSERT INTO users (username, sub_github, avatar_url) VALUES (?, ?, ?)", [username, githubUser.id, profile_pic]);
                 user = await db.get("SELECT * FROM users WHERE sub_github = ?", [githubUser.id]);
             }
 
@@ -258,9 +259,13 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             // Your existing user creation/login logic here
             let user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
             
-            if (!user) {
-            const pseudo_new = `Player${Math.floor(Math.random() * 10000000)}`;
-            await db.run("INSERT INTO users (username, sub_google) VALUES (?, ?)", [pseudo_new, payload.sub]);
+            if (!user)
+            {
+            console.log(`${payload.name}`);
+            const pseudo_new = payload.name;
+            const profile_pic = payload.picture;
+            console.log(`USER AVATR : ${payload.picture}`);
+            await db.run("INSERT INTO users (username, sub_google, avatar_url) VALUES (?, ?, ?)", [pseudo_new, payload.sub, profile_pic]);
             user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
             }
             

@@ -194,6 +194,7 @@ export default class PlayPage extends Page {
                 const data = JSON.parse(msg.data);
                 
                 if (data.type === 'start') {
+                    nahh = false;
                     joined_game = true;
                     
                     const pong_page = new Pong("ai-pong", this.router, {
@@ -257,13 +258,26 @@ export default class PlayPage extends Page {
     // (queue) btn handler
     q_btn.onclick = async () => {
       try {
-        if(nahh)
+      if (nahh) return;
+
+      if (joined_game) {
+        try {
+          if (currentGameMode === 'ai' && aiSocket && aiSocket.readyState === WebSocket.OPEN)
+          {
+            this.router.navigate('/'); // simple navigation
             return;
-        if(joined_game)
-        {
-            this.router.navigate("/");
-            return; 
-        }
+          }
+          else if (currentGameMode === 'multiplayer' && socket && socket.readyState === WebSocket.OPEN)
+          {
+            // Multi: fermeture OK
+            socket.close();
+            setTimeout(() => window.location.reload(), 200);
+            return;
+          }
+        } catch (_) {}
+        setTimeout(() => window.location.reload(), 200);
+        return;
+      }
         if(!socket || socket == null)
         {
           socket = new WebSocket('ws://localhost:3010/api/pong/ws');
@@ -327,7 +341,7 @@ export default class PlayPage extends Page {
             }
             if(data?.type == "start")
             {
-              // console.log(data);
+              nahh = false;
               start_game(true, data.ehh);
             }
         };

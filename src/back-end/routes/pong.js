@@ -105,8 +105,6 @@ async function pong_routes(fastify, options)
         for (const [id, game] of fastify.p_rooms.entries()) {
             if (game.isAI === true)
             {
-            console.log('heheheha');
-            console.error('heheheha');
             const player = await fastify.db.get(
                 'SELECT id, username FROM users WHERE id = ?',
                 [game.players[0]]
@@ -419,7 +417,6 @@ async function pong_routes(fastify, options)
             }
         }
 
-        // 🔥 IF GAME EXISTS, UPDATE SOCKET AND REJOIN
         if (existingGame) {
             // Update the socket in the existing game
             existingGame.sockets[0] = connection.socket;
@@ -471,7 +468,7 @@ async function pong_routes(fastify, options)
                 // Don't delete the game, allow reconnection
             });
 
-            return; // Exit early, game already exists
+            return;
         }
 
         ///GET THE PLAYER NAME FROM THE DB
@@ -489,10 +486,10 @@ async function pong_routes(fastify, options)
         
         const game = {
             id: game_id,
-            players: [USER_ID, AI_ID],  // Joueur vs AI
-            sockets: [connection.socket, null],  //
+            players: [USER_ID, AI_ID],
+            sockets: [connection.socket, null],  //socket null pr ai
             paddles: { p1: 50, p2: 50 },
-            ball: { x: 100, y: 100, vx: 4, vy: 4 },
+            ball: { x: 100, y: 100, vx: 6, vy: 6 },
             scores: { p1: 0, p2: 0 },
             countdown: 0,
             width: 1200,
@@ -501,7 +498,7 @@ async function pong_routes(fastify, options)
             paddleHeight: 80,
             isAI: true, 
             max_score:10,
-            aiSpeed: 3.5,   //AI SPEED
+            aiSpeed: 3.25,   //AI SPEED
             player_names: [username, 'AI Bot']
         };
         p_rooms.set(game_id, game);
@@ -668,12 +665,34 @@ const start_ai_game_loop = (game, fastify = null) => {
             game.ball.vy *= -1;
         }
 
-        // AI movement: follow the ball
-        const target = game.ball.y - game.paddleHeight / 2;
-        if (game.paddles.p2 < target)
-            game.paddles.p2 += game.aiSpeed;
-        else if (game.paddles.p2 > target)
-            game.paddles.p2 -= game.aiSpeed;
+        // Human-like AI movement
+        let target = game.ball.y - game.paddleHeight / 2;
+        
+        // Add prediction based on ball trajectory
+        if (game.ball.vx > 0) { // Ball moving towards AI
+            const timeToReach = (game.width - 30 - game.ball.x) / game.ball.vx;
+            target = game.ball.y + (game.ball.vy * timeToReach) - game.paddleHeight / 2;
+        }
+
+        // Add reaction delay (human-like latency)
+        const reactionDelay = Math.random() * 0.3 + 0.1; // 0.1-0.4 seconds
+        const delayedTarget = target + (game.ball.vy * reactionDelay);
+
+        // Imperfect tracking - sometimes overshoot or undershoot
+        const errorMargin = Math.random() * 15 - 7.5; // -7.5 to +7.5 pixels
+        const finalTarget = delayedTarget + errorMargin;
+
+        // Smooth acceleration/deceleration
+        const distance = finalTarget - game.paddles.p2;
+        const direction = Math.sign(distance);
+        const speedMultiplier = Math.min(Math.abs(distance) / 50, 1.5); // Faster when farther away
+        
+        game.paddles.p2 += direction * game.aiSpeed * speedMultiplier;
+
+        // Occasional mistakes (5% chance per frame)
+        if (Math.random() < 0.001) { // ~5% chance per second at 60fps
+            game.paddles.p2 += (Math.random() * 60 - 30); // Sudden wrong move
+        }
 
         // Clamp AI paddle
         if (game.paddles.p2 < 0) game.paddles.p2 = 0;
@@ -714,14 +733,18 @@ const start_ai_game_loop = (game, fastify = null) => {
             game.ball.vx = Math.abs(game.ball.vx);
         }
 
-        // Right paddle (AI)
+        // Right paddle (AI) - with occasional misses
+        const shouldMiss = Math.random() < 0.02; // 2% chance to miss an easy ball
         if (
+            !shouldMiss &&
             game.ball.x >= (game.width - 30) - game.paddleWidth &&
             game.ball.x <= (game.width - 30) + game.paddleWidth &&
             game.ball.y >= game.paddles.p2 &&
             game.ball.y <= game.paddles.p2 + game.paddleHeight
         ) {
             game.ball.vx = -Math.abs(game.ball.vx);
+            const angleVariation = (Math.random() * 0.4 - 0.2); // -0.2 to +0.2
+            game.ball.vy += angleVariation;
         }
 
         // Broadcast game state to player
@@ -744,7 +767,6 @@ const start_ai_game_loop = (game, fastify = null) => {
 const handle_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
     if (!game) 
     {
-        console.log('U I I A U I  I A UA UAU AUAUUWFVWEGHFBEWHFVEWYEFWGYUWEGYIGYIWECGYUGYU');
         return;
     }
 
