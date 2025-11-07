@@ -4,14 +4,15 @@ arg="$1"
 chmod +x monitoring/scripts/*.sh
 
 if [ "$arg" == "clean" ] || [ "$arg" == "down" ]; then
-	docker compose -f monitoring/docker-compose.yml down -v
 	./monitoring/scripts/cleanup_indices.sh
+	docker compose -f monitoring/docker-compose.yml down -v
 fi
 
 
 if [ "$arg" == "build" ] || [ "$arg" == "up" ] || [ "$arg" == "re" ]; then
 
 	if [ "$arg" == "re" ]; then
+		./monitoring/scripts/cleanup_indices.sh
 		docker compose -f monitoring/docker-compose.yml down -v
 	fi
 

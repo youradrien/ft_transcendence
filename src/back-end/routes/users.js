@@ -272,7 +272,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 
     // GITHUB OAUTH2
     //PREMIERE ROUTE = CLIQUE SUR LOGIN AVEC GHUB
-    fastify.get('/api/auth/github/login', async (req, reply) => {
+  fastify.get('/api/auth/github/login', async (req, reply) => {
         const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user`;
         return reply.redirect(githubAuthURL);
     });
@@ -308,57 +308,20 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                 await db.run("INSERT INTO users (username, sub_github, avatar_url) VALUES (?, ?, ?)", [username, githubUser.id, profile_pic]);
                 user = await db.get("SELECT * FROM users WHERE sub_github = ?", [githubUser.id]);
             }
-            else
-            {
-                let user;
-                try {
-                        user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
-                } catch (err){
-                        return reply.status(500).send({success: false, error : 'db_access'});                          
-                }
-                if (!user)
-                {
-                    const number = Math.floor(Math.random() * 10000000);
-                    const pseudo_new = `Player${number}`;
-                    try {
-                        await db.run("INSERT INTO users (username, sub_google) VALUES (?, ?)", [pseudo_new, payload.sub]);
-                    } catch (err)
-                    {
-                        return reply.status(500).send({success: false, error : 'db_access'});
-                    }
-                    let real_user;
-                    try {
-                        real_user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
-                    } catch (err){
-                        return reply.status(500).send({success: false, error : 'db_access'});                          
-                    }
-                    try {
-                        const jwt_content = await getJWTContent(real_user.id);
-                        const token_jwt = fastify.jwt.sign(jwt_content);
-                        fastify.setAuthCookie(reply, token_jwt);
-                        return reply.send({success: true});
-                    } catch (err)
-                    {
-                        return ({success : false, error : "db_access"});
-                    }
-                }
-                else
-                {
-                    try {
-                          const jwt_content = await getJWTContent(user.id);
-                          const token_jwt = fastify.jwt.sign(jwt_content);
-                          fastify.setAuthCookie(reply, token_jwt);
-                          return reply.send({success: true});
-                    } catch (err)
-                    {
-                          return ({success : false, error : "db_access"});
-                    }
-                }
-            }
-        } catch(err)
-        {
-            console.log("probleme avec google sign in catch");
-            return reply.status(500).send({success: false, error : 'unknown_error'});
+
+            // Générer JWT et cookie
+            const jwt_content = await getJWTContent(user.id);
+            const token_jwt = fastify.jwt.sign(jwt_content);
+            return reply.setCookie('token', token_jwt, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'none',
+                path: '/'
+            }).redirect(FRONTEND_URL);
+
+        } catch (err) {
+            console.error(err);
+            return reply.status(500).send({ success: false, error: 'OAuth GitHub error' });
         }
     });
 
