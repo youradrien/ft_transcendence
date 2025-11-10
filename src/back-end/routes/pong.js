@@ -533,8 +533,8 @@ async function pong_routes(fastify, options)
             'SELECT id, username, avatar_url FROM users WHERE id IN (?)',
             [USER_ID]
         );
-        console.log("ehhhhhhh ");
-        console.log(p_names);
+
+        
         if(p_names){
             game.player_pfps[1] = (p_names[0])?.avatar_url;
         }else{
@@ -568,6 +568,7 @@ async function pong_routes(fastify, options)
             try {
                 const msg_str = message.toString('utf8'); 
                 const data = JSON.parse(msg_str);
+                console.log("MESSAGE!!! : " + data?.type + "   =  "  + data);
                 if(data?.type == "paddle_move")
                 {
                     let _game = null;
@@ -902,6 +903,7 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
         return;
     clearInterval(game.interval);
     const { scores, max_score, players, sockets, player_names } = game
+        console.log(`xoxoxo [AI_GAME_END] AI game ${game.id} --------------`);
 
     let winner = null;
     if(reason == 'victory')

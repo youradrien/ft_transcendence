@@ -148,7 +148,9 @@ export default class PlayPage extends Page {
         }
         if(game_mode) // multiplayer
         {
-          currentGameMode = 'multiplayer';
+          if(game_ai){
+            currentGameMode = 'ai';
+          }
           // component
           const pong_page = new Pong(game_ai ? "ai-pong" : "multiplayer-pong", 
             this.router, 
@@ -205,7 +207,6 @@ export default class PlayPage extends Page {
           aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
           aiBtn.innerText = '🤖 Connecting to AI...';
           aiBtn.disabled = true;
-          currentGameMode = 'ai'; // Set game mode to AI
           
           aiSocket.onmessage = async (msg) => {
               const data = JSON.parse(msg.data);
@@ -377,13 +378,14 @@ export default class PlayPage extends Page {
         await start_game(false); // <-- single player pong
       }else
       {
+        console.log(currentGameMode);
         // Check which socket to use based on current game mode
         if (currentGameMode === 'ai' && aiSocket && aiSocket.readyState === WebSocket.OPEN)
         {
           aiSocket.send(JSON.stringify({
             type: "player_giveup"
           }));
-          aiSocket.close();
+          // aiSocket.close();
         }
         else if(currentGameMode === 'multiplayer' && socket && socket.readyState === WebSocket.OPEN)
         {
@@ -393,7 +395,7 @@ export default class PlayPage extends Page {
           socket.close();
         }
         // Reload page after giving up
-        setTimeout(() => window.location.reload(), 500);
+        setTimeout(() => window.location.reload(), 5000);
       }
     };
 
