@@ -77,8 +77,6 @@ export default class AuthPage extends Page {
         <input type="password" id="password" placeholder="Password" required />
         <p id="errorMsg" class="error-message"></p>
         <button id="submitBtn">Login</button>
-        <button id="githubLogin">Login with GitHub</button>
-        <button id="googleLogin">Login with Google</button>
         <p class="toggle-link" id="toggleForm">Don't have an account? Register</p>
       </div>
     `;
@@ -87,21 +85,6 @@ export default class AuthPage extends Page {
     const formTitle = container.querySelector('#formTitle') as HTMLElement;
     const submitBtn = container.querySelector('#submitBtn') as HTMLButtonElement;
     const toggleForm = container.querySelector('#toggleForm') as HTMLElement;
-
-    // Bouton GitHub login
-    const githubLoginBtn = container.querySelector('#githubLogin') as HTMLButtonElement;
-    githubLoginBtn.addEventListener('click', () => {
-      // Redirige vers le backend
-      window.location.href = 'http://localhost:3010/api/auth/github/login';
-    });
-
-    const googleLoginBtn = container.querySelector("#googleLogin") as HTMLButtonElement;
-    googleLoginBtn.addEventListener('click', () => {
-      // Redirige vers le backend
-      window.location.href = 'http://localhost:3010/api/auth/google/login';
-    });
-
-
 
     let isLogin = true;
 
@@ -136,7 +119,7 @@ export default class AuthPage extends Page {
         });
 
         const data = await response.json();
-        console.log(data);
+        // console.log(data);
 
         if (!response.ok) throw new Error(data?.error || 'Unknown error');
         // Handle success (e.g. redirect to main page)

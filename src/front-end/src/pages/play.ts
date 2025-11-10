@@ -32,28 +32,35 @@ export default class PlayPage extends Page {
           `
         : ""}
 
-        <div style="margin-top: 2rem; position: relative;">
-          <button id="singleBtn" style="margin: 1rem;">🎯 SINGLE-Player</button>
-
-          <div style="display: inline-block; position: relative;">
-            <button id="multiBtn" style="margin: 1rem; position: relative;">
-              🚀 Queue for Match
-            </button>
-            <span id="queue-count" style="
-              position: absolute;
-              top: -10px;
-              right: -10px;
-              background: #00ff00;
-              color: black;
-              font-size: 10px;
-              padding: 4px 6px;
-              border-radius: 10px;
-              font-weight: bold;
-              box-shadow: 0 0 6px rgba(0,0,0,0.4);
-            ">0</span>
+        <div style="margin-top: 2rem; position: relative; display: flex; flex-direction: column; padding: 20px; border: 2px solid grey; 
+            border-radius 16px; ">
+          <h1 id="game-modes">GAME-MODES</h1>
+          <div>
+              <button id="singleBtn" style="margin: 1rem;">🎯 SINGLE-Player</button>
+              <div style="display: inline-block; position: relative;">
+                <button id="multiBtn" style="margin: 1rem; position: relative;">
+                  🚀 Queue for Match
+                </button>
+                <span id="queue-count" style="
+                  position: absolute;
+                  top: -10px;
+                  right: -10px;
+                  background: #00ff00;
+                  color: black;
+                  font-size: 10px;
+                  padding: 4px 6px;
+                  border-radius: 10px;
+                  font-weight: bold;
+                  box-shadow: 0 0 6px rgba(0,0,0,0.4);
+                ">0</span>
+              </div>
           </div>
 
-           <button id="aiBtn" style="margin: 1rem; background-color: #ff6600;">🤖 PLAY vs AI</button>
+          <div>
+                <button id="hostGameBtn" style="margin: 1rem;" background-color: #007bffff;>🕹️ Host custom-game</button>
+                <button id="aiBtn" style="margin: 1rem; background-color: #ffae00ff;">🤖 PLAY vs AI</button>
+          </div>
+
         </div>
 
         <h1 id="game-join-h1" style="margin-bottom: 1rem; font-size: 30px;">JOINING ' '</h1>
@@ -66,14 +73,14 @@ export default class PlayPage extends Page {
     const sgl = container.querySelector('#singleBtn') as HTMLParagraphElement;
     const r_st = container.querySelector('#rooms-status') as HTMLParagraphElement;
     const q_btn = container.querySelector('#multiBtn') as HTMLButtonElement;
+    const hst_btn = container.querySelector('#hostGameBtn') as HTMLButtonElement;
     const aiBtn = container.querySelector('#aiBtn') as HTMLButtonElement;
     const gCounter = container.querySelector('#game-counter') as HTMLButtonElement;
     const gJntitle = container.querySelector('#game-join-h1') as HTMLButtonElement;
-    let socket: WebSocket; // <-- wsocket var
-    let aiSocket: WebSocket |  null = null;
+    let socket: WebSocket; // <-- wsocket var 
     let nahh: boolean = false;
+    let aiSocket: WebSocket |  null = null;
     let currentGameMode: 'multiplayer' | 'ai' | 'single' | null = null; // Track current game mode
-
     // whole func dedicated to update active games data
     const fetch_games = async () => {
         try {
@@ -125,7 +132,8 @@ export default class PlayPage extends Page {
     };
 
     // start either multiplayer or single player
-    const start_game = async (game_mode: boolean, game_data? : object) => 
+    // start either multiplayer or single player
+    const start_game = async (game_mode: boolean, game_data? : object, game_ai?: boolean | false) => 
     {
         joined_game = (true);
         const e = container.querySelector('#active-games') as HTMLElement;
@@ -134,15 +142,23 @@ export default class PlayPage extends Page {
         r_st.style.display = 'none';
         gCounter.style.display = 'none';
         gJntitle.style.display = 'none';
+        if(game_ai){
+            aiBtn.innerText = '🎮 Playing vs AI';
+            aiBtn.style.backgroundColor = '#ff6600';
+        }
         if(game_mode) // multiplayer
         {
           currentGameMode = 'multiplayer';
           // component
-          const pong_page = new Pong("pong_ahhh_page", this.router, {
-            multiplayer : true,
-            socket: (socket),
-            game_data: (game_data)
-          });
+          const pong_page = new Pong(game_ai ? "ai-pong" : "multiplayer-pong", 
+            this.router, 
+            {
+              multiplayer : true as (Boolean),
+              socket: (game_ai ? (aiSocket): (socket)) as (WebSocket),
+              game_data: (game_data),
+              isaigame: (game_ai)
+            }
+          );
 
           // render && append 
           const pong_container = await pong_page.render();
@@ -183,77 +199,47 @@ export default class PlayPage extends Page {
         sgl.innerText = '- - - -';
       }
     };
+    // (queue) btn handler
     aiBtn.onclick = async () => {
-        try {
-            aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
-            aiBtn.innerText = '🤖 Connecting to AI...';
-            aiBtn.disabled = true;
-            currentGameMode = 'ai'; // Set game mode to AI
-            
-            aiSocket.onmessage = async (msg) => {
-                const data = JSON.parse(msg.data);
-                
-                if (data.type === 'start') {
-                    nahh = false;
-                    joined_game = true;
-                    
-                    const pong_page = new Pong("ai-pong", this.router, {
-                        multiplayer: false,
-                        isaigame: true,
-                        socket: aiSocket,
-                        game_data: { max_score: 10 }
-                    });
+      try {
+          aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
+          aiBtn.innerText = '🤖 Connecting to AI...';
+          aiBtn.disabled = true;
+          currentGameMode = 'ai'; // Set game mode to AI
+          
+          aiSocket.onmessage = async (msg) => {
+              const data = JSON.parse(msg.data);
+              if (data.type === 'start') {
+                  nahh = false;
+                  await start_game(true, data?.ehh, true); 
+              }
+              
+              if (data.type === 'game_over') {
+                  alert(`Game Over! ${data.winner} wins!\nScore: ${data.scores.p1} - ${data.scores.p2}`);
+                  // Recharge la page6
+                  window.location.reload();
+              }
+          };
 
-                    const pong_container = await pong_page.render();
-                    const game_area = document.querySelector('#game-area');
-                    
-                    if (game_area) {
-                        game_area.innerHTML = '';
-                        game_area.appendChild(pong_container);
-                        
-                        // Cache les autres éléments
-                        p_st.style.display = 'none';
-                        r_st.style.display = 'none';
-                        gCounter.style.display = 'none';
-                        gJntitle.style.display = 'none';
-                        q_btn.style.backgroundColor = '#cc0000ff';  // Green background
-                        q_btn.style.color = 'white';              // White text
-                        q_btn.innerText = '🔌 Disconnect';
-                        sgl.style.backgroundColor = '#f5d500ff';  // Green background
-                        sgl.style.color = 'black';              // White text
-                        sgl.innerText = '❌ GIVE UP';
-                        aiBtn.innerText = '🎮 Playing vs AI';
-                        aiBtn.style.backgroundColor = '#ff6600';
-                    }
-                }
-                
-                if (data.type === 'game_over') {
-                    alert(`Game Over! ${data.winner} wins!\nScore: ${data.scores.p1} - ${data.scores.p2}`);
-                    // Recharge la page
-                    window.location.reload();
-                }
-            };
+          aiSocket.onerror = (err) => {
+              console.error('AI WebSocket error:', err);
+              aiBtn.innerText = '❌ Connection failed';
+              aiBtn.disabled = false;
+          };
+          
+          aiSocket.onclose = () => {
+              aiBtn.disabled = false;
+              aiBtn.innerText = '🤖 PLAY vs AI';
+              aiBtn.style.backgroundColor = '#ff6600';
+              currentGameMode = null; // Reset game mode
+          }
 
-            aiSocket.onerror = (err) => {
-                console.error('AI WebSocket error:', err);
-                aiBtn.innerText = '❌ Connection failed';
-                aiBtn.disabled = false;
-            };
-            
-            aiSocket.onclose = () => {
-                console.log('AI WebSocket closed');
-                aiBtn.disabled = false;
-                aiBtn.innerText = '🤖 PLAY vs AI';
-                aiBtn.style.backgroundColor = '#ff6600';
-                currentGameMode = null; // Reset game mode
-            }
-
-        } catch (err) {
-            console.error('Failed to start AI game:', err);
-            aiBtn.innerText = '❌ Failed. Retry?';
-            aiBtn.disabled = false;
-            currentGameMode = null;
-        }
+      } catch (err) {
+          console.error('Failed to start AI game:', err);
+          aiBtn.innerText = '❌ Failed. Retry?';
+          aiBtn.disabled = false;
+          currentGameMode = null;
+      }
     };
     // (queue) btn handler
     q_btn.onclick = async () => {
@@ -374,12 +360,9 @@ export default class PlayPage extends Page {
         r_st.innerText = `🔵 ${data?.data?.activeRooms} currently active pong room(s)...`;
         p_st.innerText = `🟢 ${online} player(s) in queue`;
         qc.innerText = String(online);
-        if(data?.data?.alr_in_game)
-        {
-          if (data?.data?.is_ai == true)
-            aiBtn.click();
-        else if (data?.data?.is_ai == false)
-            q_btn.click();
+        if(data?.data?.alr_in_game){
+            // auto click the queue-up btn
+            q_btn.click(); // <- this will trigger everythn needed by itself cuh
         }
     } catch (err) {
         const p_st = container.querySelector('#player-status') as HTMLParagraphElement;
@@ -414,7 +397,14 @@ export default class PlayPage extends Page {
       }
     };
 
-  
+    // custom game BTN handler
+    hst_btn.onclick = async () => {
+        try {
+
+        } catch (error) {
+          console.log(error);
+        }
+    };
 
     return container;
   }

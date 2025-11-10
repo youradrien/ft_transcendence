@@ -10,12 +10,8 @@ const { pipeline } = require ('stream/promises');
 const { db } = require('../db.js'); // chemin relatif
 
 const { OAuth2Client } = require('google-auth-library');
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, 'http://localhost:3010/api/auth/google/callback'); 
-const FRONTEND_URL = 'http://localhost:5173/auth';
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID; // A mettre dans un fichier .env !!!!
+const client = new OAuth2Client(CLIENT_ID); 
 
 
 async function getJWTContent(user_id)
@@ -180,109 +176,84 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     });
 
 
-    // GITHUB OAUTH2
-    //PREMIERE ROUTE = CLIQUE SUR LOGIN AVEC GHUB
-    fastify.get('/api/auth/github/login', async (req, reply) => {
-        const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user`;
-        return reply.redirect(githubAuthURL);
-    });
 
-    ///CALLBACK LA OU ON REDIRIGE L'UTILISATEUR ET RECUPERER LE CODE DONNE PAR GHUB 1ERE ETAPE
-    fastify.get('/api/auth/github/callback', async (req, reply) => {
-        const code = req.query.code;
-        if (!code) return reply.status(400).send('Code not provided');
+    // API -- Google Sign In (appelée via fetch) !!!! NE FONCTIONNE QU'AVEC LE NAVIGATEUR
+    fastify.post('/api/auth/google', async (request, reply) => {
+        const { id_token } = request.body;
 
         try {
-            //CODE D'ECHANGE DONNE CONTRE UN ACCESS TOKEN 2EME ETAPE DE GITHUB OAUTH
-            const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
-                method: 'POST',
-                headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ client_id: GITHUB_CLIENT_ID, client_secret: GITHUB_CLIENT_SECRET, code })
-            });
-            const tokenData = await tokenRes.json();
-            const access_token = tokenData.access_token;
-            if (!access_token) throw new Error('No access token from GitHub');
-
-            // Récupérer infos utilisateur
-            const userRes = await fetch('https://api.github.com/user', {
-                headers: { Authorization: `Bearer ${access_token}` }
-            });
-            const githubUser = await userRes.json();
-            if (!githubUser || !githubUser.id) throw new Error('GitHub user fetch failed');
-
-            // Chercher / créer utilisateur en BDD
-            let user = await db.get("SELECT * FROM users WHERE sub_github = ?", [githubUser.id]);
-            if (!user) {
-                const username = githubUser.login || `User${Math.floor(Math.random() * 100000)}`;
-                const profile_pic = githubUser.avatar_url;
-                await db.run("INSERT INTO users (username, sub_github, avatar_url) VALUES (?, ?, ?)", [username, githubUser.id, profile_pic]);
-                user = await db.get("SELECT * FROM users WHERE sub_github = ?", [githubUser.id]);
-            }
-
-            // Générer JWT et cookie
-            const jwt_content = await getJWTContent(user.id);
-            const token_jwt = fastify.jwt.sign(jwt_content);
-            return reply.setCookie('token', token_jwt, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'none',
-                path: '/'
-            }).redirect(FRONTEND_URL);
-
-        } catch (err) {
-            console.error(err);
-            return reply.status(500).send({ success: false, error: 'OAuth GitHub error' });
-        }
-    });
-
-
-
-    fastify.get('/api/auth/google/login', async (request, reply) => {
-        const authUrl = client.generateAuthUrl({access_type: 'offline',scope: ['profile', 'email', 'openid']});
-        console.log(authUrl);
-        reply.redirect(authUrl);
-    });
-
-    // Handle callback
-    fastify.get('/api/auth/google/callback', async (request, reply) => {
-        const { code } = request.query;
-        
-        try {
-            const { tokens } = await client.getToken(code);
+            console.log("TEST GOOGLE");
             const ticket = await client.verifyIdToken({
-            idToken: tokens.id_token,
-            audience: GOOGLE_CLIENT_ID
+                    idToken: id_token,
+                    audience: CLIENT_ID // Vérifie que le JWT obtenu grace a google est bien destiné A MON programme
             });
-            
             const payload = ticket.getPayload();
-            
-            // Your existing user creation/login logic here
-            let user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
-            
-            if (!user)
-            {
-            console.log(`${payload.name}`);
-            const pseudo_new = payload.name;
-            const profile_pic = payload.picture;
-            console.log(`USER AVATR : ${payload.picture}`);
-            await db.run("INSERT INTO users (username, sub_google, avatar_url) VALUES (?, ?, ?)", [pseudo_new, payload.sub, profile_pic]);
-            user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
+            if (!payload)
+            {       
+                fastify.log.info("erreur sign in payload");
+                return reply.status(401).send({success:false, error : "invalid_token"});
             }
-            
-            const jwt_content = await getJWTContent(user.id);
-            const token_jwt = fastify.jwt.sign(jwt_content);
-            
-            reply.setCookie('token', token_jwt, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            path: '/'
-            }).redirect(FRONTEND_URL); // Redirect to frontend
-            
-        } catch (err) {
-            reply.status(500).send({ success: false, error: 'auth_failed' });
+            else
+            {
+                let user;
+                try {
+                        user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
+                } catch (err){
+                        return reply.status(500).send({success: false, error : 'db_access'});                          
+                }
+                if (!user)
+                {
+                    const number = Math.floor(Math.random() * 10000000);
+                    const pseudo_new = `Player${number}`;
+                    try {
+                        await db.run("INSERT INTO users (username, sub_google) VALUES (?, ?)", [pseudo_new, payload.sub]);
+                    } catch (err)
+                    {
+                        return reply.status(500).send({success: false, error : 'db_access'});
+                    }
+                    let real_user;
+                    try {
+                        real_user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
+                    } catch (err){
+                        return reply.status(500).send({success: false, error : 'db_access'});                          
+                    }
+                    try {
+                        const jwt_content = await getJWTContent(real_user.id);
+                        const token_jwt = fastify.jwt.sign(jwt_content);
+                        return reply.setCookie('token', token_jwt, {
+                                httpOnly: true,
+                                secure : true,
+                                sameSite : 'none',
+                                path : '/'
+                        }).send({success: true});
+                    } catch (err)
+                    {
+                        return ({success : false, error : "db_access"});
+                    }
+                }
+                else
+                {
+                    try {
+                          const jwt_content = await getJWTContent(user.id);
+                          const token_jwt = fastify.jwt.sign(jwt_content);
+                          return reply.setCookie('token', token_jwt, {
+                                  httpOnly: true,
+                                  secure : true,
+                                  sameSite : 'none',
+                                  path : '/'
+                          }).send({success: true});
+                    } catch (err)
+                    {
+                          return ({success : false, error : "db_access"});
+                    }
+                }
+            }
+        } catch(err)
+        {
+            console.log("probleme avec google sign in catch");
+            return reply.status(500).send({success: false, error : 'unknown_error'});
         }
-    });
+    } );
 
 
 

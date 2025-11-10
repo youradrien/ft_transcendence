@@ -42,7 +42,6 @@ export default class UserProfilePage extends Page {
           (await response.json())?.user
           :
           (await response.json());
-        console.log(USER_DATA);
         if(USER_DATA?.avatar_url){
           pfp = USER_DATA.avatar_url;
         }
