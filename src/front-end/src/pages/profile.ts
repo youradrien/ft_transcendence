@@ -53,11 +53,14 @@ export default class UserProfilePage extends Page {
     }
     let win_rate: string;
     if (USER_DATA?.wins != null && USER_DATA?.losses != null && USER_DATA.losses > 0) {
-        win_rate = ((USER_DATA.wins / USER_DATA.losses) * 100).toFixed(1) + '%';
+        // win_rate = (100 / (USER_DATA.wins / USER_DATA.losses)).toFixed(1) + '%';
+        win_rate = ((USER_DATA.wins / (USER_DATA.wins + USER_DATA.losses)) * 100).toFixed(1) + '%';
     } else {
         win_rate = '--';
     }
-
+    if( user_api_call == "api/me-info" ){
+      USER_DATA.is_online = (true);
+    }
     const social_btns_HTML = !(user_api_call == "api/me-info") ? `
       <div style="display: flex; gap: 12px;">
         <button style="${greenButtonStyle}">ADD FRIEND</button>
@@ -143,20 +146,38 @@ export default class UserProfilePage extends Page {
           border-radius: 15px;
         ">
           <img src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
-          <div style="display: flex; align-items: center; gap: 1px; flex-direction: column;">
+          <div style="display: flex; align-items: center; gap: 1px; margin-right: 20px;  flex-direction: column;">
             <h1 style="font-size: 28px; margin: 0; color: white;">${USER_DATA?.username}</h1>
             <h2 style="font-size: 18px; margin: 0; color: white; margin-top: 5px; ">${USER_DATA?.elo} ELO 🏆</h2>
           </div>
-   
+          
+          <div style="display: flex; align-items: center; gap: 8px; margin-left:auto;">
+            <span style="
+              display: inline-block;
+              width: 12px;
+              height: 12px;
+              border-radius: 50%;
+              background-color: ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
+              box-shadow: 0 0 8px ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
+              transition: background-color 0.3s, box-shadow 0.3s;
+            "></span>
+            <span style="
+              font-size: 14px;
+              color: ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
+              text-shadow: 0 0 4px ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
+            ">
+              ${USER_DATA?.is_online ? 'Online' : 'Offline'}
+            </span>
+          </div>
         </div>
 
-        <div style"display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 10px;">
+
+
+        <h1 style="font-size: 18px; margin: 10px; color: white; text-align: left;">WINRATE ${win_rate}</h1>
+        <div style"display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 20px;">
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">last seen: ${USER_DATA?.last_online}</h1>
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">member since: ${USER_DATA?.created_at}</h1>
         </div>
-
-        <h1 style="font-size: 18px; margin: 10px; color: white; text-align: left;">WINRATE ${win_rate}</h1>
-
 
         <div style="display: flex; margin-top: 30px; gap: 30px; flex-wrap: wrap; justify-content: center;">
 
