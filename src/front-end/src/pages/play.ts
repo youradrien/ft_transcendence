@@ -95,8 +95,8 @@ export default class PlayPage extends Page {
         button {
           font-family: 'Press Start 2P', cursive;
           font-size: 14px;
-          padding: 1rem;
-          margin: 1rem;
+          padding: 1rem 1.8rem;
+          margin: 0.4rem;
           border: 2px solid #00ffff;
           border-radius: 12px;
           background: linear-gradient(145deg, #0f0f0f, #1c1c1c);
