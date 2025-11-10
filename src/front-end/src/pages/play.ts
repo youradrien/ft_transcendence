@@ -7,68 +7,191 @@ export default class PlayPage extends Page {
     const container = document.createElement('div');
     container.id = this.id;
     container.innerHTML = `
-      <div id="play-content" style="
-        width: 100%;
-        height: 100vh;
-        padding: 2rem;
-        text-align: center;
-        font-family: 'Press Start 2P', cursive;
-        position: relative;
-      ">
-        <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <div id="play-content">
+      <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+      <style>
+        body {
+          margin: 0;
+          overflow: hidden;
+        }
 
-        <h1 style="margin-bottom: 1rem; font-size: 32px;">Pong 🎮</h1>
-        <p style="margin-bottom: 0.2rem;  font-size: 14px;" id="player-status">Looking for players...</p>
-        <p style="margin-bottom: 0.2rem;  font-size: 14px;" id="rooms-status">Looking for any rooms?...</p>
+        #play-content {
+          width: 100%;
+          height: 100vh;
+          padding: 2rem;
+          text-align: center;
+          font-family: 'Press Start 2P', cursive;
+          position: relative;
+          background: radial-gradient(circle at center,rgba(255, 255, 255, 0.05) 0%, #00000047 100%);
+          border: 4px solid rgb(17, 17, 17);
+          border-radius: 24px;
+          color: #f1f1f1;
+          overflow-y: auto;
+          animation: fadeIn 1s ease-in-out;
+        }
 
-        ${!joined_game ? `
-            <div id="active-games" style="margin-top: 3rem;
-                min-width: 500px; 
-                background-color: rgba(35, 35, 35, 0.5);
-            ">
-              <h2 style="margin-bottom: 1rem; font-size: 32px;">🏓 Active Games</h2>
-              <div id="game-list" style="display: flex; flex-direction: column; gap: 1rem;"></div>
-            </div>
-          `
-        : ""}
+        h1, h2, p {
+          color: #f5f5f5;
+          text-shadow: 0 0 6px #0ff;
+        }
 
-        <div style="margin-top: 2rem; position: relative; display: flex; flex-direction: column; padding: 20px; border: 2px solid grey; 
-            border-radius 16px; ">
-          <h1 id="game-modes">GAME-MODES</h1>
-          <div>
-              <button id="singleBtn" style="margin: 1rem;">🎯 SINGLE-Player</button>
-              <div style="display: inline-block; position: relative;">
-                <button id="multiBtn" style="margin: 1rem; position: relative;">
-                  🚀 Queue for Match
-                </button>
-                <span id="queue-count" style="
-                  position: absolute;
-                  top: -10px;
-                  right: -10px;
-                  background: #00ff00;
-                  color: black;
-                  font-size: 10px;
-                  padding: 4px 6px;
-                  border-radius: 10px;
-                  font-weight: bold;
-                  box-shadow: 0 0 6px rgba(0,0,0,0.4);
-                ">0</span>
-              </div>
-          </div>
+        #active-games {
+          margin-top: 3rem;
+          min-width: 500px;
+          background: rgba(20, 20, 20, 0.4);
+          border: 2px solid rgba(0, 255, 255, 0.2);
+          border-radius: 16px;
+          box-shadow: 0 0 20px rgba(0,255,255,0.1);
+          padding: 1rem;
+          backdrop-filter: blur(6px);
+          animation: glowIn 1.5s ease-out;
+        }
 
-          <div>
-                <button id="hostGameBtn" style="margin: 1rem;" background-color: #007bffff;>🕹️ Host custom-game</button>
-                <button id="aiBtn" style="margin: 1rem; background-color: #ffae00ff;">🤖 PLAY vs AI</button>
-          </div>
+        #active-games h2 {
+          color: #00ffff;
+          text-shadow: 0 0 10px #00ffff;
+        }
 
+        #game-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .game-box {
+          padding: 1rem;
+          border: 1px solid #333;
+          border-radius: 12px;
+          background-color: #1a1a1a;
+          color: #f1f1f1;
+          font-size: 0.85rem;
+          box-shadow: 0 0 10px rgba(0,255,255,0.05);
+          transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .game-box:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 0 15px rgba(0,255,255,0.4);
+        }
+
+        /* GAME MODE PANEL */
+        #game-mode-panel {
+          margin-top: 2rem;
+          padding: 1.5rem;
+          border: 2px solid rgba(255,255,255,0.1);
+          border-radius: 16px;
+          background: rgba(10,10,10,0.35);
+          box-shadow: 0 0 15px rgba(0,255,255,0.1);
+          backdrop-filter: blur(8px);
+          animation: fadeInUp 1s ease-out;
+        }
+
+        #game-mode-panel h1 {
+          font-size: 20px;
+          margin-bottom: 1rem;
+          color: #00ffff;
+        }
+
+        button {
+          font-family: 'Press Start 2P', cursive;
+          font-size: 14px;
+          padding: 1rem;
+          margin: 1rem;
+          border: 2px solid #00ffff;
+          border-radius: 12px;
+          background: linear-gradient(145deg, #0f0f0f, #1c1c1c);
+          color: #00ffff;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 0 10px rgba(0,255,255,0.2);
+        }
+
+        button:hover {
+          background: #00ffff;
+          color: #000;
+          box-shadow: 0 0 20px #00ffff, 0 0 30px #00ffff inset;
+          transform: scale(1.05);
+          border-radius: 5px;
+        }
+
+        #aiBtn {
+          border-color: #ffae00;
+          color: #ffae00;
+        }
+        #aiBtn:hover {
+          background: #ffae00;
+          color: #000;
+          box-shadow: 0 0 20px #ffae00, 0 0 30px #ffae00 inset;
+        }
+
+        #queue-count {
+          position: absolute;
+          top: -10px;
+          right: -10px;
+          background: #00ff00;
+          color: black;
+          font-size: 10px;
+          padding: 4px 6px;
+          border-radius: 10px;
+          font-weight: bold;
+          box-shadow: 0 0 6px rgba(0,0,0,0.4);
+          animation: pulse 1.2s infinite;
+        }
+
+        /* KEYFRAMES */
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 5px #00ff00; }
+          50% { transform: scale(1.2); box-shadow: 0 0 15px #00ff00; }
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes glowIn {
+          from { box-shadow: 0 0 0 rgba(0,255,255,0); }
+          to { box-shadow: 0 0 20px rgba(0,255,255,0.4); }
+        }
+      </style>
+
+      <h1>PONG 🎮</h1>
+      <p id="player-status">Looking for players...</p>
+      <p id="rooms-status">Looking for any rooms?...</p>
+
+      ${!joined_game ? `
+        <div id="active-games">
+          <h2>🏓 Active Games</h2>
+          <div id="game-list"></div>
         </div>
+      ` : ""}
 
-        <h1 id="game-join-h1" style="margin-bottom: 1rem; font-size: 30px;">JOINING ' '</h1>
-        <h2 id="game-counter" style="margin-bottom: 1rem; font-size: 22px;">. . . . .</h2>
-
-        <div id="game-area"> </div>
+      <div id="game-mode-panel">
+        <h1>GAME MODES</h1>
+        <div>
+          <button id="singleBtn">🎯 SINGLE Player</button>
+          <div style="display: inline-block; position: relative;">
+            <button id="multiBtn">🚀 Queue for Match</button>
+            <span id="queue-count">0</span>
+          </div>
+        </div>
+        <div>
+          <button id="hostGameBtn">🕹️ Host Custom Game</button>
+          <button id="aiBtn">🤖 PLAY vs AI</button>
+        </div>
       </div>
-    `;
+
+      <h1 id="game-join-h1">JOINING ' '</h1>
+      <h2 id="game-counter">. . . . .</h2>
+
+      <div id="game-area"></div>
+    </div>
+  `;
     const p_st = container.querySelector('#player-status') as HTMLParagraphElement;
     const sgl = container.querySelector('#singleBtn') as HTMLParagraphElement;
     const r_st = container.querySelector('#rooms-status') as HTMLParagraphElement;

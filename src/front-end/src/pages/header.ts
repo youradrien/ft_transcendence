@@ -24,7 +24,7 @@ export default class Header extends Page {
     // Inject inner HTML
     container.innerHTML = `
         <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-
+   
       <h1 style = "margin-bottom: 5px; ">Transcendance</h1>
 
       <div id="online-count" style="
@@ -41,6 +41,8 @@ export default class Header extends Page {
         flex-wrap: wrap;
         justify-content: center;
       ">
+      <style>
+      </style>
         <button id="homeBtn" >Home</button>
         <button id="playBtn" >Play</button>
         <button id="leaderboardBtn" >Leaderboard</button>
