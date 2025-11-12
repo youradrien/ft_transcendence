@@ -268,7 +268,10 @@ export default class UserProfilePage extends Page {
 
             const w = (winnerName === game.p1_name) ? game.player1_score : game.player2_score;
             const l  = (winnerName === game.p1_name) ? game.player2_score : game.player1_score;
-            if(winnerName == USER_DATA.username){
+
+            let ix = USER_DATA?.username == game.p1_name ? (1) : (2);
+
+            if(game.winner_id == ix){
               e.style.border = '2px solid #4fff4f';
             }else{
               if(game.player1_score != game.player2_score)
@@ -276,9 +279,15 @@ export default class UserProfilePage extends Page {
               else
                 e.style.border = '2px solid rgba(255, 255, 255, 0.14)';
             }
+            const p1Link = `<a href="/profile/${encodeURIComponent(game.p1_name)}" 
+                     style="color: #00ffff; text-decoration: underline;">${game.p1_name}</a>`;
+            const p2Link = `<a href="/profile/${encodeURIComponent(game.p2_name)}" 
+                     style="color: #00ffff; text-decoration: underline;">${game.p2_name}</a>`;
+            USER_DATA?.username
             e.innerHTML = `
               <span style="color: lime; font-size: 11px; ">${winnerName} (${w})</span>
-              <span style="color: white;">${game?.p1_name} vs ${game?.p2_name}</span>
+              <span style="color: white;"> ${game.p1_name == USER_DATA?.username ? game.p1_name : p1Link} 
+                vs  ${game.p2_name == USER_DATA?.username ? game.p2_name : p2Link} </span>
               <span style="color: red; font-size: 11px; ">${L} (${l})</span>
             `;
             const h = container.querySelector('#game-history');

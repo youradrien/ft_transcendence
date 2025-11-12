@@ -55,7 +55,7 @@ export default class SinglePong extends Page {
     img_p1.style.borderRadius = '50%';
     img_p1.style.border = '2px solid white';
 
-    img_p1.src = this.game_data?.player_pfps[1];
+    img_p1.src = this.game_data?.player_pfps[0];
     div_p1.appendChild(img_p1);
     div_p1.appendChild(p1);
     _score.appendChild(div_p1);
@@ -89,7 +89,7 @@ export default class SinglePong extends Page {
     img_p2.style.height = '64px';
     img_p2.style.borderRadius = '50%';
     img_p2.style.border = '2px solid white';
-    img_p2.src = this.game_data?.player_pfps[0];
+    img_p2.src = this.game_data?.player_pfps[1];
     div_p2.appendChild(p2);
     div_p2.appendChild(img_p2);
     _score.appendChild(div_p2);
