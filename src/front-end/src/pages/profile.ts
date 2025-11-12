@@ -69,6 +69,7 @@ export default class UserProfilePage extends Page {
     ` : '';
     container.innerHTML = `
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+      
       <style>
         .dashboard-panel {
           min-width: 600px;
@@ -174,7 +175,7 @@ export default class UserProfilePage extends Page {
 
 
         <h1 style="font-size: 18px; margin: 10px; color: white; text-align: left;">WINRATE ${win_rate}</h1>
-        <div style"display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 20px;">
+        <div style"display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 30px;">
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">last seen: ${USER_DATA?.last_online}</h1>
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">member since: ${USER_DATA?.created_at}</h1>
         </div>
@@ -231,7 +232,12 @@ export default class UserProfilePage extends Page {
         <!-- DASHBOARD SECTION -->
         <div class="panel dashboard-panel">
             <h3>📊 PERFORMANCE DASHBOARD</h3>
+            <div style="display: flex; flex-direction: row; justify-content: space-between; width: 89%;  ">
+              <h2 style="margin: 0;">WINS/LOSSES </h2>
+              <h2 style="margin: 0;">GAMES ANALYSIS </h2>
+            </div>
             <div class="charts-row">
+              
               <canvas id="userPerformanceChart"></canvas>
               <canvas id="matchHistoryChart"></canvas>
             </div>
@@ -266,10 +272,9 @@ export default class UserProfilePage extends Page {
               e.style.border = '2px solid #4fff4f';
             }else{
               if(game.player1_score != game.player2_score)
-                e.style.border = '2px solid #800';
+                e.style.border = '2px solid rgb(19, 19, 19)';
               else
-                e.style.border = '2px solid rgba(222, 172, 33, 1)';
-    
+                e.style.border = '2px solid rgba(255, 255, 255, 0.14)';
             }
             e.innerHTML = `
               <span style="color: lime; font-size: 11px; ">${winnerName} (${w})</span>
@@ -304,7 +309,7 @@ export default class UserProfilePage extends Page {
                 labels: ['Wins', 'Losses'],
                 datasets: [{
                   data: [winRate, lossRate],
-                  backgroundColor: ['#00ff99', '#ff3366'],
+                  backgroundColor: ['#09ff00ff', '#ff1e1eff'],
                   borderColor: '#111',
                   borderWidth: 2,
                   hoverOffset: 20,
@@ -327,57 +332,120 @@ export default class UserProfilePage extends Page {
                 }
               }
             });
-
-            // Match History Chart (Line)
-            new Chart(ctx2, {
-              type: 'line',
-              data: {
-                labels: ['Game 1', 'Game 2', 'Game 3', 'Game 4', 'Game 5'],
-                datasets: [{
-                  label: 'Score Difference',
-                  data: [3, -2, 1, 4, -1],
-                  fill: false,
-                  borderColor: '#00ffff',
-                  backgroundColor: '#444444',
-                  tension: 0.4,
-                  pointRadius: 5,
-                  pointHoverRadius: 8,
-                  pointBackgroundColor: '#ffae00'
-                }]
-              },
-              options: {
-                maintainAspectRatio: false, // <--- key fix
-                aspectRatio: 1.6, // optional (wider ratio looks natural)
-                scales: {
-                  x: {
-                    ticks: { color: '#00ffff', font: { family: 'Press Start 2P', size: 8 } },
-                    grid: { color: '#222' }
-                  },
-                  y: {
-                    ticks: { color: '#00ffff', font: { family: 'Press Start 2P', size: 8 } },
-                    grid: { color: '#333' }
-                  }
-                },
-                plugins: {
-                  title: {
-                    display: true,
-                    text: 'Actual Score Difference per Game',
-                    color: '#ffae00',
-                    font: { family: 'Press Start 2P', size: 12 },
-                    padding: { top: 5, bottom: 9 }
-                  },
-                  legend: {
-                    display: true,
-                    labels: {
-                      color: '#00ffff',
-                      font: { family: 'Press Start 2P', size: 9 },
-                      padding: 15
-                    }
-                  }
-                },
-                animation: { duration: 1200, easing: 'easeOutQuart' }
-              }
+            const font = new FontFace("Press Start 2P", "url(https://fonts.gstatic.com/s/pressstart2p/v12/e3t4euO8T-267oIAQAu6jDQyK3nVivNj.woff2)");
+            font.load().then((loaded_f) => {
+                document.fonts.add(loaded_f);
             });
+            document.fonts.add(font);
+            // Match History Chart (Line)
+            // either charts from actual data 
+            // or default chart samplee.
+            if (u?.games?.length > 0)
+            {
+                const labels:string[] = ["----"], differences: number[] = [0];
+                u.games.forEach((game: any, index: number) => {
+                  // label: "player1 vs player2"
+                  labels.push(`${index}: ${game.p1_name} vs ${game.p2_name}`);
+                  // difference: (player1 - player2)
+                  let diff;
+                  if (USER_DATA.username === game.p1_name)
+                    diff = game.player1_score - game.player2_score;
+                  else if (USER_DATA.username === game.p2_name)
+                    diff = game.player2_score - game.player1_score;
+                  else
+                    diff = game.player1_score - game.player2_score;
+
+                  differences.push(diff);
+                });
+                new Chart(ctx2, {
+                  type: 'line',
+                  data: {
+                    labels: labels,
+                    datasets: [{
+                      label: 'Score Difference',
+                      data: differences,
+                      fill: false,
+                      borderColor: '#00ffff',
+                      backgroundColor: '#444444',
+                      tension: 0.4,
+                      pointRadius: 5,
+                      pointHoverRadius: 8,
+                      pointBackgroundColor: '#0099ffff'
+                    }]
+                  },
+                  options: {
+                    maintainAspectRatio: false, // <--- key fix
+                    aspectRatio: 1.6, // optional (wider ratio looks natural)
+                    scales: {
+                      x: {
+                        ticks: { color: '#00ffff', font: { family: 'Press Start 2P', size: 8 } },
+                        grid: { color: '#222' }
+                      },
+                      y: {
+                        ticks: { color: '#00ffff', font: { family: 'Press Start 2P', size: 8 } },
+                        grid: { color: '#333' }
+                      }
+                    },
+                    plugins: {
+                    },
+                    animation: { duration: 1600, easing: 'easeOutQuart' }
+                  }
+                });
+            }
+            else
+            {
+                new Chart(ctx2, {
+                  type: 'line',
+                  data: {
+                    labels: ['Game 1', 'Game 2', 'Game 3', 'Game 4', 'Game 5', 'Game 6'],
+                    datasets: [{
+                      label: 'Score Difference',
+                      data: [3, -2, 1, 4, -1, 8],
+                      fill: false,
+                      borderColor: '#00ffff',
+                      backgroundColor: '#444444',
+                      tension: 0.4,
+                      pointRadius: 5,
+                      pointHoverRadius: 8,
+                      pointBackgroundColor: '#ffffffff'
+                    }]
+                  },
+                  options: {
+                    maintainAspectRatio: false, // <--- key fix
+                    aspectRatio: 1.6, // optional (wider ratio looks natural)
+                    scales: {
+                      x: {
+                        ticks: { color: '#ffffffff', font: { family: 'Press Start 2P', size: 8 } },
+                        grid: { color: '#222' }
+                      },
+                      y: {
+                        ticks: { color: '#ffffffff', font: { family: 'Press Start 2P', size: 8 } },
+                        grid: { color: '#333' }
+                      }
+                    },
+                    plugins: {
+                      title: {
+                        display: true,
+                        text: 'This chart will show the score difference between players across recent matches',
+                        color: '#11ff00ff',
+                        font: { family: 'Press Start 2P', size: 18 },
+                        padding: { top: 5, bottom: 9 }
+                      },
+                      legend: {
+                        display: true,
+                        labels: {
+                          color: '#ffffffff',
+                          font: { family: 'Press Start 2P', size: 9 },
+                          padding: 15
+                        }
+                      }
+                    },
+                    animation: { duration: 1200, easing: 'easeOutQuart' }
+                  }
+                });
+            }
+
+            
         };
         document.body.appendChild(chartScript);
 
