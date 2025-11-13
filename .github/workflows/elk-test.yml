@@ -22,11 +22,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create Docker network
-        run: |
-          docker network rm ft_transcendence_net 2>/dev/null || true
-          docker network create ft_transcendence_net
-
       - name: Start ELK Stack
         run: |
           docker compose -f monitoring/docker-compose.yml up -d
