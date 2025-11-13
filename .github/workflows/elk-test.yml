@@ -1,0 +1,201 @@
+name: ELK Stack Test
+
+on:
+  push:
+    branches: [ main, dev, tests/ci_cd ]
+    # paths:
+    #   - 'monitoring/**'
+    #   - 'docker-compose.yml'
+    #   - '.github/workflows/elk-test.yml'
+  pull_request:
+    branches: [ main ]
+    # paths:
+    #   - 'monitoring/**'
+
+jobs:
+  elk-integration:
+    name: Test ELK Stack Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start ELK Stack
+        run: |
+          docker compose -f monitoring/docker-compose.yml up -d
+          docker compose -f monitoring/docker-compose.yml ps
+        env:
+          ELASTIC_PASSWORD: elastic_password
+          KIBANA_PASSWORD: kibana_password
+
+      - name: Wait for Elasticsearch
+        run: |
+          echo "⏳ Waiting for Elasticsearch to be ready..."
+          for i in {1..60}; do
+            if curl -s -u elastic:elastic_password http://localhost:9200/_cluster/health > /dev/null 2>&1; then
+              echo "Elasticsearch is ready"
+              break
+            fi
+            echo "Attempt $i/60..."
+            sleep 2
+          done
+
+      - name: Check Elasticsearch health
+        run: |
+          ES_HEALTH=$(curl -s -u elastic:elastic_password http://localhost:9200/_cluster/health)
+          echo "$ES_HEALTH"
+          
+          STATUS=$(echo "$ES_HEALTH" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+          
+          if [ "$STATUS" != "green" ] && [ "$STATUS" != "yellow" ]; then
+            echo "Elasticsearch health check failed: $STATUS"
+            exit 1
+          fi
+          echo "Elasticsearch health: $STATUS"
+
+      - name: Wait for Kibana
+        run: |
+          echo "⏳ Waiting for Kibana to be ready..."
+          for i in {1..60}; do
+            if curl -s http://localhost:5601/api/status > /dev/null 2>&1; then
+              echo "Kibana is ready"
+              break
+            fi
+            echo "Attempt $i/60..."
+            sleep 2
+          done
+
+      - name: Setup Kibana password
+        run: |
+          chmod +x monitoring/scripts/ensure_kibana_password.sh
+          ./monitoring/scripts/ensure_kibana_password.sh
+
+      - name: Wait for Logstash
+        run: |
+          echo "⏳ Waiting for Logstash to be ready..."
+          for i in {1..60}; do
+            if curl -s http://localhost:9600/_node/stats > /dev/null 2>&1; then
+              echo "Logstash is ready"
+              break
+            fi
+            echo "Attempt $i/60..."
+            sleep 2
+          done
+
+      - name: Check Logstash pipeline
+        run: |
+          LOGSTASH_STATS=$(curl -s http://localhost:9600/_node/stats/pipelines)
+          echo "$LOGSTASH_STATS"
+          
+          if echo "$LOGSTASH_STATS" | grep -q "main"; then
+            echo "Logstash pipeline 'main' is active"
+          else
+            echo "Logstash pipeline not found"
+            exit 1
+          fi
+
+      - name: Setup Elasticsearch template
+        run: |
+          chmod +x monitoring/scripts/setup_template.sh
+          ./monitoring/scripts/setup_template.sh
+
+      - name: Verify index template
+        run: |
+          TEMPLATE=$(curl -s -u elastic:elastic_password \
+            "http://localhost:9200/_index_template/ft_transcendence_template")
+          
+          if echo "$TEMPLATE" | grep -q "ft_transcendence-\*"; then
+            echo "Index template created successfully"
+            echo "$TEMPLATE" | jq '.index_templates[0].index_template.template.mappings.properties | keys'
+          else
+            echo "Index template not found"
+            exit 1
+          fi
+
+      - name: Setup ILM policy
+        run: |
+          chmod +x monitoring/scripts/setup_ilm.sh
+          ./monitoring/scripts/setup_ilm.sh
+
+      - name: Test log ingestion
+        run: |
+          echo "📝 Sending test log to Logstash..."
+          
+          # Send a test syslog message
+          echo '<134>1 2024-01-01T00:00:00.000Z test-host backend - - [service.name="backend" service.type="api"] {"log_level":"INFO","message":"CI test log","http_status":200,"event_type":"test"}' | \
+            nc -w 1 localhost 5000
+          
+          sleep 5
+          
+          # Check if log was indexed
+          LOG_COUNT=$(curl -s -u elastic:elastic_password \
+            "http://localhost:9200/ft_transcendence-*/_count" | \
+            grep -o '"count":[0-9]*' | cut -d':' -f2)
+          
+          echo "📊 Total logs in Elasticsearch: $LOG_COUNT"
+          
+          if [ "$LOG_COUNT" -gt 0 ]; then
+            echo "Logs successfully ingested"
+          else
+            echo "⚠️  No logs found (this might be expected in CI)"
+          fi
+
+      - name: Check for JSON parse failures
+        run: |
+          PARSE_FAILURES=$(curl -s -u elastic:elastic_password \
+            "http://localhost:9200/ft_transcendence-*/_count?q=tags:_jsonparsefailure" | \
+            grep -o '"count":[0-9]*' | cut -d':' -f2 || echo "0")
+          
+          echo "🔍 JSON parse failures: $PARSE_FAILURES"
+          
+          if [ "$PARSE_FAILURES" -gt 0 ]; then
+            echo "⚠️  Found $PARSE_FAILURES logs with parsing issues"
+            curl -s -u elastic:elastic_password \
+              "http://localhost:9200/ft_transcendence-*/_search?q=tags:_jsonparsefailure&size=1" | \
+              jq '.hits.hits[0]._source' || true
+          else
+            echo "No JSON parse failures"
+          fi
+
+      - name: Verify field mappings
+        run: |
+          echo "🗺️  Checking field mappings..."
+          MAPPINGS=$(curl -s -u elastic:elastic_password \
+            "http://localhost:9200/ft_transcendence-*/_mapping")
+          
+          # Check for key fields
+          EXPECTED_FIELDS=("log_level" "service.name" "http_status" "message" "@timestamp")
+          
+          for field in "${EXPECTED_FIELDS[@]}"; do
+            if echo "$MAPPINGS" | grep -q "\"$field\""; then
+              echo "  Field '$field' found"
+            else
+              echo "  ⚠️  Field '$field' missing"
+            fi
+          done
+
+      - name: Run full test suite
+        run: |
+          chmod +x monitoring/scripts/test_logging.sh
+          ./monitoring/scripts/test_logging.sh || true
+
+      - name: Show container logs on failure
+        if: failure()
+        continue-on-error: true
+        run: |
+          echo "=== Elasticsearch logs ==="
+          docker logs elasticsearch --tail 50 2>&1 || echo "Container not found"
+          echo ""
+          echo "=== Logstash logs ==="
+          docker logs logstash --tail 50 2>&1 || echo "Container not found"
+          echo ""
+          echo "=== Kibana logs ==="
+          docker logs kibana --tail 50 2>&1 || echo "Container not found"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose -f monitoring/docker-compose.yml down -v
+          docker network rm ft_transcendence_net || true

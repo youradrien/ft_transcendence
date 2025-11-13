@@ -1,0 +1,99 @@
+name: App CI/CD
+
+on:
+  push:
+    branches: [ main, dev, tests/ci_cd ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Build & Test Application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        run: |
+          cd src/back-end
+          npm install
+
+      - name: Install frontend dependencies
+        run: |
+          cd src/front-end
+          npm install
+
+      - name: Lint backend (if applicable)
+        run: |
+          cd src/back-end
+          if [ -f "package.json" ] && grep -q "\"lint\"" package.json; then
+            npm run lint
+          else
+            echo "No lint script found, skipping"
+          fi
+        continue-on-error: true
+
+      - name: Build frontend
+        run: |
+          cd src/front-end
+          npm run build
+
+      - name: Check TypeScript compilation
+        run: |
+          cd src/front-end
+          npx tsc --noEmit
+
+      - name: Verify build artifacts
+        run: |
+          if [ ! -d "src/front-end/dist" ]; then
+            echo "❌ Frontend build failed - dist directory not found"
+            exit 1
+          fi
+          echo "✅ Frontend built successfully"
+
+      - name: Test backend server starts
+        run: |
+          cd src/back-end
+          timeout 10s node server.js &
+          sleep 3
+          if pgrep -f "node server.js" > /dev/null; then
+            echo "✅ Backend server started successfully"
+            pkill -f "node server.js"
+          else
+            echo "❌ Backend server failed to start"
+            exit 1
+          fi
+        env:
+          NODE_ENV: test
+          VAULT_ADDR: http://localhost:8200
+          VAULT_TOKEN: test
+
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend Docker image
+        run: |
+          docker build -t ft-trans-frontend:test ./src/front-end
+
+      - name: Build backend Docker image
+        run: |
+          docker build -t ft-trans-backend:test ./src/back-end
+
+      - name: Verify images built
+        run: |
+          docker images | grep ft-trans
