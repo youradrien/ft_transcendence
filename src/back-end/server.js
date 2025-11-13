@@ -36,28 +36,13 @@ const vault = require('node-vault')({
 require('dotenv').config();
 vault.token = "root";
 // console.log(process.env.JWT_SECRET);
-vault.write('secret/data/jwt', {data: { value: process.env.JWT_SECRET,  lease: '1s' } })
+vault.write('secret/data/hello', {data: { value: process.env.JWT_SECRET,  lease: '1s' } })
   .then( async () => {
-    const a = await vault.read('secret/data/jwt');
-    await fastify.register(jwt, {
-        secret: a?.data?.data?.value || 'oof',
-        cookie: {
-          cookieName: "token",
-          signed : false
-        }
-    });
+    const a = await vault.read('secret/data/hello');
+    console.log(a);
   })
   //.then( () => vault.delete('secret/hello'))
-  .catch( async (error) => {
-      console.log(error);
-      await fastify.register(jwt, {
-          secret: process.env.JWT_SECRET,
-          cookie: {
-            cookieName: "token",
-            signed : false
-          }
-      });
-  });
+  .catch(console.error);
 
 // global containers, for rooms ws (accessibles depuis toutes les routes)
 fastify.decorate("p_rooms", new Map());   // game rooms -> [player1, player2]
@@ -75,15 +60,14 @@ fastify.register(cors, {
 // JWT
 const jwtSecret =  process.env.JWT_SECRET;
 fastify.register(cookie);
-fastify.register(multipart);+
-// -- moved into VAULT()  <---
-// fastify.register(jwt, {
-//         secret: jwtSecret || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
-//         cookie: {
-//           cookieName: "token",
-//           signed : false
-//         }
-// });
+fastify.register(multipart);
+fastify.register(jwt, {
+        secret: jwtSecret || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
+        cookie: {
+          cookieName: "token",
+          signed : false
+        }
+});
 // websocket
 fastify.register(websocket);
 // routes (REST api, ws)

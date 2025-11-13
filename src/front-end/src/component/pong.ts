@@ -2,9 +2,9 @@ import Page from '../template/page.ts';
 
 export default class SinglePong extends Page {
   private multiplayer: boolean;
+  private isaigame :boolean = false;
   private socket?: WebSocket;
   private game_data?: any;
-  private isaigame :boolean = false;
 
   constructor(id: string, router: { navigate: (path: string) => void }, options?: any) {
     super(id, router, options); // ✅ Pass required args
@@ -12,6 +12,11 @@ export default class SinglePong extends Page {
     this.socket = options?.socket;
     this.game_data = options?.game_data;
     this.isaigame = options?.isaigame;
+
+    // console.log(this.socket);
+    // (this.game_data);
+    // console.log(this.multiplayer);
+    // console.log(options);
   }
 
   async render(): Promise<HTMLElement> {
@@ -34,32 +39,12 @@ export default class SinglePong extends Page {
     _score.style.letterSpacing = '1px';
     _score.id = 'score';
 
-    const div_p1 = document.createElement('div');
-    div_p1.style.display = 'flex';
-    div_p1.style.flexDirection = 'row';
-    div_p1.style.padding = '16px';
-    div_p1.style.borderRadius = '12px';
-    div_p1.style.backgroundColor = '#202020ff';
-    div_p1.style.border = '1px solid #ffffff26'
     const p1 = document.createElement('span');
     p1.id = 'player1-score';
     p1.textContent = 'Player 1: 0';
-    // const tt = document.createElement('span');
-    // tt.textContent = 'Player 2: 0';
-    // tt.style.fontSize = '11px';
-    // tt.style.marginTop = '2px';
-    // div_p1.appendChild(tt);
-    const img_p1 = document.createElement('img');
-    img_p1.style.width = '64px';
-    img_p1.style.height = '64px';
-    img_p1.style.borderRadius = '50%';
-    img_p1.style.border = '2px solid white';
+    _score.appendChild(p1);
 
-    img_p1.src = this.game_data?.player_pfps[0];
-    div_p1.appendChild(img_p1);
-    div_p1.appendChild(p1);
-    _score.appendChild(div_p1);
-
+    // Max score in the middle
     const max_score = document.createElement('span');
     max_score.id = 'max-score';
     max_score.textContent = `Max Score: ${this.game_data ? this.game_data.max_score: 20}`;
@@ -69,32 +54,10 @@ export default class SinglePong extends Page {
     max_score.style.textAlign = 'center';
     _score.appendChild(max_score);
 
-    const div_p2 = document.createElement('div');
-    div_p2.style.display = 'flex';
-    div_p2.style.flexDirection = 'row';
-    div_p2.style.padding = '16px';
-    div_p2.style.borderRadius = '12px';
-    div_p2.style.backgroundColor = '#202020ff';
-    div_p2.style.border = '1px solid #ffffff26';
     const p2 = document.createElement('span');
     p2.id = 'player2-score';
     p2.textContent = 'Player 2: 0';
-    // const t = document.createElement('span');
-    // t.textContent = 'Player 2: 0';
-    // t.style.fontSize = '11px';
-    // t.style.marginTop = '2px';
-    // div_p2.appendChild(t);
-    const img_p2 = document.createElement('img');
-    img_p2.style.width = '64px';
-    img_p2.style.height = '64px';
-    img_p2.style.borderRadius = '50%';
-    img_p2.style.border = '2px solid white';
-    img_p2.src = this.game_data?.player_pfps[1];
-    div_p2.appendChild(p2);
-    div_p2.appendChild(img_p2);
-    _score.appendChild(div_p2);
-    
-    
+    _score.appendChild(p2);
     CONTAINER.appendChild(_score);
     const c = document.createElement('canvas');
     c.id = 'pongCanvas';
@@ -131,7 +94,7 @@ export default class SinglePong extends Page {
       ended: false,
       winning: null
     };
-    if(this.multiplayer || this.isaigame)
+    if(this.multiplayer)
     {
       if(this.game_data)
       {
@@ -141,7 +104,7 @@ export default class SinglePong extends Page {
     }
 
     const PONG_ART = 
-    `██████╗ ███████╗███╗   ██╗ ██████╗ 
+    `  ██████╗ ███████╗███╗   ██╗ ██████╗ 
       ██╔══██╗██║   ██║████╗  ██║██╔════╝ 
       ██████╔╝██║   ██║██╔██╗ ██║██║  ███╗
       ██╔═══╝ ██║   ██║██║╚██╗██║██║   ██║
@@ -155,6 +118,7 @@ export default class SinglePong extends Page {
       this.socket.addEventListener('message', async (msg) => {
         if(_g.ended)
           return ;
+        // console.log("ws msg:", msg);
         const data = await JSON.parse(msg.data);
         // handle queue, creating, etc...
         if (data?.type === "game_state"){

@@ -78,10 +78,7 @@ export default class LeaderboardPage extends Page {
             border-radius: 50%;
             border: 2px solid white;
           " />
-          <div style="font-size: 16px; display: flex; flex-direction: column">
-              <p style="margin: 0px;" >  ${player.username} </p>
-              <p style="text-align: left; margin: 0px; font-size: 10px;" >  ${player.username} </p>
-            </div>
+          <div style="font-size: 16px;">${player.username}</div>
         </div>
         <div style="font-size: 13px; color: #0f0; cursor: crosshair;">${player.elo}</div>
       `;

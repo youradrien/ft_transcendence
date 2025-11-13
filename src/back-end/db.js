@@ -25,6 +25,7 @@ async function _INIT_DB() {
       password TEXT,
       secret_totp VARCHAR(255) DEFAULT NULL,
       sub_google VARCHAR(255) DEFAULT NULL,
+      sub_github VARCHAR(255) DEFAULT NULL,
       wins INTEGER DEFAULT 0,
       losses INTEGER DEFAULT 0,
       avatar_url TEXT DEFAULT NULL,
@@ -58,6 +59,7 @@ async function _INIT_DB() {
   await db.run(`ALTER TABLE users ADD COLUMN elo INTEGER DEFAULT 1000`).catch(() => {});
   await db.run(`ALTER TABLE users ADD COLUMN xp INTEGER DEFAULT 0`).catch(() => {});
   await db.run(`ALTER TABLE users ADD COLUMN level INTEGER DEFAULT 0`).catch(() => {});
+  await db.run(`ALTER TABLE users ADD COLUMN sub_github VARCHAR(255) DEFAULT NULL`).catch(() => {});
 
   await db.run(`
     CREATE TABLE IF NOT EXISTS friends (

@@ -16,10 +16,13 @@ up: build
 # i use this to gen new .env var for JWT token at compile time, just to have to re-log 
 # and make previous users JWT-cookies invalid on api
 generate-secret:
-	@openssl rand -hex 32 > .jwt_secret && \
-	echo "JWT_SECRET=$$(cat .jwt_secret)" > ./src/back-end/.env
+	@NEW_SECRET=$$(openssl rand -hex 32); \
+	if [ -f ./src/back-end/.env ]; then \
+		sed -i.bak '/^JWT_SECRET=/d' ./src/back-end/.env && rm -f ./src/back-end/.env.bak; \
+	fi; \
+	echo "JWT_SECRET=$$NEW_SECRET" >> ./src/back-end/.env
+	@echo "Updated JWT_SECRET in .env:"
 	@cat ./src/back-end/.env
-	rm -f .jwt_secret
 
 # Rebuild and restart everything fresh
 re: generate-secret
