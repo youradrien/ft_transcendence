@@ -1,15 +1,28 @@
-version: '3.8'
-
 services:
   frontend:
     build: ./src/front-end
     ports:
-      - '5173:80'  # Or '3000:3000' if using a dev server
+      - '5173:80'
     depends_on:
       - backend
     volumes:
-      - ./src/front-end:/app  # <-- watch for changes
-      - /app/node_modules     # Avoid overwriting node_modules
+      - ./src/front-end:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - NODE_ENV=production
+    networks:
+      - ft_transcendence_net
+    logging:
+      driver: "syslog"
+      options:
+        syslog-address: "tcp://localhost:5000"
+        tag: "frontend"
+        syslog-format: "rfc5424"
+    labels:
+      service.name: "frontend"
+      service.type: "web"
+      app.component: "ui"
 
   backend:
     build:
@@ -19,8 +32,21 @@ services:
       - "3010:3010"
     restart: unless-stopped
     environment:
-      - VAULT_ADDR=http://vault:8200         # 👈 point backend to the Vault container
-      - VAULT_TOKEN=root                     # 👈 dev token (only in dev mode!)
+      - NODE_ENV=production
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root
+    networks:
+      - ft_transcendence_net
+    logging:
+      driver: "syslog"
+      options:
+        syslog-address: "tcp://localhost:5000"
+        tag: "backend"
+        syslog-format: "rfc5424"
+    labels:
+      service.name: "backend"
+      service.type: "api"
+      app.component: "server"
     depends_on:
       - vault
 
@@ -43,3 +69,7 @@ services:
 
 volumes:
   sqlite-data:
+
+networks:
+  ft_transcendence_net:
+    external: true

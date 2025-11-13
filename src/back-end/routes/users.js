@@ -42,16 +42,37 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     fastify.post('/api/register', async (request, reply) => {
         const data = request.body;
         const { username, password } = data;
-        console.log("MF " + username + ", " + password + " is trying to create an account");
+        
+        request.log.info({
+            event_type: 'registration_attempt',
+            username,
+            ip: request.ip
+        });
+        
         if (!username || !password) {
+            request.log.warn({
+                event_type: 'registration_failed',
+                reason: 'missing_credentials',
+                username
+            });
             return reply.status(400).send({ success: false, error: 'username_or_password_empty' });
         }
         try {
             const user_exists = await db.get("SELECT * FROM users WHERE username = ?", [username]);
             if (user_exists) {
+                request.log.warn({
+                    event_type: 'registration_failed',
+                    reason: 'username_exists',
+                    username
+                });
                 return reply.status(409).send({ success: false, error: 'username_already_exist' });
             }
         } catch (err) {
+            request.log.error({
+                event_type: 'registration_error',
+                error: err.message,
+                username
+            });
             return reply.status(500).send({ success: false, error: 'db_access' });
         }
         const hashed_password = await bcrypt.hash(password, 10);
@@ -72,6 +93,11 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                 [username, hashed_password, rand_av]
             );
         } catch (err) {
+            request.log.error({
+                event_type: 'registration_error',
+                error: err.message,
+                username
+            });
             return reply.status(500).send({ success: false, error: 'db_access' });
         }
         let user_added_id;
@@ -80,20 +106,33 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             user_added_id = user_added.id;
         } catch (err)
         {
+            request.log.error({
+                event_type: 'registration_error',
+                error: err.message,
+                username
+            });
             return reply.status(500).send({success: false, error : 'db_access'});                          
         }
         // new jwt ahhh
         try {
             const jwt_content = await getJWTContent(user_added_id);
             const token_jwt = fastify.jwt.sign(jwt_content);
-            return reply.setCookie('token', token_jwt, {
-                    httpOnly: true,
-                    secure : true, // true if HTTPS
-                    sameSite : 'none',
-                    path : '/'
-            }).send({success: true});
+            fastify.setAuthCookie(reply, token_jwt);
+            
+            request.log.info({
+                event_type: 'registration_success',
+                user_id: user_added_id,
+                username
+            });
+            
+            return reply.send({success: true});
         } catch (err)
         {
+            request.log.error({
+                event_type: 'registration_error',
+                error: err.message,
+                username
+            });
             return ({success : false, error : "db_access"});
         }
     });
@@ -104,25 +143,60 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     // LOGIN
     fastify.post('/api/login', async (request, reply) => {
         const {username, password, code_totp } = request.body;
+        
+        request.log.info({
+            event_type: 'login_attempt',
+            username,
+            has_2fa_code: !!code_totp,
+            ip: request.ip
+        });
+        
         if (!username || !password){
+            request.log.warn({
+                event_type: 'login_failed',
+                reason: 'missing_credentials',
+                username
+            });
             return reply.status(400).send({success:false, error : 'username_or_password_empty'});
         }
         let user;
         try {
             user = await db.get("SELECT * FROM users WHERE username = ?", [username]);
             if (!user){
+                request.log.warn({
+                    event_type: 'login_failed',
+                    reason: 'user_not_found',
+                    username
+                });
                 return reply.status(401).send({success:false, error : 'username_not_exist'});
             }
         } catch (err){
+            request.log.error({
+                event_type: 'login_error',
+                error: err.message,
+                username
+            });
             return reply.status(500).send({success: false, error : 'db_access'});                          
         }
         const passwordIsValid = await bcrypt.compare(password, user.password);
         if (!passwordIsValid){
+            request.log.warn({
+                event_type: 'login_failed',
+                reason: 'invalid_password',
+                username,
+                user_id: user.id
+            });
             return reply.status(401).send({success:false, error : 'password_not_valid'});
         }
         if (user.secret_totp)
         {
           if (!code_totp){
+              request.log.warn({
+                  event_type: 'login_failed',
+                  reason: '2fa_required',
+                  username,
+                  user_id: user.id
+              });
               return reply.status(401).send({success: false, error : '2fa_empty'});                   
           }
           else{
@@ -133,6 +207,12 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                       window: 1
               });
               if (!verified){
+                request.log.warn({
+                    event_type: 'login_failed',
+                    reason: '2fa_invalid',
+                    username,
+                    user_id: user.id
+                });
                 return reply.status(401).send({success: false, error : '2fa_code_not_valid'});
               }
           }
@@ -141,14 +221,24 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
         try {
             const jwt_content = await getJWTContent(user.id);
             const token_jwt = fastify.jwt.sign(jwt_content);
-            return reply.setCookie('token', token_jwt, {
-                    httpOnly: true,
-                    secure : true, // true for HTTPS
-                    sameSite : 'none',
-                    path : '/'
-            }).send({success: true});
+            fastify.setAuthCookie(reply, token_jwt);
+            
+            request.log.info({
+                event_type: 'login_success',
+                user_id: user.id,
+                username,
+                has_2fa: !!user.secret_totp
+            });
+            
+            return reply.send({success: true});
         } catch (err)
         {
+            request.log.error({
+                event_type: 'login_error',
+                error: err.message,
+                username,
+                user_id: user.id
+            });
             return ({success : false, error : "db_access"});
         }
     });
@@ -182,7 +272,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 
     // GITHUB OAUTH2
     //PREMIERE ROUTE = CLIQUE SUR LOGIN AVEC GHUB
-    fastify.get('/api/auth/github/login', async (req, reply) => {
+  fastify.get('/api/auth/github/login', async (req, reply) => {
         const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user`;
         return reply.redirect(githubAuthURL);
     });
