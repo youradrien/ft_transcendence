@@ -2,7 +2,7 @@ name: ELK Stack Test
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, tests/ci_cd ]
     # paths:
     #   - 'monitoring/**'
     #   - 'docker-compose.yml'
