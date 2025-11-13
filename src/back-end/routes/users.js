@@ -299,7 +299,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             const u = request.user.username;
 
             const user = await db.get(
-            "SELECT id, username, avatar_url, wins, last_online, created_at, losses FROM users WHERE username = ?",
+            "SELECT id, username, avatar_url, wins, last_online, elo, created_at, losses FROM users WHERE username = ?",
             [u]
             );
             console.log('JWT username:', `"${request.user.username}"`);
