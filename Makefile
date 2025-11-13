@@ -42,7 +42,7 @@ re: generate-secret
 
 fclean:
 	docker compose down -v
-	docker compose -f monitoring/docker-compose.yml down -v
+	@bash monitoring/scripts/master_script.sh clean
 	docker image prune -f
 	docker network prune -f
 	rm -rf src/front-end/node_modules

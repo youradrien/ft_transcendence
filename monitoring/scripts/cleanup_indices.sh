@@ -6,11 +6,11 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${YELLOW}🧹 Cleaning up Elasticsearch indices...${NC}"
+echo -e "${YELLOW}  Cleaning up Elasticsearch indices...${NC}"
 
 # Check if Elasticsearch is ready
 if ! curl -s -u elastic:elastic_password "http://localhost:9200/_cluster/health" > /dev/null 2>&1; then
-    echo -e "${RED}❌ Elasticsearch not responding${NC}"
+    echo -e "${RED}  Elasticsearch not responding${NC}"
     exit 1
 fi
 
