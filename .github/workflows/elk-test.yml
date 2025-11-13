@@ -35,7 +35,7 @@ jobs:
           echo "⏳ Waiting for Elasticsearch to be ready..."
           for i in {1..60}; do
             if curl -s -u elastic:elastic_password http://localhost:9200/_cluster/health > /dev/null 2>&1; then
-              echo "✅ Elasticsearch is ready"
+              echo "Elasticsearch is ready"
               break
             fi
             echo "Attempt $i/60..."
@@ -50,17 +50,17 @@ jobs:
           STATUS=$(echo "$ES_HEALTH" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
           
           if [ "$STATUS" != "green" ] && [ "$STATUS" != "yellow" ]; then
-            echo "❌ Elasticsearch health check failed: $STATUS"
+            echo "Elasticsearch health check failed: $STATUS"
             exit 1
           fi
-          echo "✅ Elasticsearch health: $STATUS"
+          echo "Elasticsearch health: $STATUS"
 
       - name: Wait for Kibana
         run: |
           echo "⏳ Waiting for Kibana to be ready..."
           for i in {1..60}; do
             if curl -s http://localhost:5601/api/status > /dev/null 2>&1; then
-              echo "✅ Kibana is ready"
+              echo "Kibana is ready"
               break
             fi
             echo "Attempt $i/60..."
@@ -77,7 +77,7 @@ jobs:
           echo "⏳ Waiting for Logstash to be ready..."
           for i in {1..60}; do
             if curl -s http://localhost:9600/_node/stats > /dev/null 2>&1; then
-              echo "✅ Logstash is ready"
+              echo "Logstash is ready"
               break
             fi
             echo "Attempt $i/60..."
@@ -90,9 +90,9 @@ jobs:
           echo "$LOGSTASH_STATS"
           
           if echo "$LOGSTASH_STATS" | grep -q "main"; then
-            echo "✅ Logstash pipeline 'main' is active"
+            echo "Logstash pipeline 'main' is active"
           else
-            echo "❌ Logstash pipeline not found"
+            echo "Logstash pipeline not found"
             exit 1
           fi
 
@@ -107,10 +107,10 @@ jobs:
             "http://localhost:9200/_index_template/ft_transcendence_template")
           
           if echo "$TEMPLATE" | grep -q "ft_transcendence-\*"; then
-            echo "✅ Index template created successfully"
+            echo "Index template created successfully"
             echo "$TEMPLATE" | jq '.index_templates[0].index_template.template.mappings.properties | keys'
           else
-            echo "❌ Index template not found"
+            echo "Index template not found"
             exit 1
           fi
 
@@ -137,7 +137,7 @@ jobs:
           echo "📊 Total logs in Elasticsearch: $LOG_COUNT"
           
           if [ "$LOG_COUNT" -gt 0 ]; then
-            echo "✅ Logs successfully ingested"
+            echo "Logs successfully ingested"
           else
             echo "⚠️  No logs found (this might be expected in CI)"
           fi
@@ -156,7 +156,7 @@ jobs:
               "http://localhost:9200/ft_transcendence-*/_search?q=tags:_jsonparsefailure&size=1" | \
               jq '.hits.hits[0]._source' || true
           else
-            echo "✅ No JSON parse failures"
+            echo "No JSON parse failures"
           fi
 
       - name: Verify field mappings
@@ -170,7 +170,7 @@ jobs:
           
           for field in "${EXPECTED_FIELDS[@]}"; do
             if echo "$MAPPINGS" | grep -q "\"$field\""; then
-              echo "  ✅ Field '$field' found"
+              echo "  Field '$field' found"
             else
               echo "  ⚠️  Field '$field' missing"
             fi
