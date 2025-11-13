@@ -23,11 +23,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create Docker network
-        run: docker network create ft_transcendence_net
+        run: |
+          docker network rm ft_transcendence_net 2>/dev/null || true
+          docker network create ft_transcendence_net
 
       - name: Start ELK Stack
         run: |
           docker compose -f monitoring/docker-compose.yml up -d
+          docker compose -f monitoring/docker-compose.yml ps
         env:
           ELASTIC_PASSWORD: elastic_password
           KIBANA_PASSWORD: kibana_password
@@ -185,15 +188,16 @@ jobs:
 
       - name: Show container logs on failure
         if: failure()
+        continue-on-error: true
         run: |
           echo "=== Elasticsearch logs ==="
-          docker logs elasticsearch --tail 50
+          docker logs elasticsearch --tail 50 2>&1 || echo "Container not found"
           echo ""
           echo "=== Logstash logs ==="
-          docker logs logstash --tail 50
+          docker logs logstash --tail 50 2>&1 || echo "Container not found"
           echo ""
           echo "=== Kibana logs ==="
-          docker logs kibana --tail 50
+          docker logs kibana --tail 50 2>&1 || echo "Container not found"
 
       - name: Cleanup
         if: always()
