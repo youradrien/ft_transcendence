@@ -3,14 +3,14 @@ name: ELK Stack Test
 on:
   push:
     branches: [ main, dev, tests/ci_cd ]
-    paths:
-      - 'monitoring/**'
-      - 'docker-compose.yml'
-      - '.github/workflows/elk-test.yml'
+    # paths:
+    #   - 'monitoring/**'
+    #   - 'docker-compose.yml'
+    #   - '.github/workflows/elk-test.yml'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'monitoring/**'
+    # paths:
+    #   - 'monitoring/**'
 
 jobs:
   elk-integration:
