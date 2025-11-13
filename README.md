@@ -17,7 +17,6 @@ ft_transcendence
 - lang: ts
 - webpacker: vite
 - framework: none (vanilla)
-- 
 
 # ELK
  complete ELK docs in [monitoring/docs/ELK.md](monitoring/docs/ELK.md)
