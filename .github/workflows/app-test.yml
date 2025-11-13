@@ -19,20 +19,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: |
-            src/back-end/package-lock.json
-            src/front-end/package-lock.json
 
       - name: Install backend dependencies
         run: |
           cd src/back-end
-          npm ci
+          npm install
 
       - name: Install frontend dependencies
         run: |
           cd src/front-end
-          npm ci
+          npm install
 
       - name: Lint backend (if applicable)
         run: |
