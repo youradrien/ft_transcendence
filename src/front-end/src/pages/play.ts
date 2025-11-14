@@ -267,10 +267,10 @@ export default class PlayPage extends Page {
         setTimeout(() => window.location.reload(), 200);
         return;
       }
-        if(!socket || socket == null)
-        {
-          socket = new WebSocket('ws://localhost:3010/api/pong/ws');
-        }
+      if(!socket || socket == null)
+      {
+        socket = new WebSocket('ws://localhost:3010/api/pong/ws');
+      }
         socket.onmessage = async (msg) => {
             const data = JSON.parse(msg.data);
             const qc = container.querySelector('#queue-count') as HTMLSpanElement;
@@ -307,6 +307,7 @@ export default class PlayPage extends Page {
                     queueBtn.innerText = '🔵 creating game...';
                 }
                 nahh = true;
+                aiBtn.disabled = true;
                 for(let i = 0; i < (_time_l); i++){
                     const t_left = _time_l - i;
                     setTimeout(() => {
@@ -394,9 +395,8 @@ export default class PlayPage extends Page {
           socket.send(JSON.stringify({
             type: "player_giveup"
           }));
-          socket.close();
+         // socket.close();
         }
-        // Reload page after giving up
         setTimeout(() => window.location.reload(), 5000);
       }
     };

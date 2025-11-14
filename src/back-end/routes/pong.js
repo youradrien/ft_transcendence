@@ -497,8 +497,8 @@ async function pong_routes(fastify, options)
             paddleWidth: 10,
             paddleHeight: 80,
             isAI: true, 
-            max_score:10,
-            aiSpeed: 3.25,   //AI SPEED
+            max_score:5,
+            aiSpeed: 0.25,   //AI SPEED
             player_names: [username, 'AI Bot']
         };
         p_rooms.set(game_id, game);
@@ -810,11 +810,12 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
                 player1_score, player2_score,
                 p1_name, p2_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [   players[0],  players[1], (winner === 'p1') ? 1 : 2,  
+            [   players[0],  players[1], (winner === 'p1') ? players[0] : players[1],  
                 scores.p1,  scores.p2,
                 player_names[0], player_names[1]
             ]
         );
+        console.log(`OUPI GOUPI LE WINNER EST ${((winner === 'p1') ? players[0] : players[1])}`)
         console.log(`game ${game.id} saved to DB`);
 
         // --- update users (wins/losses) ---
@@ -831,15 +832,14 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
 
     sockets.forEach((socket, i) => {
         if (socket.readyState === 1) {
-            const p_key = i === 0 ? 'p1' : 'p2';
             const d = {
                 type: 'game_end',
-                reason, // so, : eerm victory, give-up
+                reason,
                 scores,
                 winner: winner === 'p1' ? (player_names[0]) : player_names[1],
                 looser: (winner === 'p1' || winner == 'null') ? (player_names[1]) : player_names[0],
                 player_names: (player_names),
-                you_are_winner: (winner === p_key)
+                you_are_winner: (i === 0 && winner === 'p1') || (i === 1 && winner === 'p2')
             };
             socket.send(JSON.stringify(d));
         }
