@@ -32,7 +32,6 @@ async function _INIT_DB() {
       elo INTEGER DEFAULT 1000,            -- ✅ elo starts at 1000
       last_online DATETIME DEFAULT (datetime('now')),
       created_at DATETIME DEFAULT (datetime('now'))
-      
     )
   `);
 

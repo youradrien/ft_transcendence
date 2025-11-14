@@ -50,7 +50,12 @@ export default class SinglePong extends Page {
     p1.textContent = 'Player 1: 0';
     const img_p1 = document.createElement('img');
     img_p1.id = 'player2-pfp';
-    img_p1.src = this.game_data?.player_pfps[0]?.[0] || ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
+    if(this?.game_data?.player_pfps){
+      img_p1.src = this.game_data?.player_pfps[0]?.[0] || ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
+    }else{
+      img_p1.src = ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
+
+    }
     img_p1.width = 100; // optional styling
     img_p1.height = 100;
     img_p1.style.borderRadius = '50%';
@@ -80,7 +85,12 @@ export default class SinglePong extends Page {
     p2.textContent = 'Player 2: 0';
     const img_p2 = document.createElement('img');
     img_p2.id = 'player2-pfp';
-    img_p2.src = this.game_data?.player_pfps[0]?.[1] || ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
+    if(this.game_data?.player_pfps){
+        img_p2.src = this.game_data?.player_pfps[0]?.[1] || ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
+    }else{
+        img_p2.src = ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
+
+    }
     img_p2.width = 100; // optional styling
     img_p2.height = 100;
     img_p2.style.borderRadius = '50%';
