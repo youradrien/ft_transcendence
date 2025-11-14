@@ -14,7 +14,7 @@ export default class SinglePong extends Page {
     this.isaigame = options?.isaigame;
 
     // console.log(this.socket);
-    // (this.game_data);
+    console.log(this.game_data);
     // console.log(this.multiplayer);
     // console.log(options);
   }
@@ -39,10 +39,25 @@ export default class SinglePong extends Page {
     _score.style.letterSpacing = '1px';
     _score.id = 'score';
 
+    const p1_div = document.createElement('span');
+    p1_div.style.display = 'flex'
+    p1_div.style.flexDirection = 'row';
+    p1_div.style.backgroundColor = '#222';
+    p1_div.style.borderRadius = '15px';
+    p1_div.style.padding = '15px';
     const p1 = document.createElement('span');
     p1.id = 'player1-score';
     p1.textContent = 'Player 1: 0';
-    _score.appendChild(p1);
+    const img_p1 = document.createElement('img');
+    img_p1.id = 'player2-pfp';
+    img_p1.src = this.game_data?.player_pfps[0]?.[0] || ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
+    img_p1.width = 100; // optional styling
+    img_p1.height = 100;
+    img_p1.style.borderRadius = '50%';
+    img_p1.style.border = '2px solide white';
+    p1_div.appendChild(img_p1);
+    p1_div.appendChild(p1);
+    _score.appendChild(p1_div);
 
     // Max score in the middle
     const max_score = document.createElement('span');
@@ -54,10 +69,27 @@ export default class SinglePong extends Page {
     max_score.style.textAlign = 'center';
     _score.appendChild(max_score);
 
+    const p2_div = document.createElement('span');
+    p2_div.style.display = 'flex'
+    p2_div.style.flexDirection = 'row';
+    p2_div.style.backgroundColor = '#222';
+    p2_div.style.borderRadius = '15px';
+    p2_div.style.padding = '15px';
     const p2 = document.createElement('span');
     p2.id = 'player2-score';
     p2.textContent = 'Player 2: 0';
-    _score.appendChild(p2);
+    const img_p2 = document.createElement('img');
+    img_p2.id = 'player2-pfp';
+    img_p2.src = this.game_data?.player_pfps[0]?.[1] || ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
+    img_p2.width = 100; // optional styling
+    img_p2.height = 100;
+    img_p2.style.borderRadius = '50%';
+    img_p2.style.border = '2px solide white';
+    p2_div.appendChild(img_p2);
+    p2_div.appendChild(p2);
+    _score.appendChild(p2_div);
+
+
     CONTAINER.appendChild(_score);
     const c = document.createElement('canvas');
     c.id = 'pongCanvas';

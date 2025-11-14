@@ -205,6 +205,7 @@ export default class PlayPage extends Page {
     };
     // (queue) btn handler
     aiBtn.onclick = async () => {
+      
       try {
           aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
           aiBtn.innerText = '🤖 Connecting to AI...';
@@ -247,93 +248,93 @@ export default class PlayPage extends Page {
     // (queue) btn handler
     q_btn.onclick = async () => {
       try {
-      if (nahh) return;
+        if (nahh) return;
 
-      if (joined_game) {
-        try {
-          if (currentGameMode === 'ai' && aiSocket && aiSocket.readyState === WebSocket.OPEN)
-          {
-            this.router.navigate('/'); // simple navigation
-            return;
-          }
-          else if (currentGameMode === 'multiplayer' && socket && socket.readyState === WebSocket.OPEN)
-          {
-            // Multi: fermeture OK
-            socket.close();
-            setTimeout(() => window.location.reload(), 200);
-            return;
-          }
-        } catch (_) {}
-        setTimeout(() => window.location.reload(), 200);
-        return;
-      }
-        if(!socket || socket == null)
-        {
-          socket = new WebSocket('ws://localhost:3010/api/pong/ws');
+        if (joined_game) {
+          try {
+            if (currentGameMode === 'ai' && aiSocket && aiSocket.readyState === WebSocket.OPEN)
+            {
+              this.router.navigate('/'); // simple navigation
+              return;
+            }
+            else if (currentGameMode === 'multiplayer' && socket && socket.readyState === WebSocket.OPEN)
+            {
+              // Multi: fermeture OK
+              socket.close();
+              setTimeout(() => window.location.reload(), 200);
+              return;
+            }
+          } catch (_) {}
+          setTimeout(() => window.location.reload(), 200);
+          return;
         }
-        socket.onmessage = async (msg) => {
-            const data = JSON.parse(msg.data);
-            const qc = container.querySelector('#queue-count') as HTMLSpanElement;
-            const queueBtn = container.querySelector('#multiBtn') as HTMLButtonElement;
-            if(data?.queueLength >= 0){
-              qc.innerText = String(data?.queueLength);
-              p_st.innerText = `🟢 ${data?.queueLength} player(s) in queue`;
-            }
-            if(data?.type == "waiting")
-            {
-                queueBtn.style.backgroundColor = '#00cc44';
-                queueBtn.style.color = 'white';            
-                queueBtn.innerText = '✅ Queued!';
-            }
-            if(data?.type == "creating")
-            {
-
-                r_st.innerText = `🔵 ${data?.roomsLength} currently active pong room(s)...`;
-                qc.innerText = '';
-                await fetch_games();
-                // countdown.. either /actual game-countdown/ or /5s warmup time/
-                let _time_l = data?.countdown_v;
-                if(data?.is_a_comeback)
-                  {
-                    aiBtn.disabled = true;
-                    gJntitle.innerHTML = "JOINING BACK YOUR GAME!";
-                    q_btn.style.backgroundColor = '#ffbb00ff';  // Green background
-                    q_btn.style.color = 'black';              // White text
-                    q_btn.innerText = '⚡ joining. .';
-                }else{
-                    gJntitle.innerHTML = "STARTING....";
-                    queueBtn.style.backgroundColor = '#1383e4ff'; 
-                    queueBtn.style.color = 'white';            
-                    queueBtn.innerText = '🔵 creating game...';
-                }
-                nahh = true;
-                for(let i = 0; i < (_time_l); i++){
-                    const t_left = _time_l - i;
-                    setTimeout(() => {
-                      gCounter.innerText = (!data?.is_a_comeback) ?
-                        `⚔️ GAME-Joined! ⚔️  ${t_left}sec before start${(t_left % 2 == 0) ? '...'  : '..'}`
-                        :
-                        `WELCOME-BACK 🔄 ${t_left}sec (prepare urself bro)`;
-                    }, i * 1000);
-                }
-              
-            }
-            if(data?.type == "waiting-update")
-            {
+          if(!socket || socket == null)
+          {
+            socket = new WebSocket('ws://localhost:3010/api/pong/ws');
+          }
+          socket.onmessage = async (msg) => {
+              const data = JSON.parse(msg.data);
+              const qc = container.querySelector('#queue-count') as HTMLSpanElement;
+              const queueBtn = container.querySelector('#multiBtn') as HTMLButtonElement;
+              if(data?.queueLength >= 0){
+                qc.innerText = String(data?.queueLength);
                 p_st.innerText = `🟢 ${data?.queueLength} player(s) in queue`;
-                r_st.innerText = `🔵 ${data?.roomsLength} currently active pong room(s)...`;
-                await fetch_games();
-            }
-            if(data?.type == "error")
-            {
-              alert(data.message);
-            }
-            if(data?.type == "start")
-            {
-              nahh = false;
-              start_game(true, data.ehh);
-            }
-        };
+              }
+              if(data?.type == "waiting")
+              {
+                  queueBtn.style.backgroundColor = '#00cc44';
+                  queueBtn.style.color = 'white';            
+                  queueBtn.innerText = '✅ Queued!';
+              }
+              if(data?.type == "creating")
+              {
+
+                  r_st.innerText = `🔵 ${data?.roomsLength} currently active pong room(s)...`;
+                  qc.innerText = '';
+                  await fetch_games();
+                  // countdown.. either /actual game-countdown/ or /5s warmup time/
+                  let _time_l = data?.countdown_v;
+                  if(data?.is_a_comeback)
+                    {
+                      aiBtn.disabled = true;
+                      gJntitle.innerHTML = "JOINING BACK YOUR GAME!";
+                      q_btn.style.backgroundColor = '#ffbb00ff';  // Green background
+                      q_btn.style.color = 'black';              // White text
+                      q_btn.innerText = '⚡ joining. .';
+                  }else{
+                      gJntitle.innerHTML = "STARTING....";
+                      queueBtn.style.backgroundColor = '#1383e4ff'; 
+                      queueBtn.style.color = 'white';            
+                      queueBtn.innerText = '🔵 creating game...';
+                  }
+                  nahh = true;
+                  for(let i = 0; i < (_time_l); i++){
+                      const t_left = _time_l - i;
+                      setTimeout(() => {
+                        gCounter.innerText = (!data?.is_a_comeback) ?
+                          `⚔️ GAME-Joined! ⚔️  ${t_left}sec before start${(t_left % 2 == 0) ? '...'  : '..'}`
+                          :
+                          `WELCOME-BACK 🔄 ${t_left}sec (prepare urself bro)`;
+                      }, i * 1000);
+                  }
+                
+              }
+              if(data?.type == "waiting-update")
+              {
+                  p_st.innerText = `🟢 ${data?.queueLength} player(s) in queue`;
+                  r_st.innerText = `🔵 ${data?.roomsLength} currently active pong room(s)...`;
+                  await fetch_games();
+              }
+              if(data?.type == "error")
+              {
+                alert(data.message);
+              }
+              if(data?.type == "start")
+              {
+                nahh = false;
+                start_game(true, data.ehh);
+              }
+          };
       } catch (err) {
         console.log(err);
       }

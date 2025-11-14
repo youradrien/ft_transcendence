@@ -195,7 +195,9 @@ async function pong_routes(fastify, options)
                         const sf = {
                             scores: _g.scores, countdown: _g.countdown, width: _g.width, height: _g.height, 
                             paddleWidth: _g.paddleWidth, paddleHeight: _g.paddleHeight, max_score: _g.max_score, 
-                            player_names: (_g.player_names)
+                            player_names: (_g.player_names),
+                            player_pfps: [_g.player_pfps],
+                            player_elos: [_g.player_elos]
                         };
                         connection.socket.send(JSON.stringify({ 
                             type: 'start', 
@@ -250,7 +252,13 @@ async function pong_routes(fastify, options)
                 paddleWidth: 10,
                 paddleHeight: 80,
                 max_score: Math.floor(Math.random() * (75 - 10 + 1)) + 10, // score [10- 75]
-                player_names: ["player_1", "player_2"]
+                player_names: ["player_1", "player_2"],
+                player_pfps: [
+                    "https://avatars.githubusercontent.com/u/9919?s=200&v=4", 
+                    "https://avatars.githubusercontent.com/u/9919?s=200&v=4"],
+                player_elos: [
+                    500, 500
+                ]
             };
             p_rooms.set(game_id, game);
 
@@ -268,14 +276,21 @@ async function pong_routes(fastify, options)
             // thats why i put coolddown/coutdown btw
             // (could gather more infos on both playrs)
             const p_names = await fastify.db.all(
-                'SELECT id, username FROM users WHERE id IN (?, ?)',
+                'SELECT id, elo, avatar_url, username FROM users WHERE id IN (?, ?)',
                 [p1Id, p2Id]
             );
             const name_map = Object.fromEntries((p_names).map(r => [r.id, r.username]));
+            const pfp_map = Object.fromEntries((p_names).map(r => [r.id, r.avatar_url]));
+            const elo_map = Object.fromEntries((p_names).map(r => [r.id, r.elo]));
             game.player_names = (p_names).map((obj) => 
                 name_map[obj.id] || null
             );
-
+            game.player_pfps = (p_names).map((obj) => 
+                pfp_map[obj.id] || null
+            );
+            game.player_elos = (p_names).map((obj) => 
+                elo_map[obj.id] || null
+            );
             // randomly delay the START [8-15s] after "creaing...""
             for (let i = 0; i <= c; i++) {
                 setTimeout(() => {
@@ -286,7 +301,9 @@ async function pong_routes(fastify, options)
                         const safe_game = {
                             scores: game.scores, countdown: game.countdown, width: game.width, height: game.height, 
                             paddleWidth: game.paddleWidth, paddleHeight: game.paddleHeight, max_score: game.max_score, 
-                            player_names: (game.player_names)
+                            player_names: (game.player_names),
+                            player_pfps: [game.player_pfps],
+                            player_elos: [game.player_elos]
                         };
                         // send start messages
                         game.sockets[0]/*p1Socket*/.send(JSON.stringify({ 

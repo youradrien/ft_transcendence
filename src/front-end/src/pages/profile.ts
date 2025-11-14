@@ -262,7 +262,7 @@ export default class UserProfilePage extends Page {
             e.style.justifyContent = 'space-between';
             e.style.cursor = 'pointer';
             // e.style.fontSize = '12px';
-
+            console.log(game);
             const winnerName = (game.winner_id === 1 ? game.p1_name : game.p2_name);
             const L  = (winnerName === game.p1_name) ? game.p2_name : game.p1_name;
 
