@@ -4,7 +4,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "check:fix": "biome check --write ."
   },
   "keywords": [],
   "author": "",
@@ -29,6 +33,7 @@
     "qrcode": "^1.5.4",
     "speakeasy": "^2.0.0",
     "sqlite3": "^5.1.7",
-    "ws": "^8.18.2"
+    "ws": "^8.18.2",
+    "@biomejs/biome": "2.3.5"
   }
 }

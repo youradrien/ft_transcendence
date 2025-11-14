@@ -1,11 +1,11 @@
 export default class NotFoundPage {
-//   private id: string;
-//   private router: any;
+  //   private id: string;
+  //   private router: any;
 
-//   constructor(id: string, router: any) {
-//     this.id = id;
-//     this.router = router;
-//   }
+  //   constructor(id: string, router: any) {
+  //     this.id = id;
+  //     this.router = router;
+  //   }
 
   async render(): Promise<HTMLElement> {
     const div = document.createElement('div');

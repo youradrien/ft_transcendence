@@ -54,7 +54,6 @@ async function _INIT_DB() {
     )
   `);
 
-
   // Add columns if missing (catch errors silently)
   await db.run(`ALTER TABLE users ADD COLUMN elo INTEGER DEFAULT 1000`).catch(() => {});
   await db.run(`ALTER TABLE users ADD COLUMN xp INTEGER DEFAULT 0`).catch(() => {});
@@ -103,9 +102,8 @@ async function _INIT_DB() {
     )
   `);
 
-  console.log("✅ SQLite database initialized");
+  console.log('✅ SQLite database initialized');
 }
-
 
 async function _add_message(content) {
   await db.run('INSERT INTO messages (content) VALUES (?)', [content]);
@@ -140,10 +138,10 @@ async function unblockUser(userId, blockedUserId) {
 module.exports = {
   db,
   _INIT_DB,
-  _add_message, 
-  _get_messages, 
-  _add_friend, 
-  _remove_friend, 
-  blockUser, 
-  unblockUser 
+  _add_message,
+  _get_messages,
+  _add_friend,
+  _remove_friend,
+  blockUser,
+  unblockUser,
 };

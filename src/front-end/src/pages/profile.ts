@@ -1,5 +1,6 @@
 import Page from '../template/page.ts';
-          declare const Chart: any;
+
+declare const Chart: any;
 
 /* 
 en gros
@@ -9,8 +10,6 @@ component page PROFILE (pour voir le profil des autres)
 - fill le HTML avec la data que lAPI me return
 */
 export default class UserProfilePage extends Page {
-
-
   async render(): Promise<HTMLElement> {
     const container = document.createElement('div');
     container.id = this.id;
@@ -22,51 +21,51 @@ export default class UserProfilePage extends Page {
     container.style.color = '#fff';
     container.style.fontFamily = '"Press Start 2P", cursive'; // pixel font
     container.style.minHeight = '100vh';
-    container.style.background = 'radial-gradient(circle at top,rgba(11, 11, 11, 0.48) 0%, rgba(11, 11, 11, 0.21) 100%)';
-    let pfp = "https://avatars.githubusercontent.com/u/9919?s=200&v=4";
+    container.style.background =
+      'radial-gradient(circle at top,rgba(11, 11, 11, 0.48) 0%, rgba(11, 11, 11, 0.21) 100%)';
+    let pfp = 'https://avatars.githubusercontent.com/u/9919?s=200&v=4';
 
     const path = window.location.pathname; // e.g. /profile:john_doe
     const match = path.match(/^\/profile\/([^/]+)$/);
-    let user_api_call = match ? ("api/profile/" + match[1]) : null;
-    if(!user_api_call){
-      user_api_call = "api/me-info"
+    let user_api_call = match ? 'api/profile/' + match[1] : null;
+    if (!user_api_call) {
+      user_api_call = 'api/me-info';
     }
     let USER_DATA: any;
 
     try {
-        const response = await fetch(`http://localhost:3010/${user_api_call}`, {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error('User not found');
-        }
-        USER_DATA = !match ? 
-          (await response.json())?.user
-          :
-          (await response.json());
-        if(USER_DATA?.avatar_url){
-          pfp = USER_DATA.avatar_url;
-        }
+      const response = await fetch(`http://localhost:3010/${user_api_call}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('User not found');
+      }
+      USER_DATA = !match ? (await response.json())?.user : await response.json();
+      if (USER_DATA?.avatar_url) {
+        pfp = USER_DATA.avatar_url;
+      }
     } catch (error) {
       console.error('Failed to load user profile:', error);
       // document.getElementById('profile')!.innerHTML = `<p>User not found.</p>`;
     }
     let win_rate: string;
     if (USER_DATA?.wins != null && USER_DATA?.losses != null && USER_DATA.losses > 0) {
-        // win_rate = (100 / (USER_DATA.wins / USER_DATA.losses)).toFixed(1) + '%';
-        win_rate = ((USER_DATA.wins / (USER_DATA.wins + USER_DATA.losses)) * 100).toFixed(1) + '%';
+      // win_rate = (100 / (USER_DATA.wins / USER_DATA.losses)).toFixed(1) + '%';
+      win_rate = ((USER_DATA.wins / (USER_DATA.wins + USER_DATA.losses)) * 100).toFixed(1) + '%';
     } else {
-        win_rate = '--';
+      win_rate = '--';
     }
-    if( user_api_call == "api/me-info" ){
-      USER_DATA.is_online = (true);
+    if (user_api_call == 'api/me-info') {
+      USER_DATA.is_online = true;
     }
-    const social_btns_HTML = !(user_api_call == "api/me-info") ? `
+    const social_btns_HTML = !(user_api_call == 'api/me-info')
+      ? `
       <div style="display: flex; gap: 12px;">
         <button style="${greenButtonStyle}">ADD FRIEND</button>
         <button style="${greenButtonStyle}">SEND DM</button>
       </div>
-    ` : '';
+    `
+      : '';
     container.innerHTML = `
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
       
@@ -247,222 +246,216 @@ export default class UserProfilePage extends Page {
     `;
     // fill ts with game infos
     try {
-        const g = await fetch(`http://localhost:3010/api/${USER_DATA?.username}/games`, {
-          credentials: 'include'
-        });
-        let u = await(g.json());
-        u?.games.forEach((game: any) => {
-            const e = document.createElement('div');
-            e.className = 'game-entry';
-            e.style.background = '#222';
-            e.style.padding = '8px';
-            e.style.marginBottom = '6px';
-            e.style.display = 'flex';
-            e.style.borderRadius = '12px';
-            e.style.justifyContent = 'space-between';
-            e.style.cursor = 'pointer';
-            // e.style.fontSize = '12px';
+      const g = await fetch(`http://localhost:3010/api/${USER_DATA?.username}/games`, {
+        credentials: 'include',
+      });
+      const u = await g.json();
+      u?.games.forEach((game: any) => {
+        const e = document.createElement('div');
+        e.className = 'game-entry';
+        e.style.background = '#222';
+        e.style.padding = '8px';
+        e.style.marginBottom = '6px';
+        e.style.display = 'flex';
+        e.style.borderRadius = '12px';
+        e.style.justifyContent = 'space-between';
+        e.style.cursor = 'pointer';
+        // e.style.fontSize = '12px';
 
-            const winnerName = (game.winner_id === 1 ? game.p1_name : game.p2_name);
-            const L  = (winnerName === game.p1_name) ? game.p2_name : game.p1_name;
+        const winnerName = game.winner_id === 1 ? game.p1_name : game.p2_name;
+        const L = winnerName === game.p1_name ? game.p2_name : game.p1_name;
 
-            const w = (winnerName === game.p1_name) ? game.player1_score : game.player2_score;
-            const l  = (winnerName === game.p1_name) ? game.player2_score : game.player1_score;
+        const w = winnerName === game.p1_name ? game.player1_score : game.player2_score;
+        const l = winnerName === game.p1_name ? game.player2_score : game.player1_score;
 
-            let ix = USER_DATA?.username == game.p1_name ? (1) : (2);
+        const ix = USER_DATA?.username == game.p1_name ? 1 : 2;
 
-            if(game.winner_id == ix){
-              e.style.border = '2px solid #4fff4f';
-            }else{
-              if(game.player1_score != game.player2_score)
-                e.style.border = '2px solid rgb(19, 19, 19)';
-              else
-                e.style.border = '2px solid rgba(255, 255, 255, 0.14)';
-            }
-            const p1Link = `<a href="/profile/${encodeURIComponent(game.p1_name)}" 
+        if (game.winner_id == ix) {
+          e.style.border = '2px solid #4fff4f';
+        } else {
+          if (game.player1_score != game.player2_score) e.style.border = '2px solid rgb(19, 19, 19)';
+          else e.style.border = '2px solid rgba(255, 255, 255, 0.14)';
+        }
+        const p1Link = `<a href="/profile/${encodeURIComponent(game.p1_name)}" 
                      style="color: #00ffff; text-decoration: underline;">${game.p1_name}</a>`;
-            const p2Link = `<a href="/profile/${encodeURIComponent(game.p2_name)}" 
+        const p2Link = `<a href="/profile/${encodeURIComponent(game.p2_name)}" 
                      style="color: #00ffff; text-decoration: underline;">${game.p2_name}</a>`;
-            USER_DATA?.username
-            e.innerHTML = `
+        USER_DATA?.username;
+        e.innerHTML = `
               <span style="color: lime; font-size: 11px; ">${winnerName} (${w})</span>
               <span style="color: white;"> ${game.p1_name == USER_DATA?.username ? game.p1_name : p1Link} 
                 vs  ${game.p2_name == USER_DATA?.username ? game.p2_name : p2Link} </span>
               <span style="color: red; font-size: 11px; ">${L} (${l})</span>
             `;
-            const h = container.querySelector('#game-history');
-            if(h)
-            {
+        const h = container.querySelector('#game-history');
+        if (h) {
+          h.appendChild(e);
+        }
+      });
 
-              h.appendChild(e);
-            }
-          });
+      // call dashboard func && load chart.js
+      const chartScript = document.createElement('script');
+      chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+      chartScript.onload = () => {
+        // Once loaded, build charts
+        const ctx1 = (container.querySelector('#userPerformanceChart') as HTMLCanvasElement).getContext('2d');
+        const ctx2 = (container.querySelector('#matchHistoryChart') as HTMLCanvasElement).getContext('2d');
 
-          // call dashboard func && load chart.js
-          const chartScript = document.createElement('script');
-          chartScript.src = "https://cdn.jsdelivr.net/npm/chart.js";
-          chartScript.onload = () => {
-            // Once loaded, build charts
-            const ctx1 = (container.querySelector('#userPerformanceChart') as HTMLCanvasElement).getContext('2d');
-            const ctx2 = (container.querySelector('#matchHistoryChart') as HTMLCanvasElement).getContext('2d');
+        const winRate = USER_DATA?.wins || 0;
+        const lossRate = USER_DATA?.losses || 0;
+        // const totalGames = winRate + lossRate;
+        // const winPercent = totalGames ? Math.round((winRate / totalGames) * 100) : 0;
 
-            const winRate = USER_DATA?.wins || 0;
-            const lossRate = USER_DATA?.losses || 0;
-            // const totalGames = winRate + lossRate;
-            // const winPercent = totalGames ? Math.round((winRate / totalGames) * 100) : 0;
-
-            // user Performance Chart (Doughnut)
-            new Chart(ctx1, {
-              type: 'doughnut',
-              data: {
-                labels: ['Wins', 'Losses'],
-                datasets: [{
-                  data: [winRate, lossRate],
-                  backgroundColor: ['#09ff00ff', '#ff1e1eff'],
-                  borderColor: '#111',
-                  borderWidth: 2,
-                  hoverOffset: 20,
-                }]
+        // user Performance Chart (Doughnut)
+        new Chart(ctx1, {
+          type: 'doughnut',
+          data: {
+            labels: ['Wins', 'Losses'],
+            datasets: [
+              {
+                data: [winRate, lossRate],
+                backgroundColor: ['#09ff00ff', '#ff1e1eff'],
+                borderColor: '#111',
+                borderWidth: 2,
+                hoverOffset: 20,
               },
-              options: {
-                maintainAspectRatio: false, // <--- key fix
-                aspectRatio: 1.6, // optional (wider ratio looks natural)
-                plugins: {
-                  legend: {
-                    labels: {
-                      color: '#BBBBBB',
-                      font: { family: 'Press Start 2P', size: 8 }
-                    }
-                  }
+            ],
+          },
+          options: {
+            maintainAspectRatio: false, // <--- key fix
+            aspectRatio: 1.6, // optional (wider ratio looks natural)
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#BBBBBB',
+                  font: { family: 'Press Start 2P', size: 8 },
                 },
-                animation: {
-                  animateScale: true,
-                  animateRotate: true
-                }
-              }
-            });
-            const font = new FontFace("Press Start 2P", "url(https://fonts.gstatic.com/s/pressstart2p/v12/e3t4euO8T-267oIAQAu6jDQyK3nVivNj.woff2)");
-            font.load().then((loaded_f) => {
-                document.fonts.add(loaded_f);
-            });
-            document.fonts.add(font);
-            // Match History Chart (Line)
-            // either charts from actual data 
-            // or default chart samplee.
-            if (u?.games?.length > 0)
-            {
-                const labels:string[] = ["----"], differences: number[] = [0];
-                u.games.forEach((game: any, index: number) => {
-                  // label: "player1 vs player2"
-                  labels.push(`${index}: ${game.p1_name} vs ${game.p2_name}`);
-                  // difference: (player1 - player2)
-                  let diff;
-                  if (USER_DATA.username === game.p1_name)
-                    diff = game.player1_score - game.player2_score;
-                  else if (USER_DATA.username === game.p2_name)
-                    diff = game.player2_score - game.player1_score;
-                  else
-                    diff = game.player1_score - game.player2_score;
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+            },
+          },
+        });
+        const font = new FontFace(
+          'Press Start 2P',
+          'url(https://fonts.gstatic.com/s/pressstart2p/v12/e3t4euO8T-267oIAQAu6jDQyK3nVivNj.woff2)'
+        );
+        font.load().then(loaded_f => {
+          document.fonts.add(loaded_f);
+        });
+        document.fonts.add(font);
+        // Match History Chart (Line)
+        // either charts from actual data
+        // or default chart samplee.
+        if (u?.games?.length > 0) {
+          const labels: string[] = ['----'],
+            differences: number[] = [0];
+          u.games.forEach((game: any, index: number) => {
+            // label: "player1 vs player2"
+            labels.push(`${index}: ${game.p1_name} vs ${game.p2_name}`);
+            // difference: (player1 - player2)
+            let diff = 0;
+            if (USER_DATA.username === game.p1_name) diff = game.player1_score - game.player2_score;
+            else if (USER_DATA.username === game.p2_name) diff = game.player2_score - game.player1_score;
+            else diff = game.player1_score - game.player2_score;
 
-                  differences.push(diff);
-                });
-                new Chart(ctx2, {
-                  type: 'line',
-                  data: {
-                    labels: labels,
-                    datasets: [{
-                      label: 'Score Difference',
-                      data: differences,
-                      fill: false,
-                      borderColor: '#00ffff',
-                      backgroundColor: '#444444',
-                      tension: 0.4,
-                      pointRadius: 5,
-                      pointHoverRadius: 8,
-                      pointBackgroundColor: '#0099ffff'
-                    }]
+            differences.push(diff);
+          });
+          new Chart(ctx2, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: 'Score Difference',
+                  data: differences,
+                  fill: false,
+                  borderColor: '#00ffff',
+                  backgroundColor: '#444444',
+                  tension: 0.4,
+                  pointRadius: 5,
+                  pointHoverRadius: 8,
+                  pointBackgroundColor: '#0099ffff',
+                },
+              ],
+            },
+            options: {
+              maintainAspectRatio: false, // <--- key fix
+              aspectRatio: 1.6, // optional (wider ratio looks natural)
+              scales: {
+                x: {
+                  ticks: { color: '#00ffff', font: { family: 'Press Start 2P', size: 8 } },
+                  grid: { color: '#222' },
+                },
+                y: {
+                  ticks: { color: '#00ffff', font: { family: 'Press Start 2P', size: 8 } },
+                  grid: { color: '#333' },
+                },
+              },
+              plugins: {},
+              animation: { duration: 1600, easing: 'easeOutQuart' },
+            },
+          });
+        } else {
+          new Chart(ctx2, {
+            type: 'line',
+            data: {
+              labels: ['Game 1', 'Game 2', 'Game 3', 'Game 4', 'Game 5', 'Game 6'],
+              datasets: [
+                {
+                  label: 'Score Difference',
+                  data: [3, -2, 1, 4, -1, 8],
+                  fill: false,
+                  borderColor: '#00ffff',
+                  backgroundColor: '#444444',
+                  tension: 0.4,
+                  pointRadius: 5,
+                  pointHoverRadius: 8,
+                  pointBackgroundColor: '#ffffffff',
+                },
+              ],
+            },
+            options: {
+              maintainAspectRatio: false, // <--- key fix
+              aspectRatio: 1.6, // optional (wider ratio looks natural)
+              scales: {
+                x: {
+                  ticks: { color: '#ffffffff', font: { family: 'Press Start 2P', size: 8 } },
+                  grid: { color: '#222' },
+                },
+                y: {
+                  ticks: { color: '#ffffffff', font: { family: 'Press Start 2P', size: 8 } },
+                  grid: { color: '#333' },
+                },
+              },
+              plugins: {
+                title: {
+                  display: true,
+                  text: 'This chart will show the score difference between players across recent matches',
+                  color: '#11ff00ff',
+                  font: { family: 'Press Start 2P', size: 18 },
+                  padding: { top: 5, bottom: 9 },
+                },
+                legend: {
+                  display: true,
+                  labels: {
+                    color: '#ffffffff',
+                    font: { family: 'Press Start 2P', size: 9 },
+                    padding: 15,
                   },
-                  options: {
-                    maintainAspectRatio: false, // <--- key fix
-                    aspectRatio: 1.6, // optional (wider ratio looks natural)
-                    scales: {
-                      x: {
-                        ticks: { color: '#00ffff', font: { family: 'Press Start 2P', size: 8 } },
-                        grid: { color: '#222' }
-                      },
-                      y: {
-                        ticks: { color: '#00ffff', font: { family: 'Press Start 2P', size: 8 } },
-                        grid: { color: '#333' }
-                      }
-                    },
-                    plugins: {
-                    },
-                    animation: { duration: 1600, easing: 'easeOutQuart' }
-                  }
-                });
-            }
-            else
-            {
-                new Chart(ctx2, {
-                  type: 'line',
-                  data: {
-                    labels: ['Game 1', 'Game 2', 'Game 3', 'Game 4', 'Game 5', 'Game 6'],
-                    datasets: [{
-                      label: 'Score Difference',
-                      data: [3, -2, 1, 4, -1, 8],
-                      fill: false,
-                      borderColor: '#00ffff',
-                      backgroundColor: '#444444',
-                      tension: 0.4,
-                      pointRadius: 5,
-                      pointHoverRadius: 8,
-                      pointBackgroundColor: '#ffffffff'
-                    }]
-                  },
-                  options: {
-                    maintainAspectRatio: false, // <--- key fix
-                    aspectRatio: 1.6, // optional (wider ratio looks natural)
-                    scales: {
-                      x: {
-                        ticks: { color: '#ffffffff', font: { family: 'Press Start 2P', size: 8 } },
-                        grid: { color: '#222' }
-                      },
-                      y: {
-                        ticks: { color: '#ffffffff', font: { family: 'Press Start 2P', size: 8 } },
-                        grid: { color: '#333' }
-                      }
-                    },
-                    plugins: {
-                      title: {
-                        display: true,
-                        text: 'This chart will show the score difference between players across recent matches',
-                        color: '#11ff00ff',
-                        font: { family: 'Press Start 2P', size: 18 },
-                        padding: { top: 5, bottom: 9 }
-                      },
-                      legend: {
-                        display: true,
-                        labels: {
-                          color: '#ffffffff',
-                          font: { family: 'Press Start 2P', size: 9 },
-                          padding: 15
-                        }
-                      }
-                    },
-                    animation: { duration: 1200, easing: 'easeOutQuart' }
-                  }
-                });
-            }
-
-            
-        };
-        document.body.appendChild(chartScript);
-
+                },
+              },
+              animation: { duration: 1200, easing: 'easeOutQuart' },
+            },
+          });
+        }
+      };
+      document.body.appendChild(chartScript);
     } catch (error) {
       console.error('Failed to load user profile:', error);
     }
-
-
 
     return container;
   }

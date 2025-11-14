@@ -7,17 +7,12 @@ type Player = {
 };
 
 export default class LeaderboardPage extends Page {
-  constructor(id: string, router: any) {
-    super(id, router);
-  }
-
   async FETCH_PLAYERS(): Promise<Player[]> {
     try {
       const R = await fetch('http://localhost:3010/api/leaderboard', {
-        credentials: 'include'
+        credentials: 'include',
       });
-      if (!R.ok)
-        throw new Error(`API error: ${R.status} + ${R.json()}`);
+      if (!R.ok) throw new Error(`API error: ${R.status} + ${R.json()}`);
       const _data = await R.json();
       return _data?.users; // Adjust this depending on how your API sends data
     } catch (error) {
@@ -40,7 +35,7 @@ export default class LeaderboardPage extends Page {
       fontFamily: '"Press Start 2P", cursive',
       minHeight: '70vh',
       maxHeight: '70vh',
-      borderRadius: '18px'
+      borderRadius: '18px',
     });
     container.innerHTML = `
       <h1 style="font-size: 24px; margin-bottom: 30px;">LEADERBOARD</h1>

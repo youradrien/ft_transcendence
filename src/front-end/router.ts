@@ -1,5 +1,5 @@
 export class Router {
-  private routes: Record<string, () => HTMLElement | void | Promise<HTMLElement | void>> = {};
+  private routes: Record<string, () => HTMLElement | undefined | Promise<HTMLElement | undefined>> = {};
   private outletId: string;
 
   constructor(outletId: string) {
@@ -41,7 +41,7 @@ export class Router {
     });
   }
 
-  addRoute(path: string, renderFn: () => HTMLElement | void | Promise<HTMLElement | void>): void {
+  addRoute(path: string, renderFn: () => HTMLElement | undefined | Promise<HTMLElement | undefined>): void {
     this.routes[path] = renderFn;
   }
 
@@ -62,17 +62,13 @@ export class Router {
     // let params: Record<string, string> = {};
 
     //no exact match, try dynamic ones
-    if (!renderFn){
+    if (!renderFn) {
       for (const route in this.routes) {
         if (route === '*' || !route.includes(':')) continue;
 
         // conversion
         // -> /profile/:username → /^\/profile\/([^/]+)$/
-        const pattern = new RegExp(
-          '^' +
-            route.replace(/:[^/]+/g, '([^/]+)') +
-            '$'
-        );
+        const pattern = new RegExp('^' + route.replace(/:[^/]+/g, '([^/]+)') + '$');
 
         const match = path.match(pattern);
         if (match) {

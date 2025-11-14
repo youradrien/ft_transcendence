@@ -95,13 +95,11 @@ export default class AuthPage extends Page {
       window.location.href = 'http://localhost:3010/api/auth/github/login';
     });
 
-    const googleLoginBtn = container.querySelector("#googleLogin") as HTMLButtonElement;
+    const googleLoginBtn = container.querySelector('#googleLogin') as HTMLButtonElement;
     googleLoginBtn.addEventListener('click', () => {
       // Redirige vers le backend
       window.location.href = 'http://localhost:3010/api/auth/google/login';
     });
-
-
 
     let isLogin = true;
 
@@ -109,16 +107,13 @@ export default class AuthPage extends Page {
       isLogin = !isLogin;
       formTitle.textContent = isLogin ? 'Login' : 'Register';
       submitBtn.textContent = isLogin ? 'Login' : 'Register';
-      toggleForm.textContent = isLogin
-        ? "Don't have an account? Register"
-        : "Already have an account? Login";
+      toggleForm.textContent = isLogin ? "Don't have an account? Register" : 'Already have an account? Login';
     });
 
     submitBtn.addEventListener('click', async () => {
       const username = (container.querySelector('#username') as HTMLInputElement).value.trim();
       const password = (container.querySelector('#password') as HTMLInputElement).value.trim();
       const errorMsg = container.querySelector('#errorMsg') as HTMLElement;
-
 
       if (!username || !password) {
         // alert('Please fill in all fields.');
@@ -142,7 +137,6 @@ export default class AuthPage extends Page {
         // Handle success (e.g. redirect to main page)
         alert(data.message || (isLogin ? 'Logged in!' : 'Registered!'));
         this.router.navigate('/'); // go back to main page
-
       } catch (err: any) {
         alert('Error: ' + err.message);
       }

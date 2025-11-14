@@ -1,5 +1,4 @@
-export default class Page
-{
+export default class Page {
   protected id: string;
   protected router: { navigate: (path: string) => void };
   protected options?: any;

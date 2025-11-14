@@ -9,7 +9,7 @@ export default class Header extends Page {
     container.style.padding = '15px';
     // container.style.backgroundColor = '#2b2b2bff';
     // container.style.boxShadow = '0 4px 8px rgba(24, 24, 24, 1)';
-        container.style.background = 'linear-gradient(180deg, #2b2b2b 0%, #1f1f1f 100%)';
+    container.style.background = 'linear-gradient(180deg, #2b2b2b 0%, #1f1f1f 100%)';
     container.style.boxShadow = '0 0 25px rgba(184, 184, 184, 0.2)';
     container.style.marginTop = '5px';
     container.style.marginLeft = 'auto';
@@ -94,13 +94,11 @@ export default class Header extends Page {
     };
     Object.entries(routeButtonMap).forEach(([route, buttonId]) => {
       const b = container.querySelector(`#${buttonId}`) as HTMLButtonElement;
-      if (b &&  curpath.startsWith(route)) {
-        if(curpath == "/" && route != "/")
-          return;
+      if (b && curpath.startsWith(route)) {
+        if (curpath == '/' && route != '/') return;
         b.style.cssText += activeButtonStyle;
       }
     });
-
 
     const _count = container.querySelector('#online-count') as HTMLElement;
     const updateOnlineCount = async () => {
@@ -112,11 +110,13 @@ export default class Header extends Page {
         if (json.success) {
           _count.innerText = `${json.data.online_players} playerz online.`;
         }
-      } catch (err) { _count.innerText = '⚠️ Server error'; }
+      } catch (_err) {
+        _count.innerText = '⚠️ Server error';
+      }
     };
     // auto-refresh every 45 seconds
     updateOnlineCount();
-    setInterval(updateOnlineCount, 45000);    
+    setInterval(updateOnlineCount, 45000);
     return container;
   }
 }

@@ -17,7 +17,7 @@ export default class MainPage extends Page {
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
       const user = await res.json();
       return user;
-    } catch (err) {
+    } catch (_err) {
       return null;
     }
   }
@@ -30,8 +30,7 @@ export default class MainPage extends Page {
 
     // fetch before trying to render profile
     const user = await this.own_user();
-    if (user)
-    {
+    if (user) {
       const pfp = new Profile('profile-page', this.router);
       const pfp_element = await pfp.render();
       content.appendChild(pfp_element);
