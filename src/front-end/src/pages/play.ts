@@ -150,6 +150,8 @@ export default class PlayPage extends Page {
         {
           if(game_ai){
             currentGameMode = 'ai';
+          }else{
+            currentGameMode = 'multiplayer';
           }
           // component
           const pong_page = new Pong(game_ai ? "ai-pong" : "multiplayer-pong", 

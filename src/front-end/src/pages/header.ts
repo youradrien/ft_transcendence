@@ -44,8 +44,8 @@ export default class Header extends Page {
         <button id="homeBtn" >Home</button>
         <button id="playBtn" >Play</button>
         <button id="leaderboardBtn" >Leaderboard</button>
+        <button id="tournamentBtn">Tournament 🏆</button>
         <button id="friendsBtn">Friends</button>
-        <button id="friendsBtn">Tournament</button>
         <button id="logoutBtn" style="background-color: #f44336; color: white;">Logout</button>
       </div>
     `;
@@ -59,6 +59,9 @@ export default class Header extends Page {
     });
     container.querySelector('#playBtn')?.addEventListener('click', () => {
       this.router.navigate('/play');
+    });
+    container.querySelector('#tournamentBtn')?.addEventListener('click', () => {
+      this.router.navigate('/tournament');
     });
     container.querySelector('#friendsBtn')?.addEventListener('click', () => {
       this.router.navigate('/friends');

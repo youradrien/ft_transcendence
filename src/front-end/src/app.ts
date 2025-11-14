@@ -6,6 +6,7 @@ import AuthPage from './pages/auth';
 import Profile from './pages/profile';
 import Header from './pages/header';
 import Leaderboard from './pages/leaderboard';
+import Tournament from './pages/tournament';
 
 export class App {
   private router = new Router('app');
@@ -46,6 +47,10 @@ export class App {
     this.router.addRoute('/leaderboard', async () => {
         return this.renderPage(Leaderboard, 'leaderboard-page');
     });
+    this.router.addRoute('/tournament', async () => {
+        return this.renderPage(Tournament, 'tournament-page');
+    });
+
 
     this.router.addRoute('/profile/:username', async () => {
       return this.renderPage(Profile, 'profile-page');
