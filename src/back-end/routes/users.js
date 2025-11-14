@@ -336,7 +336,6 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     // Handle callback
     fastify.get('/api/auth/google/callback', async (request, reply) => {
         const { code } = request.query;
-        
         try {
             const { tokens } = await client.getToken(code);
             const ticket = await client.verifyIdToken({
@@ -346,17 +345,22 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             
             const payload = ticket.getPayload();
             
-            // Your existing user creation/login logic here
             let user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
-            
-            if (!user)
-            {
-            console.log(`${payload.name}`);
-            const pseudo_new = payload.name;
-            const profile_pic = payload.picture;
-            console.log(`USER AVATR : ${payload.picture}`);
-            await db.run("INSERT INTO users (username, sub_google, avatar_url) VALUES (?, ?, ?)", [pseudo_new, payload.sub, profile_pic]);
-            user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
+            ///check if the username is alredy in the db and if the payload.sub isnt in the db if its the case it means we have two different google users with the same username and we need to handle it
+            nick_in_use = await db.get("SELECT * FROM users WHERE username = ?", [payload.name]);
+            if (!user){
+                console.log(`${payload.name}`);
+                let pseudo_new;
+                if (!nick_in_use) {
+                    pseudo_new = payload.name;
+                } else {
+                    const rand = Math.floor(Math.random() * 15000) + 1;
+                    pseudo_new = `${payload.name}${rand}`;
+                }
+                const profile_pic = payload.picture;
+                console.log(`USER AVATR : ${payload.picture}`);
+                await db.run("INSERT INTO users (username, sub_google, avatar_url) VALUES (?, ?, ?)", [pseudo_new, payload.sub, profile_pic]);
+                user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
             }
             
             const jwt_content = await getJWTContent(user.id);
