@@ -272,9 +272,12 @@ async function pong_routes(fastify, options)
                 [p1Id, p2Id]
             );
             const name_map = Object.fromEntries((p_names).map(r => [r.id, r.username]));
-            game.player_names = (p_names).map((obj) => 
-                name_map[obj.id] || null
-            );
+            // game.player_names était déduit depuis l'ordre de retour SQL (non garanti)
+            // => forcer l'ordre [p1Id, p2Id] pour éviter l'inversion des noms
+            game.player_names = [
+                name_map[p1Id] || `/${p1Id}/`,
+                name_map[p2Id] || `/${p2Id}/`
+            ];
 
             // randomly delay the START [8-15s] after "creaing...""
             for (let i = 0; i <= c; i++) {
