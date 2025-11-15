@@ -6,6 +6,7 @@ import AuthPage from './pages/auth';
 import Profile from './pages/profile';
 import Header from './pages/header';
 import Leaderboard from './pages/leaderboard';
+import Friends from './pages/friends';
 
 export class App {
   private router = new Router('app');
@@ -30,7 +31,7 @@ export class App {
 
   private setupRoutes(): void {
     this.router.addRoute('/', async () => {
-    
+
           return this.renderPage(HomePage, 'main-page');
    
     });
@@ -51,12 +52,15 @@ export class App {
       return this.renderPage(Profile, 'profile-page');
     });
 
+	this.router.addRoute('/friends', async () => {
+        return this.renderPage(Friends, 'friends-page');
+    });
 
     // 🧱 catch-all fallback for unknown routes
     this.router.addRoute('*', async () => {
       return this.renderPage(NTFoundPage, 'not-found-page');
     });
-    
+
     this.router.loadRoute();
 
 
@@ -80,7 +84,7 @@ export class App {
             this.router.navigate('/');
             return;
         }
-        
+
 
 
         // complete DOM clear before every rendering
