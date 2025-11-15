@@ -3,6 +3,7 @@ import Page from '../template/page.ts';
 export default class SinglePong extends Page {
   private multiplayer: boolean;
   private isaigame :boolean = false;
+  private islocal: boolean = false;
   private socket?: WebSocket;
   private game_data?: any;
 
@@ -12,6 +13,7 @@ export default class SinglePong extends Page {
     this.socket = options?.socket;
     this.game_data = options?.game_data;
     this.isaigame = options?.isaigame;
+    this.islocal = options?.islocal;
 
     // console.log(this.socket);
     console.log(this.game_data);
@@ -136,14 +138,14 @@ export default class SinglePong extends Page {
       ended: false,
       winning: null
     };
-    if(this.multiplayer)
-    {
-      if(this.game_data)
-      {
-        _g.player_names = this.game_data?.player_names;
-        _g.max_score = this.game_data?.max_score;
+
+  if (this.multiplayer || this.isaigame || this.islocal) {
+        if (this.game_data) {
+          _g.player_names = this.game_data?.player_names;
+          _g.max_score = this.game_data?.max_score;
+        }
       }
-    }
+
 
     const PONG_ART = 
     `  ██████╗ ███████╗███╗   ██╗ ██████╗ 
@@ -194,18 +196,21 @@ export default class SinglePong extends Page {
 
             const F = document.querySelector('#score') as HTMLParagraphElement;
             const victory = document.createElement('h1');
-            victory.textContent = 'Defeat';
-            victory.style.color = 'red';
-            if( _g.winning ){
-                victory.textContent = 'Victory';
-                victory.style.color = 'green';
+            if (data?.is_local) {
+              victory.textContent = `${data?.winner} Wins!`;
+              victory.style.color = '#00ff00';
+            } else {
+              victory.textContent = _g.winning ? 'Victory' : 'Defeat';
+              victory.style.color = _g.winning ? 'green' : 'red';
             }
+            
             const e = document.createElement('h3');
             e.style.color = 'cyan';
-            if(data?.reason == "give-up")
+            if (data?.reason == "give-up")
               e.textContent = `${data?.looser} gave up..`;
             else
-              e.textContent = `${data?.winner} was better !`;
+              e.textContent = `${data?.winner} was better!`;
+            
             e.style.textAlign = 'center';
             victory.style.textAlign = 'center';
             victory.style.marginBottom = '0px';
@@ -214,45 +219,78 @@ export default class SinglePong extends Page {
             F.style.flexDirection = 'column';
             F.appendChild(victory);
             F.appendChild(e);
-        } 
+        }
       });
-    }
+    };
+
     treat_socket();
 
     const update = () => {
-      if(this.multiplayer || this.isaigame)
-      {
-        if(!this.socket)
-            return;
-        // update() state happens in tereat_socket() via ws
-        // only keyboard inputs are sent in this update() loop
-        let direction = null;
-        if (_g.keys.ArrowUp || _g.keys.w  ){
-          direction = "up";
-        }
-        if(_g.keys.ArrowDown || _g.keys.s ){
-          direction = "down";
-        }
-        if(direction)
-        {
-          this.socket.send(JSON.stringify({
+      if (this.multiplayer || this.isaigame || this.islocal) {
+        if (!this.socket) return;
+        
+        // For local multiplayer, send both paddle movements
+        if (this.islocal) {
+          // Player 1 (W/S keys)
+          if (_g.keys.w) {
+            this.socket.send(JSON.stringify({
+              type: "paddle_move",
+              player: "p1",
+              direction: "up"
+            }));
+          }
+          if (_g.keys.s) {
+            this.socket.send(JSON.stringify({
+              type: "paddle_move",
+              player: "p1",
+              direction: "down"
+            }));
+          }
+          
+          // Player 2 (Arrow keys)
+          if (_g.keys.ArrowUp) {
+            this.socket.send(JSON.stringify({
+              type: "paddle_move",
+              player: "p2",
+              direction: "up"
+            }));
+          }
+          if (_g.keys.ArrowDown) {
+            this.socket.send(JSON.stringify({
+              type: "paddle_move",
+              player: "p2",
+              direction: "down"
+            }));
+          }
+        } else {
+          // Regular multiplayer/AI - single paddle control
+          let direction = null;
+          if (_g.keys.ArrowUp || _g.keys.w) {
+            direction = "up";
+          }
+          if (_g.keys.ArrowDown || _g.keys.s) {
+            direction = "down";
+          }
+          if (direction) {
+            this.socket.send(JSON.stringify({
               type: "paddle_move",
               direction: direction
-          }));
+            }));
+          }
         }
-      }else
-      {
+      } else {
+        // This branch is no longer used since we moved to backend
         if (!g_started) return;
-
-        // ball
+        
+        // i think this is safe to remove now but leaving for reference idk
         _g.ball.x += _g.ball.speedX;
         _g.ball.y += _g.ball.speedY;
 
-        // paddles
-        if (_g.keys.ArrowUp && _g.paddles.player2Y > 0 + PADDLE_SPEED) _g.paddles.player2Y -= PADDLE_SPEED;
-        if (_g.keys.ArrowDown &&  _g.paddles.player2Y < canvas.height - PADDLE_SPEED) _g.paddles.player2Y += PADDLE_SPEED;
+        if (_g.keys.ArrowUp && _g.paddles.player2Y > 0 + PADDLE_SPEED) 
+          _g.paddles.player2Y -= PADDLE_SPEED;
+        if (_g.keys.ArrowDown && _g.paddles.player2Y < canvas.height - PADDLE_SPEED) 
+          _g.paddles.player2Y += PADDLE_SPEED;
 
-        // ball -> top/bottom walls
         if (_g.ball.y + BALL_RADIUS > canvas.height || _g.ball.y - BALL_RADIUS < 0) {
           _g.ball.speedY = -_g.ball.speedY;
         }
@@ -263,37 +301,35 @@ export default class SinglePong extends Page {
         if (_g.ball.x + BALL_RADIUS > canvas.width) {
           _g.score.player1++;
           p1ScoreEl.textContent = `Player 1: ${_g.score.player1}`;
-          _g.ball.speedX = - (_g.ball.speedX);
+          _g.ball.speedX = -(_g.ball.speedX);
         } else if (_g.ball.x - BALL_RADIUS < 0) {
           _g.score.player2++;
           p2ScoreEl.textContent = `Player 2: ${_g.score.player2}`;
-          _g.ball.speedX = - (_g.ball.speedX);
+          _g.ball.speedX = -(_g.ball.speedX);
         }
       }
-
     };
 
     const _paddle_collision = (paddleY: number, paddleX: number, direction: 1 | -1) => {
-        const b = _g.ball;
-        const paddleCollision = direction === 1
-            ? b.x - BALL_RADIUS < paddleX
-            : b.x + BALL_RADIUS > paddleX;
+      const b = _g.ball;
+      const paddleCollision = direction === 1
+        ? b.x - BALL_RADIUS < paddleX
+        : b.x + BALL_RADIUS > paddleX;
 
-        if (paddleCollision && b.y > paddleY && b.y < paddleY + PADDLE_HEIGHT)
-        {
-            const inter_y = ( paddleY + PADDLE_HEIGHT / 2 - b.y) / (PADDLE_HEIGHT / 2);
-
-            b.speedX = DEFAULT_BALL_SPEED * Math.cos(inter_y * (Math.PI / 3)) * direction;
-            b.speedY = DEFAULT_BALL_SPEED * -Math.sin(inter_y * (Math.PI / 3));
-            b.speedX *= 1.025;
-            b.speedY *= 1.025;
-        }
+      if (paddleCollision && b.y > paddleY && b.y < paddleY + PADDLE_HEIGHT) {
+        const inter_y = (paddleY + PADDLE_HEIGHT / 2 - b.y) / (PADDLE_HEIGHT / 2);
+        b.speedX = DEFAULT_BALL_SPEED * Math.cos(inter_y * (Math.PI / 3)) * direction;
+        b.speedY = DEFAULT_BALL_SPEED * -Math.sin(inter_y * (Math.PI / 3));
+        b.speedX *= 1.025;
+        b.speedY *= 1.025;
+      }
     };
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // field
-      ctx.strokeStyle = _g.ended ? ( _g.winning ? 'green' : 'red') : 'white';
+      
+      // Field border
+      ctx.strokeStyle = _g.ended ? (_g.winning ? 'green' : 'red') : 'white';
       ctx.lineWidth = 5;
       ctx.strokeRect(0, 0, canvas.width, canvas.height);
 
@@ -310,12 +346,14 @@ export default class SinglePong extends Page {
         ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight));
       });
       ctx.restore();
-      // ball
+      
+      // Ball
       ctx.fillStyle = 'white';
       ctx.beginPath();
       ctx.arc(_g.ball.x, _g.ball.y, BALL_RADIUS, 0, Math.PI * 2);
       ctx.fill();
-      // paddles
+      
+      // Paddles
       ctx.fillRect(20, _g.paddles.player1Y, PADDLE_WIDTH, PADDLE_HEIGHT);
       ctx.fillRect(canvas.width - 30, _g.paddles.player2Y, PADDLE_WIDTH, PADDLE_HEIGHT);
     };
@@ -329,16 +367,13 @@ export default class SinglePong extends Page {
     // Event Listeners
     const handleKeyEvent = (e: KeyboardEvent, isDown: boolean) => {
       if (e.key === ' ' && isDown && !g_started) {
-        /* 
-        reset_ball(true); */
-      }
-      // movement keys
-      else if (e.key === 'w' || e.key === 's' || e.key === 'ArrowUp' || e.key === 'ArrowDown')
-      {
-        e.preventDefault(); // ✅ Prevent arrow keys and WASD from scrolling
+        // Space bar handling if needed
+      } else if (e.key === 'w' || e.key === 's' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
         (_g.keys as any)[e.key] = isDown;
       }
     };
+    
     document.addEventListener('keydown', (e) => handleKeyEvent(e, true));
     document.addEventListener('keyup', (e) => handleKeyEvent(e, false));
 

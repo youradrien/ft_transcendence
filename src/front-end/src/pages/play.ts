@@ -73,7 +73,7 @@ export default class PlayPage extends Page {
     const sgl = container.querySelector('#singleBtn') as HTMLParagraphElement;
     const r_st = container.querySelector('#rooms-status') as HTMLParagraphElement;
     const q_btn = container.querySelector('#multiBtn') as HTMLButtonElement;
-    const hst_btn = container.querySelector('#hostGameBtn') as HTMLButtonElement;
+    // const hst_btn = container.querySelector('#hostGameBtn') as HTMLButtonElement;
     const aiBtn = container.querySelector('#aiBtn') as HTMLButtonElement;
     const gCounter = container.querySelector('#game-counter') as HTMLButtonElement;
     const gJntitle = container.querySelector('#game-join-h1') as HTMLButtonElement;
@@ -133,74 +133,95 @@ export default class PlayPage extends Page {
 
     // start either multiplayer or single player
     // start either multiplayer or single player
-    const start_game = async (game_mode: boolean, game_data? : object, game_ai?: boolean | false) => 
-    {
-        joined_game = (true);
-        const e = container.querySelector('#active-games') as HTMLElement;
-        e.innerHTML = '';
-        p_st.style.display = 'none';
-        r_st.style.display = 'none';
-        gCounter.style.display = 'none';
-        gJntitle.style.display = 'none';
-        if(game_ai){
-            aiBtn.innerText = '🎮 Playing vs AI';
-            aiBtn.style.backgroundColor = '#ff6600';
+    const start_game = async (
+      game_mode: boolean, 
+      game_data?: object, 
+      game_ai?: boolean | false,
+      is_local?: boolean | false  // NEW PARAMETER
+    ) => {
+      joined_game = true;
+      const e = container.querySelector('#active-games') as HTMLElement;
+      e.innerHTML = '';
+      p_st.style.display = 'none';
+      r_st.style.display = 'none';
+      gCounter.style.display = 'none';
+      gJntitle.style.display = 'none';
+      
+      if (game_ai) {
+        aiBtn.innerText = '🎮 Playing vs AI';
+        aiBtn.style.backgroundColor = '#ff6600';
+      }
+      
+      if (is_local) {
+        sgl.innerText = '🎮 Playing Local';
+        sgl.style.backgroundColor = '#00cc44';
+        sgl.style.color = 'white';
+      }
+      
+      if (game_mode) {
+        if (game_ai) {
+          currentGameMode = 'ai';
+        } else if (is_local) {
+          currentGameMode = 'single';
+        } else {
+          currentGameMode = 'multiplayer';
         }
-        if(game_mode) // multiplayer
-        {
-          if(game_ai){
-            currentGameMode = 'ai';
-          }else{
-            currentGameMode = 'multiplayer';
-          }
-          // component
-          const pong_page = new Pong(game_ai ? "ai-pong" : "multiplayer-pong", 
-            this.router, 
-            {
-              multiplayer : true as (Boolean),
-              socket: (game_ai ? (aiSocket): (socket)) as (WebSocket),
-              game_data: (game_data),
-              isaigame: (game_ai)
-            }
-          );
-
-          // render && append 
-          const pong_container = await pong_page.render();
-
-          // For example, append to a div with id "gameArea"
-          const game_area = document.querySelector('#game-area');
-          if (game_area)
+        
+        // Component
+        const pong_page = new Pong(
+          is_local ? "local-pong" : (game_ai ? "ai-pong" : "multiplayer-pong"), 
+          this.router, 
           {
-              // del prev games
-              aiBtn.disabled = true
-              game_area.innerHTML = '';
-              game_area.appendChild(pong_container);
-              q_btn.style.backgroundColor = '#cc0000ff';  // Green background
-              q_btn.style.color = 'white';              // White text
-              q_btn.innerText = '🔌 Disconnect';
-              sgl.style.backgroundColor = '#f5d500ff';  // Green background
-              sgl.style.color = 'black';              // White text
-              sgl.innerText = '❌ GIVE UP';
+            multiplayer: true as Boolean,
+            socket: (game_ai ? aiSocket : socket) as WebSocket,
+            game_data: game_data,
+            isaigame: game_ai,
+            islocal: is_local  // NEW FLAG
           }
+        );
+
+        const pong_container = await pong_page.render();
+        const game_area = document.querySelector('#game-area');
+        
+        if (game_area) {
+          aiBtn.disabled = true;
+          game_area.innerHTML = '';
+          game_area.appendChild(pong_container);
+          
+          if (is_local) {
+            q_btn.style.display = 'none'; // Hide multiplayer button
+            sgl.style.backgroundColor = '#cc0000ff';
+            sgl.style.color = 'white';
+            sgl.innerText = '❌ GIVE UP';
+          } else {
+            q_btn.style.backgroundColor = '#cc0000ff';
+            q_btn.style.color = 'white';
+            q_btn.innerText = '🔌 Disconnect';
+            sgl.style.backgroundColor = '#f5d500ff';
+            sgl.style.color = 'black';
+            sgl.innerText = '❌ GIVE UP';
+          }
+        }
       }else
       {
-        currentGameMode = 'single';
-        const solo_pong = new Pong("pong_ahhh_single", this.router, {
-          multiplayer : false,
-        });
-        // render && append 
-        const pong_container = await solo_pong.render();
+        // currentGameMode = 'single';
+        // const solo_pong = new Pong("pong_ahhh_single", this.router, {
+        //   multiplayer : false,
+        // });
+        // // render && append 
+        // const pong_container = await solo_pong.render();
 
-        // For example, append to a div with id "gameArea"
-        const game_area = document.querySelector('#game-area');
-        if (game_area)
-        {
-            // del prev games
-            game_area.innerHTML = '';
-            game_area.appendChild(pong_container);
-        }
-        q_btn.innerText = '- - - - -';
-        sgl.innerText = '- - - -';
+        // // For example, append to a div with id "gameArea"
+        // const game_area = document.querySelector('#game-area');
+        // if (game_area)
+        // {
+        //     // del prev games
+        //     game_area.innerHTML = '';
+        //     game_area.appendChild(pong_container);
+        // }
+        // q_btn.innerText = '- - - - -';
+        // sgl.innerText = '- - - -';
+        currentGameMode = 'single';
       }
     };
     // (queue) btn handler
@@ -376,39 +397,66 @@ export default class PlayPage extends Page {
     // single player btn handler
     const s = container.querySelector('#singleBtn') as HTMLButtonElement;
     s.onclick = async () => {
-      if(!joined_game)
-      {
-        await start_game(false); // <-- single player pong
-      }else
-      {
-        console.log(currentGameMode);
-        // Check which socket to use based on current game mode
-        if (currentGameMode === 'ai' && aiSocket && aiSocket.readyState === WebSocket.OPEN)
-        {
-          aiSocket.send(JSON.stringify({
-            type: "player_giveup"
-          }));
-          // aiSocket.close();
+      if (!joined_game) {
+        // Start local multiplayer game via backend
+        try {
+          const localSocket = new WebSocket('ws://localhost:3010/api/pong/local/ws');
+          s.innerText = '🎮 Connecting...';
+          s.disabled = true;
+          
+          localSocket.onmessage = async (msg) => {
+            const data = JSON.parse(msg.data);
+            if (data.type === 'start') {
+              nahh = false;
+              currentGameMode = 'single';
+              socket = localSocket; // Assign to main socket variable for cleanup
+              
+              // Start the game with local multiplayer flag
+              await start_game(true, data?.ehh, false, true); // Added 4th param for local
+            }
+            
+            if (data.type === 'game_end') {
+              alert(`Game Over!\n${data.winner} wins!\nScore: ${data.scores.p1} - ${data.scores.p2}`);
+              window.location.reload();
+            }
+          };
+
+          localSocket.onerror = (err) => {
+            console.error('Local WebSocket error:', err);
+            s.innerText = '❌ Connection failed';
+            s.disabled = false;
+          };
+          
+          localSocket.onclose = () => {
+            s.disabled = false;
+            s.innerText = '🎯 SINGLE-Player';
+            currentGameMode = null;
+          };
+
+        } catch (err) {
+          console.error('Failed to start local game:', err);
+          s.innerText = '❌ Failed. Retry?';
+          s.disabled = false;
         }
-        else if(currentGameMode === 'multiplayer' && socket && socket.readyState === WebSocket.OPEN)
-        {
-          socket.send(JSON.stringify({
-            type: "player_giveup"
-          }));
+      } else {
+        // Give up functionality
+        console.log(currentGameMode);
+        
+        if (currentGameMode === 'ai' && aiSocket && aiSocket.readyState === WebSocket.OPEN) {
+          aiSocket.send(JSON.stringify({ type: "player_giveup" }));
+        }
+        else if (currentGameMode === 'multiplayer' && socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "player_giveup" }));
           socket.close();
         }
-        // Reload page after giving up
+        else if (currentGameMode === 'single' && socket && socket.readyState === WebSocket.OPEN) {
+          // Local multiplayer give up
+          socket.send(JSON.stringify({ type: "player_giveup" }));
+          socket.close();
+        }
+        
         setTimeout(() => window.location.reload(), 5000);
       }
-    };
-
-    // custom game BTN handler
-    hst_btn.onclick = async () => {
-        try {
-
-        } catch (error) {
-          console.log(error);
-        }
     };
 
     return container;
