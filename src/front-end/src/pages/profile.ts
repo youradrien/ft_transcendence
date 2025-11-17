@@ -145,6 +145,7 @@ export default class UserProfilePage extends Page {
           background-color: #00000054;
           padding: 10px 35px;
           border-radius: 15px;
+          animation: fadeInUp 0.35s ease-out;
         ">
           <img src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
           <div style="display: flex; align-items: center; gap: 1px; margin-right: 20px;  flex-direction: column;">
@@ -262,7 +263,6 @@ export default class UserProfilePage extends Page {
             e.style.justifyContent = 'space-between';
             e.style.cursor = 'pointer';
             // e.style.fontSize = '12px';
-            console.log(game);
             const winnerName = (game.winner_id === 1 ? game.p1_name : game.p2_name);
             const L  = (winnerName === game.p1_name) ? game.p2_name : game.p1_name;
 

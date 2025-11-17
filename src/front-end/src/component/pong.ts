@@ -13,104 +13,142 @@ export default class SinglePong extends Page {
     this.game_data = options?.game_data;
     this.isaigame = options?.isaigame;
 
-    // console.log(this.socket);
-    console.log(this.game_data);
-    // console.log(this.multiplayer);
-    // console.log(options);
+    // console.log(this.game_data);
   }
 
-  async render(): Promise<HTMLElement> {
+async render(): Promise<HTMLElement> {
     const CONTAINER = document.createElement('div');
     CONTAINER.id = this.id;
     CONTAINER.style.display = 'flex';
     CONTAINER.style.flexDirection = 'column';
     CONTAINER.style.alignItems = 'center';
     CONTAINER.style.justifyContent = 'center';
-    // CONTAINER.style.height = '100vh';
     CONTAINER.style.textAlign = 'center';
+    CONTAINER.style.color = '#eee'; // light text
 
+    // --- Score Container ---
     const _score = document.createElement('div');
     _score.style.display = 'flex';
     _score.style.justifyContent = 'space-between';
     _score.style.width = '800px';
     _score.style.marginBottom = '1rem';
     _score.style.marginTop = '2rem';
-    _score.style.fontSize = '1.25rem'; 
+    _score.style.fontSize = '1.25rem';
     _score.style.letterSpacing = '1px';
     _score.id = 'score';
 
+    // --- Player 1 ---
     const p1_div = document.createElement('span');
-    p1_div.style.display = 'flex'
+    p1_div.style.display = 'flex';
     p1_div.style.flexDirection = 'row';
     p1_div.style.backgroundColor = '#222';
     p1_div.style.borderRadius = '15px';
     p1_div.style.padding = '15px';
+    p1_div.style.alignItems = 'center';
     const p1 = document.createElement('span');
     p1.id = 'player1-score';
     p1.textContent = 'Player 1: 0';
     const img_p1 = document.createElement('img');
-    img_p1.id = 'player2-pfp';
-    if(this?.game_data?.player_pfps){
-      img_p1.src = this.game_data?.player_pfps[0]?.[0] || ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
-    }else{
-      img_p1.src = ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
-
-    }
-    img_p1.width = 100; // optional styling
+    img_p1.id = 'player1-pfp';
+    img_p1.src = this?.game_data?.player_pfps?.[0]?.[0] || 'https://avatars.githubusercontent.com/u/9919?s=200&v=4';
+    img_p1.width = 100;
     img_p1.height = 100;
     img_p1.style.borderRadius = '50%';
-    img_p1.style.border = '2px solide white';
+    img_p1.style.border = '2px solid white'; // fixed typo
+    img_p1.style.marginRight = '10px';
     p1_div.appendChild(img_p1);
     p1_div.appendChild(p1);
     _score.appendChild(p1_div);
 
-    // Max score in the middle
+    // --- Max score ---
     const max_score = document.createElement('span');
     max_score.id = 'max-score';
-    max_score.textContent = `Max Score: ${this.game_data ? this.game_data.max_score: 20}`;
+    max_score.textContent = `Max Score: ${this.game_data ? this.game_data.max_score : 20}`;
     max_score.style.opacity = '0.7';
     max_score.style.fontSize = '0.85rem';
     max_score.style.flex = '1';
     max_score.style.textAlign = 'center';
     _score.appendChild(max_score);
 
+    // --- Player 2 ---
     const p2_div = document.createElement('span');
-    p2_div.style.display = 'flex'
+    p2_div.style.display = 'flex';
     p2_div.style.flexDirection = 'row';
     p2_div.style.backgroundColor = '#222';
     p2_div.style.borderRadius = '15px';
     p2_div.style.padding = '15px';
+    p2_div.style.alignItems = 'center';
     const p2 = document.createElement('span');
     p2.id = 'player2-score';
     p2.textContent = 'Player 2: 0';
     const img_p2 = document.createElement('img');
     img_p2.id = 'player2-pfp';
-    if(this.game_data?.player_pfps){
-        img_p2.src = this.game_data?.player_pfps[0]?.[1] || ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
-    }else{
-        img_p2.src = ('https://avatars.githubusercontent.com/u/9919?s=200&v=4');
-
-    }
-    img_p2.width = 100; // optional styling
+    img_p2.src = this.game_data?.player_pfps?.[0]?.[1] || 'https://avatars.githubusercontent.com/u/9919?s=200&v=4';
+    img_p2.width = 100;
     img_p2.height = 100;
     img_p2.style.borderRadius = '50%';
-    img_p2.style.border = '2px solide white';
+    img_p2.style.border = '2px solid white';
+    img_p2.style.marginRight = '10px';
     p2_div.appendChild(img_p2);
     p2_div.appendChild(p2);
     _score.appendChild(p2_div);
 
-
     CONTAINER.appendChild(_score);
+
+    // --- Buttons Container ---
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.gap = '1rem';
+    buttonContainer.style.marginBottom = '1rem';
+    buttonContainer.id = "oof";
+    const giveUpBtn = document.createElement('button');
+    giveUpBtn.textContent = 'GIVE-UP';
+    giveUpBtn.style.padding = '0.7rem 2.5rem';
+    giveUpBtn.style.border = '5px solid #fff3';
+    giveUpBtn.style.borderRadius = '8px';
+    giveUpBtn.style.backgroundColor = '#ff4d4d';
+    giveUpBtn.style.color = '#fff';
+    giveUpBtn.style.cursor = 'pointer';
+    giveUpBtn.onclick = async () => {
+      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+          console.warn("Socket not connected!");
+          return;
+      }
+      this.socket.send(JSON.stringify({ type: "player_giveup" }));
+    };
+
+    const D = document.createElement('button');
+    D.textContent = 'DISCONNECT';
+    D.style.padding = '0.5rem 1rem';
+    D.style.border = 'none';
+    D.style.borderRadius = '8px';
+    D.style.backgroundColor = '#777';
+    D.style.color = '#fff';
+    D.style.cursor = 'pointer';
+    D.onclick = () => {
+
+        if (!this.socket) return;
+        this.socket.close();
+        this.router.navigate('/');
+    };
+
+    buttonContainer.appendChild(giveUpBtn);
+    buttonContainer.appendChild(D);
+    CONTAINER.appendChild(buttonContainer);
+
+    // --- Canvas ---
     const c = document.createElement('canvas');
     c.id = 'pongCanvas';
-    c.width = 1200;  // Set your desired width
-    c.height = 600; // Set your desired height
+    c.width = 1200;
+    c.height = 600;
+    c.style.border = '2px solid #333';
+    c.style.borderRadius = '10px';
     CONTAINER.appendChild(c);
-
 
     this.initPong(c, p1, p2);
     return CONTAINER;
-  }
+}
+
 
   private initPong(canvas: HTMLCanvasElement, p1ScoreEl: HTMLElement, p2ScoreEl: HTMLElement): void {
     const ctx = canvas.getContext('2d')!;
@@ -160,7 +198,6 @@ export default class SinglePong extends Page {
       this.socket.addEventListener('message', async (msg) => {
         if(_g.ended)
           return ;
-        // console.log("ws msg:", msg);
         const data = await JSON.parse(msg.data);
         // handle queue, creating, etc...
         if (data?.type === "game_state"){
@@ -185,6 +222,12 @@ export default class SinglePong extends Page {
         }
         if(data?.type === "game_end")
         {
+            const l_box = document.querySelector('#arcade-panel') as HTMLElement;
+            l_box.style.top = '28%';
+            l_box.style.left = '-10%';
+            const ee = document.querySelector('#oof') as HTMLElement;
+            ee.style.display = 'none';
+            // console.log(data);
             // !
             _g.ended = (true);
             _g.winning = (data?.you_are_winner);

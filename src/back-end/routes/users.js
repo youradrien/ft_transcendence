@@ -329,7 +329,6 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 
     fastify.get('/api/auth/google/login', async (request, reply) => {
         const authUrl = client.generateAuthUrl({access_type: 'offline',scope: ['profile', 'email', 'openid']});
-        console.log(authUrl);
         reply.redirect(authUrl);
     });
 

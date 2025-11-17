@@ -95,6 +95,11 @@ async function pong_routes(fastify, options)
         } });
     });
 
+
+
+
+
+
     // specific PONG ROOMS
     fastify.get('/api/pong/active-games', {preValidation: [fastify.authenticate]}, async (request, reply) => {
         const USER__ID = request.user.id;
@@ -154,6 +159,11 @@ async function pong_routes(fastify, options)
     });
 
 
+
+
+    
+
+
     // PONG MATCHMAKING
     fastify.get('/api/pong/ws', { websocket: true }, async (connection, req) => {
         const { p_waitingPlayers, p_rooms } = fastify;
@@ -170,8 +180,6 @@ async function pong_routes(fastify, options)
             connection.socket.close();
             return;
         }
-        
-        console.log(`User ${USER_ID} connected via WebSocket`);
         // user is already in room?
         for (const [roomId, _g] of fastify.p_rooms.entries()) {
             if (Array.isArray(_g.players) && _g.players.includes(USER_ID)) {
@@ -222,7 +230,6 @@ async function pong_routes(fastify, options)
         p_waitingPlayers.set(USER_ID, connection.socket);
 
         console.log(`INFO: ${fastify.p_waitingPlayers.size} are in waiting queue...`);
-
         // 2 players -> create new game
         const waitingEntries = [...p_waitingPlayers.entries()];
         if (p_waitingPlayers.size >= 2)
@@ -238,7 +245,6 @@ async function pong_routes(fastify, options)
             const game_id = `${Date.now()}_${p1Id}_${p2Id}`;
             const c = Math.floor(Math.random() * (8 - 2 + 1)) + 2; // rand int between 8 and 2
             // p1-p2 usernames from DB -> one query
-        
             const game = {
                 id: game_id,
                 players: [p1Id, p2Id],
@@ -258,10 +264,10 @@ async function pong_routes(fastify, options)
                     "https://avatars.githubusercontent.com/u/9919?s=200&v=4"],
                 player_elos: [
                     500, 500
-                ]
+                ],
+                ended: false
             };
             p_rooms.set(game_id, game);
-
             // [creating....]
             p1Socket.send(JSON.stringify({ type: 'creating', role: 'p1', 
                 queueLength: p_waitingPlayers.size, roomsLength: p_rooms.size,
@@ -339,7 +345,6 @@ async function pong_routes(fastify, options)
                 }));
             }
         }
-
         // players inputs
         connection.socket.on('message', (message) => {
             try {
@@ -349,7 +354,6 @@ async function pong_routes(fastify, options)
                 if(data?.type == "paddle_move")
                 {
                     // convert buffer -. string
-            
                     // game exists?
                     let _game = null;
                     for (const [r, game] of fastify.p_rooms.entries()) {
@@ -397,7 +401,6 @@ async function pong_routes(fastify, options)
                 console.error('Invalid message:', err);
             }
         });
-
         connection.socket.on('close', () => {
             console.log('Player disconnected');
             // cleanup  waiting-queue
@@ -406,6 +409,14 @@ async function pong_routes(fastify, options)
             }
         });
     });
+
+
+
+
+
+
+
+
 
     // 🤖 PONG AI WEBSOCKET
     fastify.get('/api/pong/ai/ws', { websocket: true }, async (connection, req) => {
@@ -422,9 +433,6 @@ async function pong_routes(fastify, options)
             connection.socket.close();
             return;
         }
-
-        console.log(`User ${USER_ID} connected to AI game`);
-
         let existingGame = null;
         for (const [roomId, game] of p_rooms.entries()) {
             if (game.isAI && Array.isArray(game.players) && game.players[0] === USER_ID) {
@@ -433,12 +441,10 @@ async function pong_routes(fastify, options)
                 break;
             }
         }
-
         if (existingGame) {
             // Update the socket in the existing game
             existingGame.sockets[0] = connection.socket;
             console.log('✅ [AI_RECONNECT] Socket updated for existing game');
-
             const safe_game = {
                 scores: existingGame.scores,
                 countdown: existingGame.countdown,
@@ -449,7 +455,6 @@ async function pong_routes(fastify, options)
                 max_score: existingGame.max_score,
                 player_names: existingGame.player_names
             };
-
             // Send start message with current game state
             connection.socket.send(JSON.stringify({ 
                 type: 'start', 
@@ -458,7 +463,6 @@ async function pong_routes(fastify, options)
                 message: 'AI game rejoined!',
                 ehh: safe_game
             }));
-
             // Handle messages for rejoined game
             connection.socket.on('message', (message) => {
                 try {
@@ -484,10 +488,8 @@ async function pong_routes(fastify, options)
                 console.log(`🔌 [AI_RECONNECT] User ${USER_ID} disconnected from AI game ${existingGame.id}`);
                 // Don't delete the game, allow reconnection
             });
-
             return;
         }
-
         ///GET THE PLAYER NAME FROM THE DB
         let username = 'Player';
         try {
@@ -496,11 +498,9 @@ async function pong_routes(fastify, options)
         } catch (err) {
             console.error('Failed to fetch username:', err);
         }
-
         // Crée une partie AI
         const game_id = `ai_${Date.now()}_${USER_ID}`;
         const AI_ID = 'AI_BOT';
-        
         const game = {
             id: game_id,
             players: [USER_ID, AI_ID],
@@ -516,7 +516,8 @@ async function pong_routes(fastify, options)
             isAI: true, 
             max_score:10,
             aiSpeed: 3.25,   //AI SPEED
-            player_names: [username, 'AI Bot']
+            player_names: [username, 'AI Bot'],
+            ended: false
         };
         p_rooms.set(game_id, game);
          const safe_game = {
@@ -538,10 +539,8 @@ async function pong_routes(fastify, options)
             message: 'AI game started!',
             ehh : safe_game
         }));
-
         // Lance le game loop AI
         start_ai_game_loop(game, fastify);
-
         // Input du joueur
         connection.socket.on('message', (message) => {
             try {
@@ -579,7 +578,6 @@ async function pong_routes(fastify, options)
                 console.error('Invalid message:', err);
             }
         });
-
         // Cleanup
         connection.socket.on('close', () => {
             console.log(`AI game ${game_id} ended`);
@@ -590,7 +588,14 @@ async function pong_routes(fastify, options)
     });
 }
 
+
+
+
+
 module.exports = pong_routes;
+
+
+
 
 const start_game_loop = (game, fastify = null) =>
 {
@@ -669,6 +674,11 @@ const start_game_loop = (game, fastify = null) =>
   }, 1000 / 60); // 60 FPS
   game.interval = interval;
 }
+
+
+
+
+
 
 
 const start_ai_game_loop = (game, fastify = null) => {
@@ -780,17 +790,18 @@ const start_ai_game_loop = (game, fastify = null) => {
 };
 
 
+
+
+
 // game ending: 'give_up', 'victory' or 'disconnection'
 const handle_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
-    if (!game) 
+    if (!game || game?.ended)
     {
         return;
     }
-
     clearInterval(game.interval);
 
     const { scores, max_score, players, sockets, player_names } = game;
-
     let winner = null;
     if(reason == 'victory')
     {
@@ -845,7 +856,7 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     }
 
 
-
+    game.ended = (true);
     sockets.forEach((socket, i) => {
         if (socket.readyState === 1) {
             const p_key = i === 0 ? 'p1' : 'p2';
@@ -868,6 +879,13 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     console.log(`Game ${game.id} ended (${reason}) — Winner: ${winner}`);
 }
 
+
+
+
+
+
+
+
 const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
     console.log('🔵 [AI_GAME_END] Function called with:', {
         game_id: game?.id,
@@ -876,9 +894,8 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
         has_fastify: !!fastify
     });
 
-    if (!game)
+    if (!game || game?.ended)
         return;
-
     clearInterval(game.interval);
 
     const { scores, max_score, players, sockets, player_names } = game
@@ -899,6 +916,7 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
     const player_id = players[0];
     
     // --- WEBSOCKET NOTIFICATION (AVANT LA DB) ---
+    console.log("SOCKETWZZZZ:  " + game.sockets[0] + "      2:  " + game.sockets[1]);
     const socket = game.sockets[0];
     // Envoyer le message AVANT que le socket se ferme
     if (socket && socket.readyState === 1)
@@ -913,34 +931,29 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
             you_are_winner: (winner === 'p1')
         };
         socket.send(JSON.stringify(d));
+        console.log("successfully sent: ");
     } else {
         console.error('❌ [AI_GAME_END] Cannot send message - socket not ready (state:', socket?.readyState, ')');
     }
     
     // --- DATABASE OPERATIONS ---
     try {
-        console.log('💾 [AI_GAME_END] Starting DB operations...');
-        
-        // 🔥 OPTION 1: Créer un ID fictif pour l'AI (recommandé)
-        // D'abord, créer un utilisateur AI dans la DB si pas existe
         let AI_USER_ID = -1; // ID spécial pour l'AI
         try {
             const aiUser = await fastify.db.get('SELECT id FROM users WHERE username = ?', ['AI_BOT']);
             if (aiUser) {
                 AI_USER_ID = aiUser.id;
             } else {
-                // Créer l'utilisateur AI
                 const result = await fastify.db.run(
-                    'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-                    ['AI_BOT', 'ai@bot.local', 'no_password']
+                    'INSERT INTO users (username, password) VALUES (?, ?)',
+                    ['AI_BOT', 'no_password']
                 );
-                AI_USER_ID = result.lastID;
+                AI_USER_ID = result?.lastID;
                 console.log('✅ [AI_GAME_END] AI user created with ID:', AI_USER_ID);
             }
         } catch (err) {
             console.error('❌ [AI_GAME_END] Error creating/finding AI user:', err);
         }
-
 
         const insertResult = await fastify.db.run(
             `INSERT INTO games (
@@ -953,21 +966,17 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
                 player_names[0], player_names[1]
             ]
         );
-        console.log(`✅ [AI_GAME_END] AI game ${game.id} saved to DB`);
-
-        // Update wins/losses SEULEMENT pour le joueur humain
         if (winner === 'p1')
             await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [player_id]);
         else
             await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [player_id]);
+
+        game.ended = (true);
     } catch (err) {
-        console.error("❌ [AI_GAME_END] Error saving AI game:", err);
     }
     
     // --- CLEANUP ---
     if(fastify){
         fastify?.p_rooms.delete(game.id);
-        console.log('🗑️ [AI_GAME_END] Room deleted from p_rooms');
     }
-    console.log(`✅ [AI_GAME_END] AI Game ${game.id} ended (${reason}) — Winner: ${winner}`);
 }
