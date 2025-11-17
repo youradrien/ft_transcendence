@@ -15,6 +15,7 @@ export default class PlayPage extends Page {
         text-align: center;
         font-family: 'Press Start 2P', cursive;
         position: relative;
+        min-height: 80vh;
       ">
         <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
@@ -358,6 +359,7 @@ export default class PlayPage extends Page {
         });
         const data = await res.json();
         const qc = container.querySelector('#queue-count') as HTMLSpanElement;
+        console.log(data?.data);
         const online = data?.data?.queuedPlayers ?? 0;
         if(data?.data?.joinedQueue)
         {

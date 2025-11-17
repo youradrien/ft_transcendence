@@ -5,7 +5,7 @@ const { db } = require('../db.js');
 // -------------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------------
 
-const attach_socket_handler = async (socket, USER_ID, fastify) =>{
+const attach_socket_handler = async (socket, USER_ID, fastify, ai_game = false) =>{
     if( !socket ){
         return ;
     }
@@ -14,10 +14,8 @@ const attach_socket_handler = async (socket, USER_ID, fastify) =>{
         try {
             const msg_str = message.toString('utf8'); 
             const data = JSON.parse(msg_str);
-            // console.log(`Received message from user ${USER_ID}:`, data);
             if(data?.type == "paddle_move")
             {
-                // convert buffer -. string
         
                 // game exists?
                 let _game = null;
@@ -31,20 +29,29 @@ const attach_socket_handler = async (socket, USER_ID, fastify) =>{
                     connection.socket.send(JSON.stringify({ type: 'error', message: 'no' }));
                     return;
                 }
-                // user ix in dis game??
-                const ix = _game.players.indexOf(USER_ID);
-                const r = ix === 0 ? 'p1' : 'p2';
-                if (ix === -1) {
-                    return;
-                }
-                // update game state...
-                //if (data.type === 'paddle_move') {
-                _game.paddles[r] += data.direction == "up" ? -4: 4;
+                if(!ai_game) // multiplayer 1v1
+                {
+                    // user ix in dis game??
+                    const ix = _game.players.indexOf(USER_ID);
+                    const r = ix === 0 ? 'p1' : 'p2';
+                    if (ix === -1) {
+                        return;
+                    }
+                    // update game state...
+                    //if (data.type === 'paddle_move') {
+                    _game.paddles[r] += data.direction == "up" ? -4: 4;
 
-                // clamp 
-                if (_game.paddles[r] < 0) _game.paddles[r] = 0;
-                if (_game.paddles[r] > _game.height) _game.paddles[r] = _game.height;
-                //}
+                    // clamp 
+                    if (_game.paddles[r] < 0) _game.paddles[r] = 0;
+                    if (_game.paddles[r] > _game.height) _game.paddles[r] = _game.height;
+                }else // AI game
+                {
+                    _game.paddles.p1 += data.direction == "up" ? -4: 4;
+
+                    // clamp 
+                    if (_game.paddles.p1 < 0) _game.paddles.p1 = 0;
+                    if (_game.paddles.p1 > _game.height) _game.paddles.p1 = _game.height;
+                }
             }
             if(data?.type == "player_giveup")
             {
@@ -59,7 +66,11 @@ const attach_socket_handler = async (socket, USER_ID, fastify) =>{
                 }
                 if(_game != null)
                 {
-                    handle_game_end(_game, "give-up", fastify, USER_ID);
+                    if(ai_game){
+                        handle_ai_game_end(_game, 'give-up', fastify, USER_ID);
+                    }else{
+                        handle_game_end(_game, "give-up", fastify, USER_ID);
+                    }
                 }
             }
         } catch (err) {
@@ -110,25 +121,24 @@ async function pong_routes(fastify, options)
         for (const [id, game] of fastify.p_rooms.entries()) {
             if (game.isAI === true)
             {
-            const player = await fastify.db.get(
-                'SELECT id, username FROM users WHERE id = ?',
-                [game.players[0]]
-            );
-            
-            rooms.push({
-                id,
-                isAI: true,
-                player1: {
-                id: game.players[0],
-                username: player?.username || 'Player',
-                score: game.scores.p1
-                },
-                player2: {
-                id: 'AI_BOT',
-                username: 'AI Bot',
-                score: game.scores.p2
-                }
-            });
+                const player = await fastify.db.get(
+                    'SELECT id, username FROM users WHERE id = ?',
+                    [game.players[0]]
+                );
+                rooms.push({
+                    id,
+                    isAI: true,
+                    player1: {
+                    id: game.players[0],
+                    username: player?.username || 'Player',
+                    score: game.scores.p1
+                    },
+                    player2: {
+                    id: 'AI_BOT',
+                    username: 'AI Bot',
+                    score: game.scores.p2
+                    }
+                });
             }
             else
             {
@@ -346,7 +356,8 @@ async function pong_routes(fastify, options)
             }
         }
         // players inputs
-        connection.socket.on('message', (message) => {
+        attach_socket_handler(connection.socket, USER_ID, fastify);
+        /* connection.socket.on('message', (message) => {
             try {
                 const msg_str = message.toString('utf8'); 
                 const data = JSON.parse(msg_str);
@@ -400,7 +411,7 @@ async function pong_routes(fastify, options)
             } catch (err) {
                 console.error('Invalid message:', err);
             }
-        });
+        }); */
         connection.socket.on('close', () => {
             console.log('Player disconnected');
             // cleanup  waiting-queue
@@ -442,9 +453,7 @@ async function pong_routes(fastify, options)
             }
         }
         if (existingGame) {
-            // Update the socket in the existing game
             existingGame.sockets[0] = connection.socket;
-            console.log('✅ [AI_RECONNECT] Socket updated for existing game');
             const safe_game = {
                 scores: existingGame.scores,
                 countdown: existingGame.countdown,
@@ -455,7 +464,6 @@ async function pong_routes(fastify, options)
                 max_score: existingGame.max_score,
                 player_names: existingGame.player_names
             };
-            // Send start message with current game state
             connection.socket.send(JSON.stringify({ 
                 type: 'start', 
                 role: 'p1', 
@@ -463,27 +471,8 @@ async function pong_routes(fastify, options)
                 message: 'AI game rejoined!',
                 ehh: safe_game
             }));
-            // Handle messages for rejoined game
-            connection.socket.on('message', (message) => {
-                try {
-                    const msg_str = message.toString('utf8'); 
-                    const data = JSON.parse(msg_str);
-                    
-                    if(data?.type == "paddle_move") {
-                        existingGame.paddles.p1 += data.direction == "up" ? -4: 4;
-                        if (existingGame.paddles.p1 < 0) existingGame.paddles.p1 = 0;
-                        if (existingGame.paddles.p1 > existingGame.height) existingGame.paddles.p1 = existingGame.height;
-                    }
 
-                    if (data.type === 'player_giveup') {
-                        console.log('🏳️ [AI_RECONNECT] Player gave up after reconnecting');
-                        handle_ai_game_end(existingGame, 'give-up', fastify, USER_ID);
-                    }
-                } catch (err) {
-                    console.error('Invalid message:', err);
-                }
-            });
-
+            attach_socket_handler(connection.socket, USER_ID, fastify, true);
             connection.socket.on('close', () => {
                 console.log(`🔌 [AI_RECONNECT] User ${USER_ID} disconnected from AI game ${existingGame.id}`);
                 // Don't delete the game, allow reconnection
@@ -539,48 +528,13 @@ async function pong_routes(fastify, options)
             message: 'AI game started!',
             ehh : safe_game
         }));
-        // Lance le game loop AI
+        // game loop AI
         start_ai_game_loop(game, fastify);
-        // Input du joueur
-        connection.socket.on('message', (message) => {
-            try {
-                const msg_str = message.toString('utf8'); 
-                const data = JSON.parse(msg_str);
-                if(data?.type == "paddle_move")
-                {
-                    let _game = null;
-                    for (const [r, game] of fastify.p_rooms.entries()) {
-                        if (Array.isArray(game.players) && game.players.includes(USER_ID)) {
-                            _game = (game);
-                            break;
-                        }
-                    }
-                    if (!_game){ 
-                        connection.socket.send(JSON.stringify({ type: 'error', message: 'no' }));
-                        return;
-                    }
-                
-                    // update game state...
-                    //if (data.type === 'paddle_move') {
-                    _game.paddles.p1 += data.direction == "up" ? -4: 4;
 
-                    // clamp 
-                    if (_game.paddles.p1 < 0) _game.paddles.p1 = 0;
-                    if (_game.paddles.p1 > _game.height) _game.paddles.p1 = _game.height;
-                    //}
-                }
-
-                if (data.type === 'player_giveup')
-                {
-                    handle_ai_game_end(game, 'give-up', fastify, USER_ID);
-                }
-            } catch (err) {
-                console.error('Invalid message:', err);
-            }
-        });
+        // inputs
+        attach_socket_handler(connection.socket, USER_ID, fastify, true);
         // Cleanup
         connection.socket.on('close', () => {
-            console.log(`AI game ${game_id} ended`);
             if (game.interval)
                 clearInterval(game.interval);
             p_rooms.delete(game_id);
@@ -800,7 +754,6 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
         return;
     }
     clearInterval(game.interval);
-
     const { scores, max_score, players, sockets, player_names } = game;
     let winner = null;
     if(reason == 'victory')
@@ -825,7 +778,6 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
         console.error("errd: sockets missing or invalid for game", game?.id);
         return;
     }
-
     //write to DB ---
     const W_id = (winner === 'p1') ?  
         players[0] 
@@ -854,8 +806,6 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     } catch (err) {
         console.error("❌ Error saving game:", err);
     }
-
-
     game.ended = (true);
     sockets.forEach((socket, i) => {
         if (socket.readyState === 1) {
@@ -872,12 +822,12 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
             socket.send(JSON.stringify(d));
         }
     });
-
     if(fastify){
         fastify?.p_rooms.delete(game.id);
     }
     console.log(`Game ${game.id} ended (${reason}) — Winner: ${winner}`);
 }
+
 
 
 
