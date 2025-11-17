@@ -272,8 +272,6 @@ async function pong_routes(fastify, options)
                 [p1Id, p2Id]
             );
             const name_map = Object.fromEntries((p_names).map(r => [r.id, r.username]));
-            // game.player_names était déduit depuis l'ordre de retour SQL (non garanti)
-            // => forcer l'ordre [p1Id, p2Id] pour éviter l'inversion des noms
             game.player_names = [
                 name_map[p1Id] || `/${p1Id}/`,
                 name_map[p2Id] || `/${p2Id}/`
@@ -490,19 +488,25 @@ async function pong_routes(fastify, options)
         const game = {
             id: game_id,
             players: [USER_ID, AI_ID],
-            sockets: [connection.socket, null],  //socket null pr ai
+            sockets: [connection.socket, null],
             paddles: { p1: 50, p2: 50 },
-            ball: { x: 100, y: 100, vx: 6, vy: 6 },
+            ball: { x: 100, y: 100, vx: 7, vy: 7 },
             scores: { p1: 0, p2: 0 },
             countdown: 0,
             width: 1200,
             height: 600,
             paddleWidth: 10,
-            paddleHeight: 80,
-            isAI: true, 
+            paddleHeight: 70,
+            isAI: true,
             max_score:5,
-            aiSpeed: 0.25,   //AI SPEED
-            player_names: [username, 'AI Bot']
+            aiSpeed: 3,
+            player_names: [username, 'AI Bot'],
+            ai_state: {
+                viewRefreshMs: 1000,
+                nextRefreshTs: Date.now(),
+                targetY: null,
+                currentDirection: null // 'up' | 'down' | null
+            }
         };
         p_rooms.set(game_id, game);
          const safe_game = {
@@ -657,76 +661,74 @@ const start_game_loop = (game, fastify = null) =>
 }
 
 
+// Prédiction simple avec réflexion et un léger bruit (pas de spin/overshoot)
+function predictBallYAtX(game, targetX) {
+    const { x, y, vx, vy } = game.ball;
+    if (vx <= 0)
+        return y;
+    const t = (targetX - x) / vx;
+    if (t < 0)
+        return y;
+    let rawY = y + vy * t;
+    const H = game.height;
+    const period = 2 * H;
+    let m = ((rawY % period) + period) % period;
+    let finalY = (m <= H) ? m : (period - m);
+
+    // TWEAK THIS TO MAKE AI WORSE/BETTER
+    finalY += (Math.random() * 40 - 15);
+    if (finalY < 0)
+        finalY = 0;
+    if (finalY > H)
+        finalY = H;
+    return finalY;
+}
+
+function simulateAIKey(game, direction) {
+    if (direction === 'up')
+        game.paddles.p2 -= 4;
+    else if (direction === 'down')
+        game.paddles.p2 += 4;
+    if (game.paddles.p2 < 0)
+        game.paddles.p2 = 0;
+    if (game.paddles.p2 > game.height - game.paddleHeight)
+        game.paddles.p2 = game.height - game.paddleHeight;
+}
+
+// Remplacement de start_ai_game_loop 
 const start_ai_game_loop = (game, fastify = null) => {
     const interval = setInterval(() => {
-        // Ball physics
+        // Physique balle classique A CHANGER UN PEU PTET
         game.ball.x += game.ball.vx;
         game.ball.y += game.ball.vy;
 
-        // Bounce top/bottom
+        // rebonds
         if (game.ball.y <= 0 || game.ball.y >= game.height) {
             game.ball.vy *= -1;
         }
 
-        // Human-like AI movement
-        let target = game.ball.y - game.paddleHeight / 2;
-        
-        // Add prediction based on ball trajectory
-        if (game.ball.vx > 0) { // Ball moving towards AI
-            const timeToReach = (game.width - 30 - game.ball.x) / game.ball.vx;
-            target = game.ball.y + (game.ball.vy * timeToReach) - game.paddleHeight / 2;
-        }
-
-        // Add reaction delay (human-like latency)
-        const reactionDelay = Math.random() * 0.3 + 0.1; // 0.1-0.4 seconds
-        const delayedTarget = target + (game.ball.vy * reactionDelay);
-
-        // Imperfect tracking - sometimes overshoot or undershoot
-        const errorMargin = Math.random() * 15 - 7.5; // -7.5 to +7.5 pixels
-        const finalTarget = delayedTarget + errorMargin;
-
-        // Smooth acceleration/deceleration
-        const distance = finalTarget - game.paddles.p2;
-        const direction = Math.sign(distance);
-        const speedMultiplier = Math.min(Math.abs(distance) / 50, 1.5); // Faster when farther away
-        
-        game.paddles.p2 += direction * game.aiSpeed * speedMultiplier;
-
-        // Occasional mistakes (5% chance per frame)
-        if (Math.random() < 0.001) { // ~5% chance per second at 60fps
-            game.paddles.p2 += (Math.random() * 60 - 30); // Sudden wrong move
-        }
-
-        // Clamp AI paddle
-        if (game.paddles.p2 < 0) game.paddles.p2 = 0;
-        if (game.paddles.p2 > game.height - game.paddleHeight)
-            game.paddles.p2 = game.height - game.paddleHeight;
-
-        // Score system
-        if (game.ball.x <= 0) {
+        // Score ai
+        if (game.ball.x <= 0){
             game.scores.p2 += 1;
-        } else if (game.ball.x >= game.width) {
+        } 
+        //score joueur
+        else if (game.ball.x >= game.width){
             game.scores.p1 += 1;
         }
 
-        // Game end
         if (game.ball.x <= 0 || game.ball.x >= game.width) {
             if (game.scores.p1 >= game.max_score || game.scores.p2 >= game.max_score) {
                 handle_ai_game_end(game, "victory", fastify);
                 return;
             }
-        }
-
-        // Bounce left/right
-        if (game.ball.x <= 0 || game.ball.x >= game.width) {
             if (Math.abs(game.ball.vx) < 3.5)
                 game.ball.vx *= -1.15;
             else
                 game.ball.vx *= -1;
         }
 
-        // Paddle collisions
-        // Left paddle (player)
+        // Collisions paddles
+        // Gauche
         if (
             game.ball.x <= 20 + game.paddleWidth &&
             game.ball.x >= 20 - game.paddleWidth &&
@@ -735,22 +737,46 @@ const start_ai_game_loop = (game, fastify = null) => {
         ) {
             game.ball.vx = Math.abs(game.ball.vx);
         }
-
-        // Right paddle (AI) - with occasional misses
-        const shouldMiss = Math.random() < 0.02; // 2% chance to miss an easy ball
+        // Droite
         if (
-            !shouldMiss &&
             game.ball.x >= (game.width - 30) - game.paddleWidth &&
             game.ball.x <= (game.width - 30) + game.paddleWidth &&
             game.ball.y >= game.paddles.p2 &&
             game.ball.y <= game.paddles.p2 + game.paddleHeight
         ) {
             game.ball.vx = -Math.abs(game.ball.vx);
-            const angleVariation = (Math.random() * 0.4 - 0.2); // -0.2 to +0.2
-            game.ball.vy += angleVariation;
         }
 
-        // Broadcast game state to player
+        // 1hz
+        const now = Date.now();
+        if (now >= game.ai_state.nextRefreshTs) {
+            const predictedY = predictBallYAtX(game, game.width - 30);
+            const targetY = Math.max(0, Math.min(predictedY - game.paddleHeight / 2, game.height - game.paddleHeight));
+            game.ai_state.targetY = targetY;
+
+            const center = game.paddles.p2 + game.paddleHeight / 2;
+            game.ai_state.currentDirection =
+                center > targetY + 6 ? 'up' :
+                center < targetY - 6 ? 'down' :
+                null;
+
+            game.ai_state.nextRefreshTs = now + game.ai_state.viewRefreshMs;
+        }
+
+        if (game.ai_state.currentDirection) {
+            const center = game.paddles.p2 + game.paddleHeight / 2;
+            if (
+                (game.ai_state.currentDirection === 'up' && center <= game.ai_state.targetY + 6) ||
+                (game.ai_state.currentDirection === 'down' && center >= game.ai_state.targetY - 6)
+            ) {
+                game.ai_state.currentDirection = null;
+            } 
+            else{
+                simulateAIKey(game, game.ai_state.currentDirection);
+            }
+        }
+
+        // Broadcast
         const socket = game.sockets[0];
         if (socket?.readyState === 1) {
             socket.send(JSON.stringify({
@@ -760,8 +786,7 @@ const start_ai_game_loop = (game, fastify = null) => {
                 scores: game.scores
             }));
         }
-    }, 1000 / 60); // 60 FPS
-
+    }, 1000 / 60);
     game.interval = interval;
 };
 
