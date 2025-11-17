@@ -530,5 +530,34 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             friend_status // <-- nouveau champ pour le statut d'amitié
         });
     });
+
+	// FRIENDS GESTION !!
+
+	fastify.get('/api/friends', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+
+		try {
+			const userId = request.user.id;
+
+			const friendsRows = await db.all(
+				` SELECT u.id, u.username, u.avatar_url, u.last_online
+				FROM friends f
+				JOIN users u ON u.id = f.friend_id
+				WHERE f.user_id = ? AND f.status = 'accepted'`, [userId]);
+
+			const friends = friendsRows.map(f => ({
+				id: f.id,
+				username: f.username,
+				avatar: f.avatar_url,
+				online: (Date.now() - new Date(f.last_online).getTime()) < 5 * 60 * 1000,
+				last_seen: f.last_online
+			}));
+
+			return reply.send({ success: true, friends });
+		} catch (err) {
+			console.error(err);
+			return reply.status(500).send({ success: false, error: 'db_error' });
+		}
+	});
   }
+
   module.exports = userRoutes;
