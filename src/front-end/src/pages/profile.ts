@@ -145,6 +145,7 @@ export default class UserProfilePage extends Page {
           background-color: #00000054;
           padding: 10px 35px;
           border-radius: 15px;
+          animation: fadeInUp 0.35s ease-out;
         ">
           <img src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
           <div style="display: flex; align-items: center; gap: 1px; margin-right: 20px;  flex-direction: column;">
@@ -262,13 +263,11 @@ export default class UserProfilePage extends Page {
             e.style.justifyContent = 'space-between';
             e.style.cursor = 'pointer';
             // e.style.fontSize = '12px';
-
             // -- FIX gagnant/perdant selon deux schémas possibles du winner_id:
             //    - IA: winner_id est 1 ou 2 (côté)
             //    - MULTI: winner_id est un user_id réel (player1_id ou player2_id)
             const winnerIsP1 = (game.winner_id === 1) || (game.winner_id === game.player1_id);
             const winnerIsP2 = (game.winner_id === 2) || (game.winner_id === game.player2_id);
-
             let winnerSide: 'p1' | 'p2';
             if (winnerIsP1) {
               winnerSide = 'p1';
