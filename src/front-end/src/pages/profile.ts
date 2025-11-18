@@ -145,6 +145,7 @@ export default class UserProfilePage extends Page {
           background-color: #00000054;
           padding: 10px 35px;
           border-radius: 15px;
+          animation: fadeInUp 0.35s ease-out;
         ">
           <img src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
           <div style="display: flex; align-items: center; gap: 1px; margin-right: 20px;  flex-direction: column;">
@@ -197,7 +198,7 @@ export default class UserProfilePage extends Page {
           </div>
 
           <!-- STATISTICS -->
-          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px;">
+          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column, gap: 20px;">
             
             ${social_btns_HTML}
     
@@ -262,23 +263,39 @@ export default class UserProfilePage extends Page {
             e.style.justifyContent = 'space-between';
             e.style.cursor = 'pointer';
             // e.style.fontSize = '12px';
-            console.log(game);
-            const winnerName = (game.winner_id === 1 ? game.p1_name : game.p2_name);
-            const L  = (winnerName === game.p1_name) ? game.p2_name : game.p1_name;
+            // -- FIX gagnant/perdant selon deux schémas possibles du winner_id:
+            //    - IA: winner_id est 1 ou 2 (côté)
+            //    - MULTI: winner_id est un user_id réel (player1_id ou player2_id)
+            const winnerIsP1 = (game.winner_id === 1) || (game.winner_id === game.player1_id);
+            const winnerIsP2 = (game.winner_id === 2) || (game.winner_id === game.player2_id);
+            let winnerSide: 'p1' | 'p2';
+            if (winnerIsP1) {
+              winnerSide = 'p1';
+            } else if (winnerIsP2) {
+              winnerSide = 'p2';
+            } else {
+              // Fallback si winner_id ne matche pas: déduire via les scores
+              winnerSide = (game.player1_score >= game.player2_score) ? 'p1' : 'p2';
+            }
 
-            const w = (winnerName === game.p1_name) ? game.player1_score : game.player2_score;
-            const l  = (winnerName === game.p1_name) ? game.player2_score : game.player1_score;
+            const winnerName = winnerSide === 'p1' ? game.p1_name : game.p2_name;
+            const L          = winnerSide === 'p1' ? game.p2_name : game.p1_name;
+            const w          = winnerSide === 'p1' ? game.player1_score : game.player2_score;
+            const l          = winnerSide === 'p1' ? game.player2_score : game.player1_score;
 
-            let ix = USER_DATA?.username == game.p1_name ? (1) : (2);
+            // Bordure: vert si l'utilisateur courant a gagné, sinon neutre (ou gris si égalité)
+            const userIsP1 = USER_DATA?.username === game.p1_name;
+            const userIsP2 = USER_DATA?.username === game.p2_name;
 
-            if(game.winner_id == ix){
+            if ((userIsP1 && winnerSide === 'p1') || (userIsP2 && winnerSide === 'p2')) {
               e.style.border = '2px solid #4fff4f';
-            }else{
-              if(game.player1_score != game.player2_score)
+            } else {
+              if (game.player1_score != game.player2_score)
                 e.style.border = '2px solid rgb(19, 19, 19)';
               else
                 e.style.border = '2px solid rgba(255, 255, 255, 0.14)';
             }
+
             const p1Link = `<a href="/profile/${encodeURIComponent(game.p1_name)}" 
                      style="color: #00ffff; text-decoration: underline;">${game.p1_name}</a>`;
             const p2Link = `<a href="/profile/${encodeURIComponent(game.p2_name)}" 

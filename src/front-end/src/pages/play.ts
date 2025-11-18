@@ -4,43 +4,85 @@ import Pong from '../component/pong.ts';
 export default class PlayPage extends Page {
   async render(): Promise<HTMLElement> {
     let joined_game: boolean = false;
+    let queued_up: boolean = false;
     const container = document.createElement('div');
     container.id = this.id;
     container.innerHTML = `
       <div id="play-content" style="
         width: 100%;
-        height: 100vh;
+        height: 100%;
         padding: 2rem;
         text-align: center;
         font-family: 'Press Start 2P', cursive;
         position: relative;
+        min-height: 80vh;
       ">
         <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-        <h1 style="margin-bottom: 1rem; font-size: 32px;">Pong 🎮</h1>
-        <p style="margin-bottom: 0.2rem;  font-size: 14px;" id="player-status">Looking for players...</p>
-        <p style="margin-bottom: 0.2rem;  font-size: 14px;" id="rooms-status">Looking for any rooms?...</p>
+        <h1 style="margin-bottom: 1rem; font-size: 32px; animation: fadeInUp 0.38s ease-out;">ONLINE 🎮</h1>
+        <p style="margin-bottom: 0.2rem;  font-size: 14px; animation: fadeInUp 0.5s ease-out;" id="player-status">Looking for players...</p>
+        <p style="margin-bottom: 0.2rem;  font-size: 14px; animation: fadeInUp 0.63s ease-out;" id="rooms-status">Looking for any rooms?...</p>
 
         ${!joined_game ? `
-            <div id="active-games" style="margin-top: 3rem;
-                min-width: 500px; 
-                background-color: rgba(35, 35, 35, 0.5);
+            <div id="active-games" style="margin: 0 auto; margin-top: 3rem;
+                min-width: 600px; 
+                animation: fadeInUp 0.82s ease-out;
             ">
-              <h2 style="margin-bottom: 1rem; font-size: 32px;">🏓 Active Games</h2>
+              <h2 style="margin-bottom: 1rem; font-size: 32px;">⚡ Active Games</h2>
               <div id="game-list" style="display: flex; flex-direction: column; gap: 1rem;"></div>
             </div>
           `
         : ""}
 
-        <div style="margin-top: 2rem; position: relative; display: flex; flex-direction: column; padding: 20px; border: 2px solid grey; 
-            border-radius 16px; ">
-          <h1 id="game-modes">GAME-MODES</h1>
-          <div>
-              <button id="singleBtn" style="margin: 1rem;">🎯 SINGLE-Player</button>
-              <div style="display: inline-block; position: relative;">
-                <button id="multiBtn" style="margin: 1rem; position: relative;">
-                  🚀 Queue for Match
-                </button>
+        <div id="arcade-panel" style="
+          width: 260px;
+          padding: 1rem;
+          border: 3px solid #444;
+          border-radius: 16px;
+          background: rgba(25,25,25,0.8);
+          backdrop-filter: blur(4px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+          position: absolute;
+          transition: 0.3s;
+          top: 2rem;
+          left: 2rem;
+          text-align: left;
+          font-family: 'Press Start 2P', cursive;
+          color: #fff;
+          animation: fadeInUp 0.6s ease-out;
+        ">
+          <h3 style="font-size: 14px; margin-bottom: 1rem;">📟 ARCADE PANEL</h3>
+          <p id="ap-player" style="font-size: 10px; opacity: 0.9;">Player: ...</p>
+          <p id="ap-queue"  style="font-size: 10px; opacity: 0.9;">Queue: ...</p>
+          <p id="ap-rooms"  style="font-size: 10px; opacity: 0.9;">Rooms: ...</p>
+          <p id="ap-tournaments"  style="font-size: 10px; opacity: 0.9;">Tournaments: ...</p>
+          <p id="ap-tournaments"  style="font-size: 10px; opacity: 0.9;">Average elo: ...</p>
+
+          <div style="
+            margin-top: 1rem;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #bbdfff, #0095ff);
+            box-shadow: 0 0 10px #0095ff;
+          "></div>
+          <p style="font-size: 9px; margin-top: 1rem; opacity: 0.7;">
+            Tip: Press ESC to quit a match instantly.
+          </p>
+        </div>
+
+          
+          <div class="title-banner" id ="title-banner"  style="animation: fadeInUp 0.8s ease-out;">
+              <h1 style="margin-bottom: 2px; font-size: 36px; ">🏓 PONG ARCADE</h1>
+              <p style="margin-top: 3px;">Choose your game mode</p>
+              <div class="neon-divider"></div>
+          </div>
+
+
+          <div class="menu-box" id="menu-box" style="animation: fadeInUp 1s ease-out;">
+              <h1 class="menu-title">GAME MODES</h1>
+              <button id="singleBtn" class="arcade-btn arcade-yellow">🎯 SINGLE PLAYER</button>
+              <button id="multiBtn" class="arcade-btn arcade-blue" style="position:relative;">
+                🚀 MULTIPLAYER
                 <span id="queue-count" style="
                   position: absolute;
                   top: -10px;
@@ -53,15 +95,118 @@ export default class PlayPage extends Page {
                   font-weight: bold;
                   box-shadow: 0 0 6px rgba(0,0,0,0.4);
                 ">0</span>
-              </div>
+              </button>
+              <button id="aiBtn" class="arcade-btn arcade-orange">🤖 PLAY VS AI</button>
           </div>
 
-          <div>
-                <button id="hostGameBtn" style="margin: 1rem;" background-color: #007bffff;>🕹️ Host custom-game</button>
-                <button id="aiBtn" style="margin: 1rem; background-color: #ffae00ff;">🤖 PLAY vs AI</button>
-          </div>
+        <style>
+              /* Retro Arcade Button */
+              .arcade-btn {
+                font-family: 'Press Start 2P', cursive;
+                font-size: 12px;
+                padding: 14px 24px;
+                margin: 12px;
+                border: 3px solid #333;
+                border-radius: 8px;
+                background-color: #1e1e1e;
+                color: #fff;
+                text-transform: uppercase;
+                cursor: pointer;
+                letter-spacing: 1px;
+                transition: 0.18s ease-out;
+                box-shadow: 0 4px 0 #000;
+              }
 
-        </div>
+              #play-content {
+                background: radial-gradient(circle at center, #353535 0%, #1a1a1a4f 60%, #09090900 100%);
+                background-size: cover;
+                background-attachment: fixed;
+              }
+
+              .arcade-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 6px 0 #000;
+                background-color: #292929;
+              }
+
+              .arcade-btn:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 0 #000;
+              }
+
+              /* Highlight variations */
+              .arcade-green { background: #0ac700; }
+              .arcade-blue  { background: #008cff; }
+              .arcade-red   { background: #ff4040; }
+              .arcade-yellow { background: #ffd900; color: #000; }
+              .arcade-orange { background: #ff9100; color: #000; }
+
+              /* Disable behavior */
+              .arcade-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+              }
+
+              /* Sub-menu container */
+              .menu-box {
+                width: 950px;
+                margin: 2rem auto;
+                padding: 20px;
+                border: 3px solid #444;
+                border-radius: 16px;
+                background: rgba(20,20,20,0.75);
+                backdrop-filter: blur(4px);
+                display: flex;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+              }
+
+              .menu-title {
+                font-size: 26px;
+                margin-bottom: 1rem;
+                color: #fff;
+                letter-spacing: 2px;
+              }
+
+              #active-games {
+                margin-top: 2rem;
+                padding: 1rem;
+                border-radius: 12px;
+                width: 600px;
+              }
+              .title-banner {
+                text-align: center;
+                margin-top: 2rem;
+                margin-bottom: 1.5rem;
+                font-family: 'Press Start 2P', cursive;
+                color: #fff;
+              }
+
+              .title-banner h1 {
+                font-size: 28px;
+                margin-bottom: 0.5rem;
+                text-shadow: 0px 3px #000;
+              }
+
+              .title-banner p {
+                font-size: 12px;
+                color: #cccccc;
+                opacity: 0.8;
+              }
+              .neon-divider {
+                width: 80%;
+                height: 4px;
+                background: linear-gradient(90deg, #bbdfffff, #0095ffff);
+                border-radius: 4px;
+                margin: 1.5rem auto;
+                box-shadow: 0 0 12px #b4ddffff, 0 0 12px #0099ffff;
+              }
+        
+
+              @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+        </style>
 
         <h1 id="game-join-h1" style="margin-bottom: 1rem; font-size: 30px;">JOINING ' '</h1>
         <h2 id="game-counter" style="margin-bottom: 1rem; font-size: 22px;">. . . . .</h2>
@@ -70,7 +215,7 @@ export default class PlayPage extends Page {
       </div>
     `;
     const p_st = container.querySelector('#player-status') as HTMLParagraphElement;
-    const sgl = container.querySelector('#singleBtn') as HTMLParagraphElement;
+    const s = container.querySelector('#singleBtn') as HTMLButtonElement;
     const r_st = container.querySelector('#rooms-status') as HTMLParagraphElement;
     const q_btn = container.querySelector('#multiBtn') as HTMLButtonElement;
     // const hst_btn = container.querySelector('#hostGameBtn') as HTMLButtonElement;
@@ -78,293 +223,183 @@ export default class PlayPage extends Page {
     const gCounter = container.querySelector('#game-counter') as HTMLButtonElement;
     const gJntitle = container.querySelector('#game-join-h1') as HTMLButtonElement;
     let socket: WebSocket; // <-- wsocket var 
-    let nahh: boolean = false;
     let aiSocket: WebSocket |  null = null;
     let currentGameMode: 'multiplayer' | 'ai' | 'single' | null = null; // Track current game mode
-    // whole func dedicated to update active games data
+
+    // start [MULTIPLAYER, AI, SINGLE-PLAYER]
+    const start_game = async (
+        game_mode: boolean, game_data?: object, game_ai?: boolean | false, is_local?: boolean | false
+    ) => {
+        joined_game = true;
+
+        // grab UI
+        const e = container.querySelector('#active-games') as HTMLElement;
+        const m = container.querySelector('#menu-box') as HTMLElement;
+        const L = container.querySelector('#title-banner') as HTMLElement;
+        const game_area = document.querySelector('#game-area');
+        const l_box = container.querySelector('#arcade-panel') as HTMLElement;
+
+        l_box.style.top = '-12rem';
+        l_box.style.left = '0rem';
+
+        // Hide menu UI
+        [e, p_st, r_st, m, L, gCounter, gJntitle].forEach(el => {
+            if (el) el.style.display = 'none';
+        });
+        e.innerHTML = '';
+
+        // --- Button setup for AI/Local ---
+        if (game_ai) {
+            currentGameMode = 'ai';
+            aiBtn.innerText = '🎮 Playing vs AI';
+            aiBtn.style.backgroundColor = '#ff6600';
+        }
+        
+        if (is_local) {
+            currentGameMode = 'single';
+            s.innerText = '🎮 Playing Local';
+            s.style.backgroundColor = '#00cc44';
+            s.style.color = 'white';
+        }
+
+        // ============================================================
+        //  MULTIPLAYER/AI/LOCAL GAME
+        // ============================================================
+        if (game_mode) 
+        {
+            if (game_ai) {
+                currentGameMode = 'ai';
+            } else if (is_local) {
+                currentGameMode = 'single';
+            } else {
+                currentGameMode = 'multiplayer';
+            }
+
+            const pong_page = new Pong(
+                is_local ? "local-pong" : (game_ai ? "ai-pong" : "multiplayer-pong"),
+                this.router,
+                {
+                    multiplayer: true as Boolean,
+                    socket: (game_ai ? aiSocket : socket) as WebSocket,
+                    game_data,
+                    isaigame: game_ai,
+                    islocal: is_local
+                }
+            );
+
+            const pong_container = await pong_page.render();
+
+            if (game_area) {
+                game_area.innerHTML = '';
+                game_area.appendChild(pong_container);
+                
+                if (is_local) {
+                    q_btn.style.display = 'none';
+                    s.style.backgroundColor = '#cc0000ff';
+                    s.style.color = 'white';
+                    s.innerText = '❌ GIVE UP';
+                } else {
+                    aiBtn.disabled = true;
+                }
+            }
+            return;
+        }
+
+        // ============================================================
+        //  OFFLINE SINGLEPLAYER (currently not used)
+        // ============================================================
+        currentGameMode = 'single';
+    };
+
+    // Fetch active games helper
     const fetch_games = async () => {
         try {
-        const res = await fetch('http://localhost:3010/api/pong/active-games', {
+            const res = await fetch('http://localhost:3010/api/pong/active-games', {
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (data.success) {
+                const _gl = container.querySelector('#game-list') as HTMLDivElement;
+                _gl.innerHTML = '';
+
+                data.data.forEach((game: any) => {
+                    const _game_bx = document.createElement('div');
+                    _game_bx.style.padding = '1rem';
+                    _game_bx.style.border = '1px solid #444';
+                    _game_bx.style.borderRadius = '12px';
+                    _game_bx.style.backgroundColor = '#1e1e1e';
+                    _game_bx.style.color = '#f1f1f1';
+                    _game_bx.style.fontSize = '0.85rem';
+                    _game_bx.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                    _game_bx.style.display = 'flex';
+                    _game_bx.style.flexDirection = 'column';
+                    _game_bx.style.alignItems = 'center';
+                    _game_bx.style.justifyContent = 'center';
+                    _game_bx.style.minWidth = '220px';
+
+                    const idP = document.createElement('p');
+                    idP.style.margin = '0 0 0.5rem';
+                    idP.style.fontWeight = 'bold';
+                    idP.style.color = '#888';
+                    idP.textContent = `🏓 Game ID: ${game.id}`;
+
+                    const scoreP = document.createElement('p');
+                    scoreP.style.margin = '0';
+                    scoreP.style.fontSize = '0.95rem';
+                    scoreP.textContent = `${game.player1.username} [${game.player1.score}] vs ${game.player2.username} [${game.player2.score}]`;
+
+                    _game_bx.appendChild(idP);
+                    _game_bx.appendChild(scoreP);
+                    _gl.appendChild(_game_bx);
+                });
+            }
+        } catch (err) {
+            console.error('Failed to fetch active games:', err);
+        }
+    };
+
+    // (FETCH) stats of current serv state - initial page load
+    try {
+        const ress = await fetch('http://localhost:3010/api/pong/active-games', {
           credentials: 'include'
         });
-        const data = await res.json();
-        if (data.success) {
-          const _gl = container.querySelector('#game-list') as HTMLDivElement;
-          _gl.innerHTML = ''; // clear previous games
+        const dataa = await ress.json();
+        if (dataa.success)
+        {
+            const _gl = container.querySelector('#game-list') as HTMLDivElement;
+            _gl.innerHTML = ''; // clear previous games
 
-          data.data.forEach((game: any) => {
-                const _game_bx = document.createElement('div');
-                _game_bx.style.padding = '1rem';
-                _game_bx.style.border = '1px solid #444';
-                _game_bx.style.borderRadius = '12px';
-                _game_bx.style.backgroundColor = '#1e1e1e';
-                _game_bx.style.color = '#f1f1f1';
-                _game_bx.style.fontSize = '0.85rem';
-                _game_bx.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
-                _game_bx.style.display = 'flex';
-                _game_bx.style.flexDirection = 'column';
-                _game_bx.style.alignItems = 'center';
-                _game_bx.style.justifyContent = 'center';
-                _game_bx.style.minWidth = '220px';
+            dataa.data.forEach((game: any) => {
+                  const _game_bx = document.createElement('div');
+                  _game_bx.style.padding = '1rem';
+                  _game_bx.style.border = '1px solid #444';
+                  _game_bx.style.borderRadius = '12px';
+                  _game_bx.style.backgroundColor = '#1e1e1e';
+                  _game_bx.style.color = '#f1f1f1';
+                  _game_bx.style.fontSize = '0.85rem';
+                  _game_bx.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                  _game_bx.style.display = 'flex';
+                  _game_bx.style.flexDirection = 'column';
+                  _game_bx.style.alignItems = 'center';
+                  _game_bx.style.justifyContent = 'center';
+                  _game_bx.style.minWidth = '220px';
 
-                const idP = document.createElement('p');
-                idP.style.margin = '0 0 0.5rem';
-                idP.style.fontWeight = 'bold';
-                idP.style.color = '#888';
-                idP.textContent = `🏓 Game ID: ${game.id}`;
+                  const idP = document.createElement('p');
+                  idP.style.margin = '0 0 0.5rem';
+                  idP.style.fontWeight = 'bold';
+                  idP.style.color = '#888';
+                  idP.textContent = `🏓 Game ID: ${game.id}`;
 
-                const scoreP = document.createElement('p');
-                scoreP.style.margin = '0';
-                scoreP.style.fontSize = '0.95rem';
-                scoreP.textContent = `${game.player1.username} [${game.player1.score}] vs ${game.player2.username} [${game.player2.score}]`;
+                  const scoreP = document.createElement('p');
+                  scoreP.style.margin = '0';
+                  scoreP.style.fontSize = '0.95rem';
+                  scoreP.textContent = `${game.player1.username} [${game.player1.score}] vs ${game.player2.username} [${game.player2.score}]`;
 
-                // Append to box
-                _game_bx.appendChild(idP);
-                _game_bx.appendChild(scoreP);
-
-                // Add to game list
-                _gl.appendChild(_game_bx);
-          });
+                  _game_bx.appendChild(idP);
+                  _game_bx.appendChild(scoreP);
+                  _gl.appendChild(_game_bx);
+            });
         }
-      } catch (err) {
-        console.error('Failed to fetch active games:', err);
-      }
-    };
-
-    // start either multiplayer or single player
-    // start either multiplayer or single player
-    const start_game = async (
-      game_mode: boolean, 
-      game_data?: object, 
-      game_ai?: boolean | false,
-      is_local?: boolean | false  // NEW PARAMETER
-    ) => {
-      joined_game = true;
-      const e = container.querySelector('#active-games') as HTMLElement;
-      e.innerHTML = '';
-      p_st.style.display = 'none';
-      r_st.style.display = 'none';
-      gCounter.style.display = 'none';
-      gJntitle.style.display = 'none';
-      
-      if (game_ai) {
-        aiBtn.innerText = '🎮 Playing vs AI';
-        aiBtn.style.backgroundColor = '#ff6600';
-      }
-      
-      if (is_local) {
-        sgl.innerText = '🎮 Playing Local';
-        sgl.style.backgroundColor = '#00cc44';
-        sgl.style.color = 'white';
-      }
-      
-      if (game_mode) {
-        if (game_ai) {
-          currentGameMode = 'ai';
-        } else if (is_local) {
-          currentGameMode = 'single';
-        } else {
-          currentGameMode = 'multiplayer';
-        }
-        
-        // Component
-        const pong_page = new Pong(
-          is_local ? "local-pong" : (game_ai ? "ai-pong" : "multiplayer-pong"), 
-          this.router, 
-          {
-            multiplayer: true as Boolean,
-            socket: (game_ai ? aiSocket : socket) as WebSocket,
-            game_data: game_data,
-            isaigame: game_ai,
-            islocal: is_local  // NEW FLAG
-          }
-        );
-
-        const pong_container = await pong_page.render();
-        const game_area = document.querySelector('#game-area');
-        
-        if (game_area) {
-          aiBtn.disabled = true;
-          game_area.innerHTML = '';
-          game_area.appendChild(pong_container);
-          
-          if (is_local) {
-            q_btn.style.display = 'none'; // Hide multiplayer button
-            sgl.style.backgroundColor = '#cc0000ff';
-            sgl.style.color = 'white';
-            sgl.innerText = '❌ GIVE UP';
-          } else {
-            q_btn.style.backgroundColor = '#cc0000ff';
-            q_btn.style.color = 'white';
-            q_btn.innerText = '🔌 Disconnect';
-            sgl.style.backgroundColor = '#f5d500ff';
-            sgl.style.color = 'black';
-            sgl.innerText = '❌ GIVE UP';
-          }
-        }
-      }else
-      {
-        // currentGameMode = 'single';
-        // const solo_pong = new Pong("pong_ahhh_single", this.router, {
-        //   multiplayer : false,
-        // });
-        // // render && append 
-        // const pong_container = await solo_pong.render();
-
-        // // For example, append to a div with id "gameArea"
-        // const game_area = document.querySelector('#game-area');
-        // if (game_area)
-        // {
-        //     // del prev games
-        //     game_area.innerHTML = '';
-        //     game_area.appendChild(pong_container);
-        // }
-        // q_btn.innerText = '- - - - -';
-        // sgl.innerText = '- - - -';
-        currentGameMode = 'single';
-      }
-    };
-    // (queue) btn handler
-    aiBtn.onclick = async () => {
-      
-      try {
-          aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
-          aiBtn.innerText = '🤖 Connecting to AI...';
-          aiBtn.disabled = true;
-          
-          aiSocket.onmessage = async (msg) => {
-              const data = JSON.parse(msg.data);
-              if (data.type === 'start') {
-                  nahh = false;
-                  await start_game(true, data?.ehh, true); 
-              }
-              
-              if (data.type === 'game_over') {
-                  alert(`Game Over! ${data.winner} wins!\nScore: ${data.scores.p1} - ${data.scores.p2}`);
-                  // Recharge la page6
-                  window.location.reload();
-              }
-          };
-
-          aiSocket.onerror = (err) => {
-              console.error('AI WebSocket error:', err);
-              aiBtn.innerText = '❌ Connection failed';
-              aiBtn.disabled = false;
-          };
-          
-          aiSocket.onclose = () => {
-              aiBtn.disabled = false;
-              aiBtn.innerText = '🤖 PLAY vs AI';
-              aiBtn.style.backgroundColor = '#ff6600';
-              currentGameMode = null; // Reset game mode
-          }
-
-      } catch (err) {
-          console.error('Failed to start AI game:', err);
-          aiBtn.innerText = '❌ Failed. Retry?';
-          aiBtn.disabled = false;
-          currentGameMode = null;
-      }
-    };
-    // (queue) btn handler
-    q_btn.onclick = async () => {
-      try {
-        if (nahh) return;
-
-        if (joined_game) {
-          try {
-            if (currentGameMode === 'ai' && aiSocket && aiSocket.readyState === WebSocket.OPEN)
-            {
-              this.router.navigate('/'); // simple navigation
-              return;
-            }
-            else if (currentGameMode === 'multiplayer' && socket && socket.readyState === WebSocket.OPEN)
-            {
-              // Multi: fermeture OK
-              socket.close();
-              setTimeout(() => window.location.reload(), 200);
-              return;
-            }
-          } catch (_) {}
-          setTimeout(() => window.location.reload(), 200);
-          return;
-        }
-          if(!socket || socket == null)
-          {
-            socket = new WebSocket('ws://localhost:3010/api/pong/ws');
-          }
-          socket.onmessage = async (msg) => {
-              const data = JSON.parse(msg.data);
-              const qc = container.querySelector('#queue-count') as HTMLSpanElement;
-              const queueBtn = container.querySelector('#multiBtn') as HTMLButtonElement;
-              if(data?.queueLength >= 0){
-                qc.innerText = String(data?.queueLength);
-                p_st.innerText = `🟢 ${data?.queueLength} player(s) in queue`;
-              }
-              if(data?.type == "waiting")
-              {
-                  queueBtn.style.backgroundColor = '#00cc44';
-                  queueBtn.style.color = 'white';            
-                  queueBtn.innerText = '✅ Queued!';
-              }
-              if(data?.type == "creating")
-              {
-
-                  r_st.innerText = `🔵 ${data?.roomsLength} currently active pong room(s)...`;
-                  qc.innerText = '';
-                  await fetch_games();
-                  // countdown.. either /actual game-countdown/ or /5s warmup time/
-                  let _time_l = data?.countdown_v;
-                  if(data?.is_a_comeback)
-                    {
-                      aiBtn.disabled = true;
-                      gJntitle.innerHTML = "JOINING BACK YOUR GAME!";
-                      q_btn.style.backgroundColor = '#ffbb00ff';  // Green background
-                      q_btn.style.color = 'black';              // White text
-                      q_btn.innerText = '⚡ joining. .';
-                  }else{
-                      gJntitle.innerHTML = "STARTING....";
-                      queueBtn.style.backgroundColor = '#1383e4ff'; 
-                      queueBtn.style.color = 'white';            
-                      queueBtn.innerText = '🔵 creating game...';
-                  }
-                  nahh = true;
-                  for(let i = 0; i < (_time_l); i++){
-                      const t_left = _time_l - i;
-                      setTimeout(() => {
-                        gCounter.innerText = (!data?.is_a_comeback) ?
-                          `⚔️ GAME-Joined! ⚔️  ${t_left}sec before start${(t_left % 2 == 0) ? '...'  : '..'}`
-                          :
-                          `WELCOME-BACK 🔄 ${t_left}sec (prepare urself bro)`;
-                      }, i * 1000);
-                  }
-                
-              }
-              if(data?.type == "waiting-update")
-              {
-                  p_st.innerText = `🟢 ${data?.queueLength} player(s) in queue`;
-                  r_st.innerText = `🔵 ${data?.roomsLength} currently active pong room(s)...`;
-                  await fetch_games();
-              }
-              if(data?.type == "error")
-              {
-                alert(data.message);
-              }
-              if(data?.type == "start")
-              {
-                nahh = false;
-                start_game(true, data.ehh);
-              }
-          };
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
-    // stats of current serv state
-    // so : players in queue, rooms, total online plyr count
-    try {
-        await fetch_games();
         gCounter.innerHTML = "";
         gJntitle.innerHTML = "";
         const ga = document.querySelector('#game-area');
@@ -375,6 +410,7 @@ export default class PlayPage extends Page {
         });
         const data = await res.json();
         const qc = container.querySelector('#queue-count') as HTMLSpanElement;
+        console.log(data?.data);
         const online = data?.data?.queuedPlayers ?? 0;
         if(data?.data?.joinedQueue)
         {
@@ -392,11 +428,128 @@ export default class PlayPage extends Page {
     } catch (err) {
         const p_st = container.querySelector('#player-status') as HTMLParagraphElement;
         p_st.innerText = '⚠️ Could not load player status';
+        console.error('Failed to fetch data:', err);
     }
 
-    // single player btn handler
-    const s = container.querySelector('#singleBtn') as HTMLButtonElement;
+
+
+    // (AI) btn handler
+    aiBtn.onclick = async () => {
+        if(queued_up) return;
+        try {
+            aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
+            aiBtn.innerText = '🤖 Connecting to AI...';
+            aiBtn.disabled = true;
+            
+            aiSocket.onmessage = async (msg) => {
+                const data = JSON.parse(msg.data);
+                if (data.type === 'start') {
+                    await start_game(true, data?.ehh, true); 
+                }                
+                if (data.type === 'game_over') {
+                    alert(`Game Over! ${data.winner} wins!\nScore: ${data.scores.p1} - ${data.scores.p2}`);
+                    // Recharge la page6
+                    window.location.reload();
+                }
+            };
+            aiSocket.onerror = (err) => {
+                console.error('AI WebSocket error:', err);
+                aiBtn.innerText = '❌ Connection failed';
+                aiBtn.disabled = false;
+            };
+            aiSocket.onclose = () => {
+                aiBtn.disabled = false;
+                aiBtn.innerText = '🤖 PLAY vs AI';
+                aiBtn.style.backgroundColor = '#ff6600';
+            }
+        } catch (err) {
+            console.error('Failed to start AI game:', err);
+            aiBtn.innerText = '❌ Failed. Retry?';
+            aiBtn.disabled = false;
+        }
+    };
+
+
+
+    // (queue) btn handler
+    q_btn.onclick = async () => {
+      if(queued_up) return;
+      try {
+          if(!socket || socket == null)
+          {
+            socket = new WebSocket('ws://localhost:3010/api/pong/ws');
+          }
+          socket.onmessage = async (msg) => {
+              const data = JSON.parse(msg.data);
+              const qc = container.querySelector('#queue-count') as HTMLSpanElement;
+              if(data?.queueLength >= 0) {
+                  qc.innerText = String(data?.queueLength);
+                  p_st.innerText = `🟢 ${data?.queueLength} player(s) in queue`;
+              }
+              if(data?.type == "waiting")
+              {
+                  queued_up = true;
+                  q_btn.style.backgroundColor = '#00cc44';
+                  q_btn.style.color = 'white';            
+                  q_btn.innerText = '✅ Queued!';
+              }
+              if(data?.type == "creating")
+              {
+                  r_st.innerText = `🔵 ${data?.roomsLength} currently active pong room(s)...`;
+                  qc.innerText = '';
+                  queued_up = true;
+                  // countdown.. either /actual game-countdown/ or /5s warmup time/
+                  let _time_l = data?.countdown_v;
+                  if(data?.is_a_comeback)
+                  {
+                    aiBtn.disabled = true;
+                    gJntitle.innerHTML = "JOINING BACK YOUR GAME!";
+                    q_btn.style.backgroundColor = '#ffbb00ff';  // Green background
+                    q_btn.style.color = 'black';              // White text
+                    q_btn.innerText = '⚡ joining. .';
+                  }else{
+                    gJntitle.innerHTML = "STARTING....";
+                    q_btn.style.backgroundColor = '#1383e4ff'; 
+                    q_btn.style.color = 'white';            
+                    q_btn.innerText = '🔵 creating game...';
+                  }
+                  for(let i = 0; i < (_time_l); i++){
+                      const t_left = _time_l - i;
+                      setTimeout(() => {
+                        gCounter.innerText = (!data?.is_a_comeback) ?
+                          `⚔️ GAME-Joined! ⚔️  ${t_left}sec before start${(t_left % 2 == 0) ? '...'  : '..'}`
+                          :
+                          `WELCOME-BACK 🔄 ${t_left}sec (prepare urself bro)`;
+                      }, i * 1000);
+                  }
+              }
+              if(data?.type == "waiting-update")
+              {
+                  p_st.innerText = `🟢 ${data?.queueLength} player(s) in queue`;
+                  r_st.innerText = `🔵 ${data?.roomsLength} currently active pong room(s)...`;
+                  await fetch_games();
+              }
+              if(data?.type == "error")
+              {
+                  alert(data.message);
+              }
+              if(data?.type == "start")
+              {
+                  start_game(true, data.ehh);
+              }
+          };
+
+        
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+
+    // single player btn handler (local multiplayer)
     s.onclick = async () => {
+      if(queued_up) return;
+      
       if (!joined_game) {
         // Start local multiplayer game via backend
         try {
@@ -407,12 +560,9 @@ export default class PlayPage extends Page {
           localSocket.onmessage = async (msg) => {
             const data = JSON.parse(msg.data);
             if (data.type === 'start') {
-              nahh = false;
               currentGameMode = 'single';
-              socket = localSocket; // Assign to main socket variable for cleanup
-              
-              // Start the game with local multiplayer flag
-              await start_game(true, data?.ehh, false, true); // Added 4th param for local
+              socket = localSocket;
+              await start_game(true, data?.ehh, false, true);
             }
             
             if (data.type === 'game_end') {
@@ -429,7 +579,7 @@ export default class PlayPage extends Page {
           
           localSocket.onclose = () => {
             s.disabled = false;
-            s.innerText = '🎯 SINGLE-Player';
+            s.innerText = '🎯 SINGLE PLAYER';
             currentGameMode = null;
           };
 
@@ -440,8 +590,6 @@ export default class PlayPage extends Page {
         }
       } else {
         // Give up functionality
-        console.log(currentGameMode);
-        
         if (currentGameMode === 'ai' && aiSocket && aiSocket.readyState === WebSocket.OPEN) {
           aiSocket.send(JSON.stringify({ type: "player_giveup" }));
         }
@@ -450,7 +598,6 @@ export default class PlayPage extends Page {
           socket.close();
         }
         else if (currentGameMode === 'single' && socket && socket.readyState === WebSocket.OPEN) {
-          // Local multiplayer give up
           socket.send(JSON.stringify({ type: "player_giveup" }));
           socket.close();
         }
@@ -458,6 +605,7 @@ export default class PlayPage extends Page {
         setTimeout(() => window.location.reload(), 5000);
       }
     };
+
 
     return container;
   }
