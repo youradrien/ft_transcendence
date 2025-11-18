@@ -15,3 +15,5 @@ npm-debug.log*
 .idea/
 
 data/
+
+src/back-end/vault_handler/secrets/*

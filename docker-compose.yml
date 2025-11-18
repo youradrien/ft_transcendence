@@ -2,7 +2,8 @@ services:
   frontend:
     build: ./src/front-end
     ports:
-      - '5173:80'
+      - "80"   # exposé pour le réseau interne, plus de port mappé sur l’hôte
+      - "8080" # pour le live reload interne si nécessaire
     depends_on:
       - backend
     volumes:
@@ -17,6 +18,7 @@ services:
       driver: "syslog"
       options:
         syslog-address: "tcp://localhost:5000"
+        # syslog-address: "udp://127.0.0.1:5000" #mac os workaround
         tag: "frontend"
         syslog-format: "rfc5424"
     labels:
@@ -34,38 +36,60 @@ services:
     environment:
       - NODE_ENV=production
       - VAULT_ADDR=http://vault:8200
-      - VAULT_TOKEN=root
     networks:
       - ft_transcendence_net
     logging:
       driver: "syslog"
       options:
         syslog-address: "tcp://localhost:5000"
+        # syslog-address: "udp://127.0.0.1:5000" #mac os workaround
         tag: "backend"
         syslog-format: "rfc5424"
     labels:
       service.name: "backend"
       service.type: "api"
       app.component: "server"
+    volumes:
+      # - ./vault-config/vault.crt:/app/certs/vault.crt:ro # Monte le certificat pour que Node.js puisse le lire
+      - ./src/back-end/vault_handler:/app/vault_handler  # <-- watch for changes
+    entrypoint: ["node", "server.js"]
     depends_on:
       - vault
 
-  vault:
-    image: hashicorp/vault:1.21
-    container_name: vault
+  modsec-proxy:
+    image: owasp/modsecurity-crs:3.3.7-nginx-alpine-202510030310
+    container_name: modsecurity
     ports:
-      - "8200:8200"
+      - "5173:80"
     environment:
-      - VAULT_DEV_ROOT_TOKEN_ID=root
-      - VAULT_TOKEN=root          # 👈 dev token for simplicity
-      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
-      - VAULT_ADDR=http://0.0.0.0:8200 
+      - PARANOIA=1
+      - ANOMALY_INBOUND=10
+      - ANOMALY_OUTBOUND=5
+      - BLOCKING_PARANOIA=2
+      - LOGLEVEL=debug
+    volumes:
+      - ./src/modsecurity/nginx-custom.conf:/etc/nginx/conf.d/reverse-proxy.conf:ro
+    depends_on:
+      - frontend
+    networks:
+      - ft_transcendence_net
+
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    ports: 
+      - "8200:8200"
     cap_add:
       - IPC_LOCK                             # prevent memory swap for secrets
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
     volumes:
-      - ./vault-data:/vault/file             # optional: persistent data
-    command: server -dev                     # 👈 dev mode; remove for production
-
+      - ./vault/vault-data:/vault/file             # persistent data
+      - ./vault/vault-config:/vault/config         # mount config and certs
+    # command: server -config /vault/config/vault.hcl # Utilise notre fichier de config
+    entrypoint: ["vault", "server", "-config=/vault/config/vault.hcl"]
+    networks:
+      - ft_transcendence_net
 
 volumes:
   sqlite-data:
@@ -73,3 +97,4 @@ volumes:
 networks:
   ft_transcendence_net:
     external: true
+    driver: bridge
