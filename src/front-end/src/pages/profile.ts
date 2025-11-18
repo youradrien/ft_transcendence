@@ -247,6 +247,7 @@ export default class UserProfilePage extends Page {
       </div>
     `;
 
+	// Button for adding the current user as a friend :
 	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;
 	if (addFriendBtn) {
 
@@ -255,7 +256,8 @@ export default class UserProfilePage extends Page {
 			addFriendBtn.textContent = "Sending...";
 
 			try {
-				const response = await fetch('api/friend/add', {
+				const route = 'api/friend/add';
+				const response = await fetch(`http://localhost:3010/${route}`, {
 					method: 'POST',
 					credentials: 'include',
 					headers: {

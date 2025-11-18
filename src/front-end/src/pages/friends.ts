@@ -43,9 +43,7 @@ type Friend = {
 
 export default class Friends extends Page {
 
-
   //Method for fetching user's friends.
-
   async FETCH_FRIENDS(): Promise<Friend[]> {
 
 	try {
