@@ -4,7 +4,7 @@ type FriendFromAPI = {
 
 	id: number;
 	username: string;
-	avatar: string;
+	avatar_url: string;
 	online: boolean;
 	last_seen: string;
 };
@@ -47,7 +47,7 @@ export default class Friends extends Page {
   async FETCH_FRIENDS(): Promise<Friend[]> {
 
 	try {
-		const res = await fetch('api/friends', {
+		const res = await fetch('http://localhost:3010/api/friends', {
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -61,7 +61,7 @@ export default class Friends extends Page {
 		return friendsFromAPI.map(f => ({
 			id: f.id,
 			username: f.username,
-			avatar_url: f.avatar,
+			avatar_url: f.avatar_url,
 			online: f.online,
 			last_seen: f.last_seen
 		}));

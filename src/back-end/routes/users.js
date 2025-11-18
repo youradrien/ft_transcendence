@@ -563,41 +563,145 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 	});
   }
 
-  fastify.post('/api/friend/add', {
-	preValidation: [fastify.authenticate],
-	schema: {
-		body: {
-			type: 'object',
-			required: ['username'],
-			properties: {
-				username: { type: 'string', minLength: 1, maxLength: 32 }
-			} 
-		}
-	}
-  }, async (request, reply) => {
-	const { username } = request.body;
-	const senderId = request.user.id;
+//   fastify.post('/api/friend/add', {
+// 	preValidation: [fastify.authenticate],
+// 	schema: {
+// 		body: {
+// 			type: 'object',
+// 			required: ['username'],
+// 			properties: {
+// 				username: { type: 'string', minLength: 1, maxLength: 32 }
+// 			} 
+// 		}
+// 	}
+//   }, async (request, reply) => {
+// 	const { username } = request.body;
+// 	const senderId = request.user.id;
 
-	try {
-		const target = await db.get("SELECT id, username FROM users WHERE username = ?", [username]);
-		if (!target) {
-			return (reply.status(400).send({success: false, error: 'user_not_found'}));
-		}
+// 	try {
+// 		const target = await db.get("SELECT id, username FROM users WHERE username = ?", [username]);
+// 		if (!target) {
+// 			return (reply.status(400).send({success: false, error: 'user_not_found'}));
+// 		}
 
-		const targetId = target.id;
-		if (targetId === senderId) {
-			return (reply.status(400).send({success: false, error: 'cannot_add_yourself'}));
-		}
+// 		const targetId = target.id;
+// 		if (targetId === senderId) {
+// 			return (reply.status(400).send({success: false, error: 'cannot_add_yourself'}));
+// 		}
 
-		const existing = await db.get(
-			"SELECT * FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
-			[senderId, targetId, targetId, senderId]);
+// 		const existing = await db.get(
+// 			"SELECT * FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
+// 			[senderId, targetId, targetId, senderId]);
 		
-			if (existing) {
+// 		if (existing) {
 
-				if (existing.status)
-			}
-	}
-  });
+// 			if (existing.status === 'accepted') {
+// 				return reply.send({ success: false, error: 'already_friends' });
+// 			}
+// 			if (existing.user_id === targetId && existing.status === 'pending') {
+
+// 				await db.run(
+// 					"UPDATE friends SET status = 'accepted' WHERE user_id = ? AND friend_id = ?",
+// 					[senderId, targetId]
+// 				);
+// 				await db.run(
+// 					"UPDATE friends SET status = 'accepted' WHERE user_id = ? AND friend_id = ?",
+// 					[targetId, senderId]
+// 				);
+
+// 				return reply.send({ success: true, autoAccepted: true });
+// 				}
+// 			}
+
+// 			// If no realtion exists :
+// 			await db.run(
+// 				"INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'pending')",
+// 				[senderId, targetId]
+// 			);
+// 			await db.run(
+// 				"INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'pending')",
+// 				[targetId, senderId]
+// 			);
+// 			return reply.send({ success: true, requestSent: true });
+
+// 	} catch (err) {
+// 		console.error("Friend add error:", err);
+// 		return reply.status(500).send({ success: false, error: 'db_error' });
+// 	}
+//   });
+
+fastify.post('/api/friend/add', {
+  preValidation: [fastify.authenticate],
+  schema: {
+    body: {
+      type: 'object',
+      required: ['username'],
+      properties: {
+        username: { type: 'string', minLength: 1, maxLength: 32 }
+      }
+    }
+  }
+}, async (request, reply) => {
+  const { username } = request.body;
+  const senderId = request.user.id;
+
+  try {
+    const target = await db.get("SELECT id, username FROM users WHERE username = ?", [username]);
+    if (!target) {
+      return reply.status(400).send({ success: false, error: 'user_not_found' });
+    }
+
+    const targetId = target.id;
+
+    if (targetId === senderId) {
+      return reply.status(400).send({ success: false, error: 'cannot_add_yourself' });
+    }
+
+    const existing = await db.get(
+      "SELECT * FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
+      [senderId, targetId, targetId, senderId]
+    );
+
+    if (existing) {
+      if (existing.status === 'accepted') {
+        return reply.send({ success: false, error: 'already_friends' });
+      }
+
+      if (existing.user_id === senderId && existing.status === 'pending') {
+        return reply.send({ success: false, error: 'request_already_sent' });
+      }
+
+      if (existing.user_id === targetId && existing.status === 'pending') {
+        await db.run(
+          "UPDATE friends SET status = 'accepted' WHERE user_id = ? AND friend_id = ?",
+          [targetId, senderId]
+        );
+        await db.run(
+          "UPDATE friends SET status = 'accepted' WHERE user_id = ? AND friend_id = ?",
+          [senderId, targetId]
+        );
+
+        return reply.send({ success: true, autoAccepted: true });
+      }
+
+      return reply.send({ success: false, error: 'unknown_friend_state' });
+    }
+
+    await db.run(
+      "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'pending')",
+      [senderId, targetId]
+    );
+    await db.run(
+      "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'pending')",
+      [targetId, senderId]
+    );
+
+    return reply.send({ success: true, requestSent: true });
+
+  } catch (err) {
+    console.error("Friend add error:", err);
+    return reply.status(500).send({ success: false, error: 'db_error' });
+  }
+});
 
   module.exports = userRoutes;
