@@ -136,7 +136,6 @@ export default class AuthPage extends Page {
         });
 
         const data = await response.json();
-        console.log(data);
 
         if (!response.ok) throw new Error(data?.error || 'Unknown error');
         // Handle success (e.g. redirect to main page)
