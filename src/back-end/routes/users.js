@@ -563,4 +563,41 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 	});
   }
 
+  fastify.post('/api/friend/add', {
+	preValidation: [fastify.authenticate],
+	schema: {
+		body: {
+			type: 'object',
+			required: ['username'],
+			properties: {
+				username: { type: 'string', minLength: 1, maxLength: 32 }
+			} 
+		}
+	}
+  }, async (request, reply) => {
+	const { username } = request.body;
+	const senderId = request.user.id;
+
+	try {
+		const target = await db.get("SELECT id, username FROM users WHERE username = ?", [username]);
+		if (!target) {
+			return (reply.status(400).send({success: false, error: 'user_not_found'}));
+		}
+
+		const targetId = target.id;
+		if (targetId === senderId) {
+			return (reply.status(400).send({success: false, error: 'cannot_add_yourself'}));
+		}
+
+		const existing = await db.get(
+			"SELECT * FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
+			[senderId, targetId, targetId, senderId]);
+		
+			if (existing) {
+
+				if (existing.status)
+			}
+	}
+  });
+
   module.exports = userRoutes;
