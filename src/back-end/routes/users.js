@@ -563,6 +563,19 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 		}
 	});
 
+	/*
+		Route pour ajouter un ami.
+		Si A ajoute B, deux entrees sont crees dans la DB :
+
+			1/ A comme user et B comme relation avec statut 'accepted'
+			2/ B comme user avec A comme relation avec status 'pending'
+
+		Vu que pour le moment seulement un type d'amitie style "following" est implemente,
+		ca ne sert a rien de faire deux entrees (si A ajoute B, une entree avec A user et B relation
+		suffit !). Mais ce systeme est conserve pour se garder la possibilite d'etendre la feature
+		plus tard si voulu (gestion des amis type "reseau social" avec demandes en attente, refusees, accepetees, etc),
+		sans changer la DB.
+	*/
 
 	fastify.post('/api/friends/add', { preValidation: [fastify.authenticate] }, async (request, reply) => {
 
@@ -594,7 +607,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 				return (reply.status(400).send({success: false, error: 'already_exists'}));
 				}
 			}
-	
+
 			//create entries in table !
 			await db.run("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'accepted')", [senderId, targetId]);
 			await db.run("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'pending')", [targetId, senderId]);
