@@ -32,7 +32,7 @@ async function vaultstart() {
 	 * - Si Vault est initialisé mais scellé : récupère les clés sauvegardées et unseal
 	 * - Si Vault est déjà déverrouillé : crée simplement un token backend
 	 *
-	 * @async
+	 * @async 
 	 * @returns {Promise<string>} backendToken - Le token backend créé (client_token)
 	 * @throws {Error} Relance toute erreur provenant des appels à l'API Vault
 	 */
@@ -62,7 +62,16 @@ async function vaultstart() {
 
 		//need delete le .env containing jwt secret after writing to vault
 		const jwtSecret =  process.env.JWT_SECRET;
+		const GITHUB_CLIENT_ID= process.env.GITHUB_CLIENT_ID;
+		const GITHUB_CLIENT_SECRET= process.env.GITHUB_CLIENT_SECRET;
+		const GOOGLE_CLIENT_ID= process.env.GOOGLE_CLIENT_ID;
+		const GOOGLE_CLIENT_SECRET= process.env.GOOGLE_CLIENT_SECRET;
+
 		await writeSecret('jwt', { value: jwtSecret});
+		await writeSecret('github_client_id', { value: GITHUB_CLIENT_ID});
+		await writeSecret('github_client_secret', { value: GITHUB_CLIENT_SECRET});
+		await writeSecret('google_client_id', { value: GOOGLE_CLIENT_ID});
+		await writeSecret('google_client_secret', { value: GOOGLE_CLIENT_SECRET});
 
 		
 		//delete env containing jwt secret

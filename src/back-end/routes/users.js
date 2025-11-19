@@ -10,12 +10,7 @@ const { pipeline } = require ('stream/promises');
 const { db } = require('../db.js'); // chemin relatif
 
 const { OAuth2Client } = require('google-auth-library');
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, 'http://localhost:3010/api/auth/google/callback'); 
-const FRONTEND_URL = 'http://localhost:5173/auth';
+
 
 
 async function getJWTContent(user_id)
@@ -33,6 +28,10 @@ async function getJWTContent(user_id)
 
 async function userRoutes(fastify, options) // Options permet de passer des variables personnalisées
 {
+    // Initialisation du client Google avec les secrets
+    const client = new OAuth2Client(fastify.secrets.googleClientId, fastify.secrets.googleClientSecret, 'http://localhost:3010/api/auth/google/callback'); 
+    const FRONTEND_URL = 'http://localhost:5173/auth';
+
     fastify.get('/api/test', async (request, reply) => {
             return "test akbar";
     });
@@ -273,7 +272,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     // GITHUB OAUTH2
     //PREMIERE ROUTE = CLIQUE SUR LOGIN AVEC GHUB
   fastify.get('/api/auth/github/login', async (req, reply) => {
-        const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user`;
+        const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${fastify.secrets.githubClientId}&scope=read:user`;
         return reply.redirect(githubAuthURL);
     });
 
@@ -287,7 +286,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
                 method: 'POST',
                 headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ client_id: GITHUB_CLIENT_ID, client_secret: GITHUB_CLIENT_SECRET, code })
+                body: JSON.stringify({ client_id: fastify.secrets.githubClientId, client_secret: fastify.secrets.githubClientSecret, code })
             });
             const tokenData = await tokenRes.json();
             const access_token = tokenData.access_token;
@@ -339,7 +338,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             const { tokens } = await client.getToken(code);
             const ticket = await client.verifyIdToken({
             idToken: tokens.id_token,
-            audience: GOOGLE_CLIENT_ID
+            audience: fastify.secrets.googleClientId
             });
             
             const payload = ticket.getPayload();

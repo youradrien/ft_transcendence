@@ -123,23 +123,35 @@ const gen_fake_games = (count = 1) => {
         fastify.p_rooms.set(_id, _f_game);
     }
 }
-// START SERV, and link db
+
 const start = async () => {
     try {
       const token = await vaultstart();
       vault.token = token;
-      const jwtSecret = await readSecret('jwt');
+
+      // Création de l'objet contenant les secrets
+      const secrets = {
+        jwtSecret: (await readSecret('jwt'))?.value,
+        githubClientId: (await readSecret('github_client_id'))?.value,
+        githubClientSecret: (await readSecret('github_client_secret'))?.value,
+        googleClientId: (await readSecret('google_client_id'))?.value,
+        googleClientSecret: (await readSecret('google_client_secret'))?.value
+      };
+
+      // On décore l'instance fastify pour rendre les secrets accessibles partout
+      fastify.decorate('secrets', secrets);
+
       fastify.register(cookie);
       fastify.register(multipart);+
       // -- moved into VAULT()  <---
       fastify.register(jwt, {
-              secret: jwtSecret?.value || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
+              secret: secrets.jwtSecret || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
               cookie: {
                 cookieName: "token",
                 signed : false
               }
       });
-      console.log('jwt apres lecture vault:',jwtSecret?.value);
+      console.log('jwt apres lecture vault:', secrets.jwtSecret);
       // websocket
       fastify.register(websocket);
       await _INIT_DB(); // ✅ DB init here <------------
