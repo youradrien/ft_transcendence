@@ -80,7 +80,7 @@ export default class Friends extends Page {
 		justifyContent: "space-between",
 		alignItems: "center",
 		padding: "12px 16px",
-		background: "#1c1c1c",
+		background: "#0f0f0dff",
 		border: "2px solid #333",
 		borderRadius: "8px",
 		boxShadow: "0 0 8px rgba(0, 255, 0, 0.06)",
@@ -100,8 +100,8 @@ export default class Friends extends Page {
 	avatar.src = friend.avatar_url;
 	avatar.alt = friend.username;
 	Object.assign(avatar.style, {
-		width: "48px",
-		height: "48px",
+		width: "55px",
+		height: "55px",
 		borderRadius: "50%",
 		border: "2px solid white",
 		flexShrink: "0"

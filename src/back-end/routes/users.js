@@ -7,7 +7,7 @@ const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const { pipeline } = require ('stream/promises');
-const { db } = require('../db.js'); // chemin relatif
+const { db, _add_friend } = require('../db.js'); // chemin relatif
 
 const { OAuth2Client } = require('google-auth-library');
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
@@ -551,8 +551,8 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 			const friends = friendsRows.map(f => ({
 				id: f.id,
 				username: f.username,
-				avatar: f.avatar_url,
-				online: (Date.now() - new Date(f.last_online).getTime()) < 5 * 60 * 1000,
+				avatar_url: f.avatar_url,
+				online: (new Date() - new Date(f.last_online)) <= 30 * 1000,
 				last_seen: f.last_online
 			}));
 
@@ -609,8 +609,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 			}
 
 			//create entries in table !
-			await db.run("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'accepted')", [senderId, targetId]);
-			await db.run("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'pending')", [targetId, senderId]);
+			await _add_friend(senderId, targetId);
 
 			return (reply.send({ success: true}));
 		} catch (error) {
