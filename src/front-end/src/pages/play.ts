@@ -99,15 +99,6 @@ export default class PlayPage extends Page {
               <button id="aiBtn" class="arcade-btn arcade-orange">🤖 PLAY VS AI</button>
           </div>
 
-          
-          <div class="title-banner" id ="title-bannerz"  style="animation: fadeInUp 0.8s ease-out;">
-                <div class="neon-divider nn"></div>
-                <h1 style="margin-bottom: 2px; font-size: 36px; ">🏆 TOURNAMENT PONG </h1>
-                <p style="margin-top: 3px;">CREATE/JOIN an online tournament now !</p>
-                <button id="TBtn" class="arcade-btn arcade-orange">PLAY TOURNAMENT MODE ⚔️</button>
-          </div>
-
-
         <style>
               /* Retro Arcade Button */
               .arcade-btn {
@@ -168,9 +159,6 @@ export default class PlayPage extends Page {
                 display: flex;
                 box-shadow: 0 4px 20px rgba(0,0,0,0.4);
               }
-              .ll{
-                width: 500px;
-              }
 
               .menu-title {
                 font-size: 26px;
@@ -212,10 +200,6 @@ export default class PlayPage extends Page {
                 margin: 1.5rem auto;
                 box-shadow: 0 0 12px #b4ddffff, 0 0 12px #0099ffff;
               }
-                
-              .nn{
-                background: linear-gradient(90deg, #ffd633ff, #ffb300ff);
-              }
         
 
               @keyframes fadeInUp {
@@ -241,12 +225,7 @@ export default class PlayPage extends Page {
     let socket: WebSocket; // <-- wsocket var 
     let aiSocket: WebSocket |  null = null;
     let currentGameMode: 'multiplayer' | 'ai' | 'single' | null = null; // Track current game mode
-    // tournament
-    container.querySelector('#TBtn')?.addEventListener('click', () => {
-      if(!joined_game){
-          this.router.navigate('/tournament');
-      }
-    });
+
     // start [MULTIPLAYER, AI, SINGLE-PLAYER]
     const start_game = async (
         game_mode: boolean, game_data?: object, game_ai?: boolean | false, is_local?: boolean | false
@@ -259,12 +238,12 @@ export default class PlayPage extends Page {
         const L = container.querySelector('#title-banner') as HTMLElement;
         const game_area = document.querySelector('#game-area');
         const l_box = container.querySelector('#arcade-panel') as HTMLElement;
-        const c = container.querySelector('#title-bannerz') as HTMLElement; 
+
         l_box.style.top = '-12rem';
         l_box.style.left = '0rem';
 
         // Hide menu UI
-        [e, p_st, r_st, m, L, c, gCounter, gJntitle].forEach(el => {
+        [e, p_st, r_st, m, L, gCounter, gJntitle].forEach(el => {
             if (el) el.style.display = 'none';
         });
         e.innerHTML = '';
