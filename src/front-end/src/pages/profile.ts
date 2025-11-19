@@ -256,7 +256,7 @@ export default class UserProfilePage extends Page {
 			addFriendBtn.textContent = "Sending...";
 
 			try {
-				const route = 'api/friend/add';
+				const route = 'api/friends/add';
 				const response = await fetch(`http://localhost:3010/${route}`, {
 					method: 'POST',
 					credentials: 'include',
