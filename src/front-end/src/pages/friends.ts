@@ -142,7 +142,7 @@ export default class Friends extends Page {
 	left.appendChild(avatar);
 	left.appendChild(textWrap);
 
-	//Button "Unfriend" and actions (such as view profile, etc) -> right side of the card :
+	//Button "Unfriend" -> right side of the card :
 
 	const right = document.createElement('div');
 	Object.assign(right.style, {
@@ -150,23 +150,6 @@ export default class Friends extends Page {
 		alignItems: "center",
 		gap: "8px"
 	});
-
-	//Button "view profile" :
-	const viewBtn = document.createElement("button");
-	viewBtn.textContent = "Profile";
-	Object.assign(viewBtn.style, {
-		background: "#2b2b2b",
-		color: "white",
-		border: "1px solid #3002faff",
-		borderRadius: "6px",
-		padding: "6px 10px",
-		cursor: "pointer"
-	});
-	// WARNING : NOT SURE, JUST A SUPPOSITION FOR THE MOMENT !!
-	viewBtn.onclick = (e) => {
-		e.stopPropagation();
-		this.router.navigate(`/profile/${friend.username}`);
-	};
 
 	//Button "Unfriend" :
 
@@ -188,7 +171,6 @@ export default class Friends extends Page {
 		removeCallBack(friend.username);
 	};
 
-	right.appendChild(viewBtn);
 	right.appendChild(unfBtn);
 
 	card.appendChild(left);
@@ -286,5 +268,4 @@ export default class Friends extends Page {
 // │     ├─ usernameEl
 // │     └─ statusEl
 // └─ right (conteneur enfant)
-//    ├─ viewBtn
 //    └─ unfBtn
