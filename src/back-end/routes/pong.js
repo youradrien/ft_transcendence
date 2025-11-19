@@ -4,7 +4,205 @@ const { db } = require('../db.js');
 // --------------------------------      PONG                 --------------------------------------------
 // -------------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------------
+/*
 
+*/
+
+// const  broadcastTournament = async (fastify, packet) => {
+//     const json = JSON.stringify(packet);
+
+//     for (const [userId, socket] of fastify.p_tournament.player_sockets.entries()) {
+//         if (socket && socket.readyState === 1) { // OPEN
+//             try {
+//                 socket.send(json);
+//             } catch (err) {
+//                 console.error(`Failed to send to ${userId}`, err);
+//             }
+//         }
+//     }
+// }
+
+// [TOURNAMENT - NEXT MATCH]
+const t_run_next_match = async (fastify) => {
+    const t = fastify.p_tournament;
+
+    const match = t.bracket[ t.currentRound ][ t.currentMatch ];
+    if (!match) {
+        return;
+    }
+
+    const [p1, p2] = match;
+
+    /*
+        const game_id = `${Date.now()}_${p1Id}_${p2Id}`;
+        const c = Math.floor(Math.random() * (8 - 2 + 1)) + 2; // rand int between 8 and 2
+        // p1-p2 usernames from DB -> one query
+        const game = {
+            id: game_id,
+            players: [p1Id, p2Id],
+            sockets: [p1Socket, p2Socket],
+            paddles: { p1: 50, p2: 50 },
+            ball: { x: 100, y: 100, vx: 3.5, vy: 3.5 },
+            scores: { p1: 0, p2: 0 },
+            countdown: (c), // init at 10
+            width: 1200,
+            height: 600,
+            paddleWidth: 10,
+            paddleHeight: 80,
+            max_score: Math.floor(Math.random() * (75 - 10 + 1)) + 10, // score [10- 75]
+            player_names: ["player_1", "player_2"],
+            player_pfps: [
+                "https://avatars.githubusercontent.com/u/9919?s=200&v=4", 
+                "https://avatars.githubusercontent.com/u/9919?s=200&v=4"],
+            player_elos: [
+                500, 500
+            ],
+            ended: false
+        };
+        p_rooms.set(game_id, game);
+        // [creating....]
+        p1Socket.send(JSON.stringify({ type: 'creating', role: 'p1', 
+            queueLength: p_waitingPlayers.size, roomsLength: p_rooms.size,
+            is_a_comeback: false,
+            countdown_v: game?.countdown
+        }));
+        p2Socket.send(JSON.stringify({ type: 'creating', role: 'p2',
+            queueLength: p_waitingPlayers.size, roomsLength: p_rooms.size,
+            is_a_comeback: false,
+            countdown_v: game?.countdown
+        }));
+        // thats why i put coolddown/coutdown btw
+        // (could gather more infos on both playrs)
+        const p_names = await fastify.db.all(
+            'SELECT id, elo, avatar_url, username FROM users WHERE id IN (?, ?)',
+            [p1Id, p2Id]
+        );
+        const name_map = Object.fromEntries((p_names).map(r => [r.id, r.username]));
+        game.player_names = [
+            name_map[p1Id] || `/${p1Id}/`,
+            name_map[p2Id] || `/${p2Id}/`
+        ];
+        // randomly delay the START [8-15s] after "creaing...""
+        for (let i = 0; i <= c; i++) {
+            setTimeout(() => {
+                const timeLeft = c - i;
+                if (timeLeft > 0) {
+                    game.countdown -= 1;
+                } else {
+                    const safe_game = {
+                        scores: game.scores, countdown: game.countdown, width: game.width, height: game.height, 
+                        paddleWidth: game.paddleWidth, paddleHeight: game.paddleHeight, max_score: game.max_score, 
+                        player_names: (game.player_names),
+                        player_pfps: [game.player_pfps],
+                        player_elos: [game.player_elos]
+                    };
+                    // send start messages
+                    game.sockets[0].send(JSON.stringify({ 
+                        type: 'start', 
+                        role: 'p1', 
+                        ehh: safe_game}));
+                    game.sockets[1].send(JSON.stringify({ 
+                        type: 'start',
+                        role: 'p2', 
+                        ehh: safe_game }));
+
+                    if (game) {
+                        start_game_loop(game, fastify);
+                    }
+                }
+            }, (i) * 1000); // 1 sec step
+        }
+
+        // players inputs
+        attach_socket_handler(connection.socket, USER_ID, fastify);
+
+    */
+}
+// [TOURNAMENT - START]
+function handle_tournament_start(fastify) {
+    const t = fastify.p_tournament;
+
+    // shuffle player orders
+    const shuffled = [...t.players].sort(() => Math.random() - 0.5);
+
+    // Fill quarterfinal bracket
+    t.bracket[0] = [
+        [shuffled[0], shuffled[1]],
+        [shuffled[2], shuffled[3]],
+        [shuffled[4], shuffled[5]],
+        [shuffled[6], shuffled[7]]
+    ];
+
+    broadcastTournament(fastify, {
+        type: 'tournament-start',
+        bracket: t.bracket,
+        prize: t.prize
+    });
+
+    // Start first match
+    t_run_next_match(fastify);
+}
+// [TOURNAMENT - REGISTRATION]
+const handle_tournament_registration = async (USER_ID, fastify)  => {
+    const t = fastify.p_tournament;
+
+    // start new tournament if noneactive
+    // reset bracket & results
+    if (!t.active) {
+        t.active = true;
+        t.players = [];
+        t.currentRound = 0;
+        t.currentMatch = 0;
+
+        t.bracket = [
+            [null, null, null, null],
+            [null, null],
+            [null]
+        ];
+        t.results = {
+            quarter:  [null, null, null, null],
+            semi:     [null, null],
+            final:    null
+        };
+    }
+
+    // alr registered?
+    if (t.players.find(p => p.userId === USER_ID))
+    {
+        // return sendToUSER(USER_ID, fastify, {
+        //     type: 'already-registered',
+        //     playerCount: t.players.length
+        // });
+        return ;
+    }
+
+    // quick db fetch
+    const row = await fastify.db.get(
+        `SELECT username, avatar_url, elo FROM users WHERE id = ?`, 
+        [USER_ID]
+    );
+    const player_info = {
+        userId: USER_ID,
+        username: row.username,
+        pfp: row.avatar_url,
+        elo: row.elo
+    };
+    t.players.push(player_info);
+
+    broadcastTournament(fastify, {
+        type: 'player-joined',
+        player: player_info,
+        count: t.players.length
+    });
+
+    // start tournament when 8/8 reached
+    if (t.players.length === 8) {
+        handle_tournament_start(fastify);
+    }
+}
+
+
+// [ANY GAME - attach input messages to player sockets]
 const attach_socket_handler = async (socket, USER_ID, fastify, ai_game = false) =>{
     if( !socket ){
         return ;
@@ -172,6 +370,7 @@ async function pong_routes(fastify, options)
 
 
     
+
 
 
     // PONG MATCHMAKING
@@ -419,6 +618,9 @@ async function pong_routes(fastify, options)
 
 
 
+
+
+    
     // 🤖 PONG AI WEBSOCKET
     fastify.get('/api/pong/ai/ws', { websocket: true }, async (connection, req) => {
         const { p_rooms } = fastify;
@@ -547,6 +749,17 @@ async function pong_routes(fastify, options)
     });
 
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     fastify.get('/api/pong/local/ws', { websocket: true }, async (connection, req) => {
         const { p_rooms } = fastify;
         let USER_ID;
@@ -659,13 +872,58 @@ async function pong_routes(fastify, options)
             p_rooms.delete(game_id);
         });
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // PONG TOURNAMENT
+    fastify.get('/api/pong/tournament/ws', { websocket: true }, async (connection, req) => {
+        const t = fastify.p_tournament;
+        let USER_ID;
+        // auth
+        try {
+            await fastify.authenticate(req);
+            USER_ID = req.user.id;
+        } catch {
+            connection.socket.send(JSON.stringify({ type: 'error', msg: 'Unauthorized' }));
+            return connection.socket.close();
+        }
+
+        // store socket reference
+        t.sockets.set(USER_ID, connection.socket);
+        
+
+        // incoming messages
+        connection.socket.on('message', async (m) => {
+            const data = JSON.parse(m);
+
+            if (data.type === 'register') { // register
+                await handle_tournament_registration(USER_ID, fastify);
+            }
+        });
+
+        // bind-disconnection
+        connection.socket.on('close', () => {
+            t.sockets.delete(USER_ID);
+        });
+    });
 }
-
-
-
-
-
 module.exports = pong_routes;
+
+
+
+
+
+
 
 function attach_local_socket_handler(socket, game, fastify, USER_ID) {
     socket.on('message', (message) => {

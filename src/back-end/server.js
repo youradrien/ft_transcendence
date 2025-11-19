@@ -78,6 +78,28 @@ vault.write('secret/data/hello', {data: { value: process.env.JWT_SECRET,  lease:
 // global containers, for rooms ws (accessibles depuis toutes les routes)
 fastify.decorate("p_rooms", new Map());   // game rooms -> [player1, player2]
 fastify.decorate("p_waitingPlayers", new Map());        // matchId -> game state
+// potentiellement 1 seul tournament
+fastify.decorate('p_tournament', {
+    active: false,
+    player_sockets: new Map(), // {userId → socket}
+    players: [],         // array of 8 plyr-info-objs: {username, pfp, elo..}
+    game_states: [ // game states will still be in p_rooms, to be visibile to everyone
+      [], [], []
+    ],
+    bracket: [  // en gros, une array-bracket qui contient des array de matchups: [ [p1,p2], [p3,p4], [p2, p6]...]
+        [null, null, null, null], // quarterfinals 
+        [null, null], // semi-finals
+        [null] // final
+    ],        
+    currentRound: 0,     // 0=QF, 1=SF, 2=Final
+    currentMatch: 0,     
+    results: { // match winners: [similaire aux brackets, contient infos sur WINNER/LOOSER/SCORES etc...]
+      quarter: [null, null, null, null],
+      semi_finals: [null, null],
+      final: null
+    },      
+    prize: 1200 // prix en elo?   
+});
 
 
 // CORS (our frontend)

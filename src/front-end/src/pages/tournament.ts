@@ -22,15 +22,7 @@ interface TournamentRecord {
 }
 
 export default class TournamentPage extends Page {
-  private registeredPlayers: string[] = [];
   private maxPlayers = 8;
-
-  private bracketState: BracketState = {
-    qf: [],
-    sf: [],
-    final: {},
-  };
-
   private history: TournamentRecord[] = [
     {
       id: 1,
@@ -57,6 +49,7 @@ export default class TournamentPage extends Page {
   async render(): Promise<HTMLElement> {
     const container = document.createElement("div");
     container.id = this.id;
+    let socket: WebSocket; // <-- wsocket var 
 
     container.innerHTML = `
     <style>
@@ -64,6 +57,9 @@ export default class TournamentPage extends Page {
         padding: 2rem;
         color: #f1f1f1;
         font-family: 'Press Start 2P', cursive;
+        background: radial-gradient(circle at center, #3b88ff33 0%, #1a1a1a4f 60%, #09090900 100%);
+        background-size: cover;
+        background-attachment: fixed;
       }
       h1, h2 {
         text-align: center;
@@ -86,7 +82,6 @@ export default class TournamentPage extends Page {
       }
       button {
         cursor: pointer;
-        background: #2e9afe;
         color: white;
       }
       button:hover {
@@ -268,13 +263,36 @@ export default class TournamentPage extends Page {
     <div id="tournament-wrapper">
       <h1>🏆 Tournament Mode</h1>
 
-      <div id="registration-box">
+      <div>
+          <div style="display: flex; flex-direction: row; ">
+                <span id="onlin_tournament" style="
+                  font-size: 14px;
+                  color: #00ff44;
+                  text-shadow: 0 0 4px #00ff44;
+                  margin: 0 auto;
+                ">
+                    Offline
+                </span>
+                <span style="
+                      display: inline-block;
+                      width: 12px;
+                      height: 12px;
+                      border-radius: 50%;
+                      background-color: #00ff44;
+                      box-shadow: 0 0 8px #00ff44;
+                      transition: background-color 0.3s, box-shadow 0.3s;">
+                  </span>
+          </div>
         <h2>Player Registration</h2>
         <input id="player-name" placeholder="Enter alias..." maxlength="12" />
-        <button id="add-player-btn">Add player</button>
+        <button id="join-btn">
+              Join Tournament
+        </button>
+        
         <p id="players-list">0 / ${this.maxPlayers} players registered</p>
-        <button id="start-btn" disabled>Start Tournament</button>
-      </div>
+        
+        <button id="idk-btn" disabled>Tournament waiting for start</button>
+     </div>
 
       
     <h2>Bracket</h2>
@@ -346,23 +364,32 @@ export default class TournamentPage extends Page {
 
     // === DOM elements ===
     const nameInput = container.querySelector("#player-name") as HTMLInputElement;
-    const addBtn = container.querySelector("#add-player-btn") as HTMLButtonElement;
-    const startBtn = container.querySelector("#start-btn") as HTMLButtonElement;
-    const playersList = container.querySelector("#players-list") as HTMLParagraphElement;
-
-
+    const register_btn = container.querySelector("#join-btn") as HTMLButtonElement;
     const historyDiv = container.querySelector("#history-list") as HTMLElement;
+    const online_trn = container.querySelector("#onlin_tournament") as HTMLElement;
+
+      // init ws with serv
+      try {
+         
+          socket = new WebSocket('ws://localhost:3010/api/pong/tournament/ws');
+          if(socket.OPEN){
+            online_trn.innerHTML = "ONLINE";
+          }
+          socket.onmessage = async (msg) => {
+              const data = JSON.parse(msg.data);
+              if(data?.type == "player-joined")
+              {
+                  console.log(data);
+              }
+          };
+      } catch (err) {
+        console.log(err);
+      }
+
 
     // ------------------------------------
     //     UPDATE DISPLAY HELPERS
     // ------------------------------------
-
-    const updatePlayerList = () => {
-      playersList.innerText = `${this.registeredPlayers.length} / ${this.maxPlayers} players registered`;
-      startBtn.disabled = this.registeredPlayers.length !== this.maxPlayers;
-    };
-
-
     const drawHistory = () => {
       historyDiv.innerHTML = "";
       this.history.forEach((t) => {
@@ -378,58 +405,27 @@ export default class TournamentPage extends Page {
     };
 
 
+
     // ------------------------------------
     //     REGISTRATION LOGIC
     // ------------------------------------
-    addBtn.onclick = () => {
-      const name = nameInput.value.trim();
-      if (!name) return;
-
-      if (this.registeredPlayers.length >= this.maxPlayers) {
-        alert("Tournament is full!");
-        return;
-      }
-      this.registeredPlayers.push(name);
-      nameInput.value = "";
-      updatePlayerList();
-    };
-
-    // ------------------------------------
-    //     START TOURNAMENT
-    // ------------------------------------
-    startBtn.onclick = () => {
-      this.generateBracket();
+    register_btn.onclick = async () => {
+        const name = nameInput.value.trim();
+        if (!name || 
+            !socket
+        ) {
+          return;
+        }
+        
+        socket.send(JSON.stringify({
+          type: "register",
+        }));
     };
 
     // ------------------------------------
     //     INITIAL RENDER
     // ------------------------------------
-    updatePlayerList();
     drawHistory();
-
     return container;
   }
-
-  // ===============================================================
-  //                BRACKET GENERATION LOGIC
-  // ===============================================================
-
-  private generateBracket() {
-    const shuffled = [...this.registeredPlayers].sort(() => Math.random() - 0.5);
-
-    this.bracketState.qf = [
-      { p1: shuffled[0], p2: shuffled[1] },
-      { p1: shuffled[2], p2: shuffled[3] },
-      { p1: shuffled[4], p2: shuffled[5] },
-      { p1: shuffled[6], p2: shuffled[7] },
-    ];
-
-    this.bracketState.sf = [
-      { p1: undefined, p2: undefined },
-      { p1: undefined, p2: undefined },
-    ];
-
-    this.bracketState.final = { p1: undefined, p2: undefined };
-  }
-
 }
