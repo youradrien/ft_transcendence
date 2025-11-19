@@ -2,9 +2,9 @@ name: App CI/CD
 
 on:
   push:
-    branches: [ main, dev, tests/ci_cd ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "**" ]
 
 jobs:
   test:
