@@ -19,8 +19,8 @@ jobs:
         env:
           VAULT_DEV_ROOT_TOKEN_ID: root
           VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
-        options: >- # mrc copilot
-          --health-cmd "vault status"
+        options: >-
+          --health-cmd "vault status -address=http://127.0.0.1:8200"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

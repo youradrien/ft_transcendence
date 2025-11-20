@@ -2,13 +2,13 @@ name: ELK Stack Test
 
 on:
   push:
-    branches: [ main, dev, tests/ci_cd ]
+    branches: [ "**" ]
     # paths:
     #   - 'monitoring/**'
     #   - 'docker-compose.yml'
     #   - '.github/workflows/elk-test.yml'
   pull_request:
-    branches: [ main ]
+    branches: [ "**" ]
     # paths:
     #   - 'monitoring/**'
 
