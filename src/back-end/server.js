@@ -72,6 +72,20 @@ fastify.register(cors, {
   allowedHeaders: ['Content-Type', 'Authorization']
 });
 
+// Cookie (Registered before i18n to allow cookie-based locale detection)
+fastify.register(cookie);
+
+// Hook: Sync backend locale with frontend cookie (via Accept-Language header)
+fastify.addHook('onRequest', async (request, reply) => {
+  const cookieHeader = request.headers.cookie;
+  if (cookieHeader) {
+    const match = cookieHeader.match(/app_locale=(en|fr)/);
+    if (match) {
+      request.headers['accept-language'] = match[1];
+    }
+  }
+});
+
 // i18n
 fastify.register(i18n, {
   locales: ['en', 'fr'],
@@ -164,7 +178,6 @@ const start = async () => {
       fastify.decorate('oauth', oauthSecrets);
       // ----------------------------------------
 
-      fastify.register(cookie);
       fastify.register(multipart);
       // -- moved into VAULT()  <---
       fastify.register(jwt, {

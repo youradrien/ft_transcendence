@@ -2,5 +2,6 @@
   "hello": "Hello World",
   "welcome": "Welcome to Transcendence",
   "login_success": "Login successful",
-  "login_failed": "Login failed"
+  "login_failed": "Login failed",
+  "error_user_not_found": "Wrong username or password"
 }

@@ -1,5 +1,6 @@
 // src/auth/index.ts
 import Page from '../template/page.ts';
+import { i18n } from '../i18n';
 
 export default class AuthPage extends Page {
   async render(): Promise<HTMLElement> {
@@ -70,16 +71,16 @@ export default class AuthPage extends Page {
         }
       </style>
 
-      <h1>Welcome to Transcendance</h1>
+      <h1>${i18n.t('welcome_title')}</h1>
       <div class="auth-container">
-        <h2 id="formTitle">Login</h2>
-        <input type="text" id="username" placeholder="Username" required />
-        <input type="password" id="password" placeholder="Password" required />
+        <h2 id="formTitle">${i18n.t('login_title')}</h2>
+        <input type="text" id="username" placeholder="${i18n.t('username_placeholder')}" required />
+        <input type="password" id="password" placeholder="${i18n.t('password_placeholder')}" required />
         <p id="errorMsg" class="error-message"></p>
-        <button id="submitBtn">Login</button>
-        <button id="githubLogin">Login with GitHub</button>
-        <button id="googleLogin">Login with Google</button>
-        <p class="toggle-link" id="toggleForm">Don't have an account? Register</p>
+        <button id="submitBtn">${i18n.t('login_btn')}</button>
+        <button id="githubLogin">${i18n.t('github_login')}</button>
+        <button id="googleLogin">${i18n.t('google_login')}</button>
+        <p class="toggle-link" id="toggleForm">${i18n.t('no_account')}</p>
       </div>
     `;
 
@@ -107,11 +108,11 @@ export default class AuthPage extends Page {
 
     toggleForm.addEventListener('click', () => {
       isLogin = !isLogin;
-      formTitle.textContent = isLogin ? 'Login' : 'Register';
-      submitBtn.textContent = isLogin ? 'Login' : 'Register';
+      formTitle.textContent = isLogin ? i18n.t('login_title') : i18n.t('register_title');
+      submitBtn.textContent = isLogin ? i18n.t('login_btn') : i18n.t('register_btn');
       toggleForm.textContent = isLogin
-        ? "Don't have an account? Register"
-        : "Already have an account? Login";
+        ? i18n.t('no_account')
+        : i18n.t('has_account');
     });
 
     submitBtn.addEventListener('click', async () => {
@@ -122,7 +123,7 @@ export default class AuthPage extends Page {
 
       if (!username || !password) {
         // alert('Please fill in all fields.');
-        errorMsg.textContent = 'nope'; // clear previous error
+        errorMsg.textContent = i18n.t('fill_all_fields'); // clear previous error
         return;
       }
 
@@ -139,11 +140,11 @@ export default class AuthPage extends Page {
 
         if (!response.ok) throw new Error(data?.error || 'Unknown error');
         // Handle success (e.g. redirect to main page)
-        alert(data.message || (isLogin ? 'Logged in!' : 'Registered!'));
+        alert(data.message || (isLogin ? i18n.t('logged_in') : i18n.t('registered')));
         this.router.navigate('/'); // go back to main page
 
       } catch (err: any) {
-        alert('Error: ' + err.message);
+        alert(i18n.t('error_prefix') + err.message);
       }
     });
 
