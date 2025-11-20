@@ -130,10 +130,6 @@ fastify.addHook('onResponse', async (request, reply) => {
   request.log.info(logData);
 });
 
-// routes (REST api, ws)
-fastify.register(require('./routes/users.js'));
-fastify.register(require('./routes/pong.js'));
-
 // fake ahhh
 const gen_fake_games = (count = 1) => {
     for (let i = 0; i < count; i++) {
@@ -190,6 +186,11 @@ const start = async () => {
       console.log('jwt apres lecture vault:',jwtSecret?.value);
       // websocket
       fastify.register(websocket);
+
+      // routes (REST api, ws)
+      fastify.register(require('./routes/users.js'));
+      fastify.register(require('./routes/pong.js'));
+
       await _INIT_DB(); // ✅ DB init here <------------
       gen_fake_games(Math.floor(Math.random() * 2)); // 
       // gen_fake_users(db);
@@ -252,18 +253,39 @@ fastify.decorate('updateLastOnline', async function(userId) {
 fastify.decorate("authenticate", async function(request, reply)
 {
     try {
-        const token = request.cookies.token;
+        let token = request.cookies ? request.cookies.token : null;
+        
+        // Fallback: manually parse cookie if fastify-cookie didn't populate it
+        if (!token && request.headers.cookie) {
+            const rawCookies = request.headers.cookie.split(';');
+            for (const c of rawCookies) {
+                const [key, value] = c.trim().split('=');
+                if (key === 'token') {
+                    token = value;
+                    break;
+                }
+            }
+        }
+
         if (!token)
         {
-          return reply.code(401).send({success:false, error:"no_token_in_cookie"})
+          if (reply)
+            return reply.code(401).send({success:false, error:"no_token_in_cookie"})
+          else
+            throw new Error("no_token_in_cookie");
         }
-        const decoded = await request.jwtVerify(token);
-        // console.log('Decoded JWT:', decoded);
+        
+        // Verify the token explicitly
+        const decoded = await fastify.jwt.verify(token);
+        
         request.user = decoded;
         await fastify.updateLastOnline(decoded.id); // Update last_online here
     } catch (err)
     {
-        return reply.code(401).send({success:false, error:"invalid_token"})    
+        if (reply)
+            return reply.code(401).send({success:false, error:"invalid_token"})
+        else
+            throw err;
     }
 });
 
