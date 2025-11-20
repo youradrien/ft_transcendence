@@ -86,15 +86,22 @@ jobs:
 
       - name: Check Logstash pipeline
         run: |
-          LOGSTASH_STATS=$(curl -s http://localhost:9600/_node/stats/pipelines)
-          echo "$LOGSTASH_STATS"
+          echo "⏳ Waiting for Logstash pipeline 'main' to be active..."
+          for i in {1..30}; do
+            LOGSTASH_STATS=$(curl -s http://localhost:9600/_node/stats/pipelines)
+            
+            if echo "$LOGSTASH_STATS" | grep -q "main"; then
+              echo "✅ Logstash pipeline 'main' is active"
+              echo "$LOGSTASH_STATS"
+              exit 0
+            fi
+            echo "Attempt $i/30: Pipeline not yet active..."
+            sleep 2
+          done
           
-          if echo "$LOGSTASH_STATS" | grep -q "main"; then
-            echo "Logstash pipeline 'main' is active"
-          else
-            echo "Logstash pipeline not found"
-            exit 1
-          fi
+          echo "❌ Logstash pipeline 'main' failed to start"
+          echo "Final stats: $LOGSTASH_STATS"
+          exit 1
 
       - name: Setup Elasticsearch template
         run: |

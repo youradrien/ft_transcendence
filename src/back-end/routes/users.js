@@ -178,7 +178,9 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                     reason: 'user_not_found',
                     username
                 });
-                return reply.status(401).send({success:false, error : 'username_not_exist'});
+                return reply.status(401).send({
+                    success: false,
+                    error : request.i18n.t('error_user_not_found')});
             }
         } catch (err){
             request.log.error({
@@ -196,7 +198,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                 username,
                 user_id: user.id
             });
-            return reply.status(401).send({success:false, error : 'password_not_valid'});
+            return reply.status(401).send({success:false, error : request.i18n.t('error_user_not_found')});
         }
         if (user.secret_totp)
         {
