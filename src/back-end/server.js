@@ -4,6 +4,8 @@ const jwt = require('@fastify/jwt');
 const cors = require('@fastify/cors');
 const multipart = require ('@fastify/multipart');
 const websocket = require('@fastify/websocket');
+const path = require('path');
+const i18n = require('fastify-i18n');
 
 // Configure Pino logger for better structured logging
 const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -70,6 +72,17 @@ fastify.register(cors, {
   allowedHeaders: ['Content-Type', 'Authorization']
 });
 
+// i18n
+fastify.register(i18n, {
+  locales: ['en', 'fr'],
+  directory: path.join(__dirname, 'locales'),
+  defaultLocale: 'en',
+  messages: {
+    en: require('./locales/en.json'),
+    fr: require('./locales/fr.json')
+  }
+});
+
 // JWT
 
 
@@ -129,8 +142,30 @@ const start = async () => {
       const token = await vaultstart();
       vault.token = token;
       const jwtSecret = await readSecret('jwt');
+
+      let oauthSecrets = await readSecret('oauth');
+      
+      const envOAuth = {
+          github_client_id: process.env.GITHUB_CLIENT_ID,
+          github_client_secret: process.env.GITHUB_CLIENT_SECRET,
+          google_client_id: process.env.GOOGLE_CLIENT_ID,
+          google_client_secret: process.env.GOOGLE_CLIENT_SECRET
+      };
+
+      if (envOAuth.github_client_id || envOAuth.google_client_id) {
+          console.log('🔄 Seeding/Updating OAuth secrets in Vault from .env');
+          await writeSecret('oauth', envOAuth);
+          oauthSecrets = envOAuth;
+      }
+
+      if (!oauthSecrets)
+          oauthSecrets = {};
+
+      fastify.decorate('oauth', oauthSecrets);
+      // ----------------------------------------
+
       fastify.register(cookie);
-      fastify.register(multipart);+
+      fastify.register(multipart);
       // -- moved into VAULT()  <---
       fastify.register(jwt, {
               secret: jwtSecret?.value || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
@@ -236,6 +271,15 @@ fastify.get('/api', async (request, reply) => {
   return {
     status: 'ok',
     message: 'pong de ses morts'
+  };
+});
+
+// Route GET /api/i18n-test (pour tester i18n)
+fastify.get('/api/i18n-test', async (request, reply) => {
+  return {
+    hello: request.i18n.t('hello'),
+    welcome: request.i18n.t('welcome'),
+    locale: request.i18n.locale
   };
 });
 
