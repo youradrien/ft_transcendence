@@ -84,6 +84,17 @@ async function vaultstart() {
 			//récupérer les clés
 			const savepath = path.resolve(__dirname, 'secrets', 'vault_keys.json');
 			console.log('savepath2: ', savepath);
+			
+			if (!fs.existsSync(savepath)) {
+				// Fallback for CI/Dev: if keys are missing but we are in dev mode with root token
+				if (process.env.VAULT_TOKEN === 'root') {
+					console.log('⚠️ No keys file found, but running with root token. Assuming dev mode.');
+					vault.token = 'root';
+					return await createBackendToken();
+				}
+				throw new Error(`Vault is sealed and keys file not found at ${savepath}`);
+			}
+
 			const data = JSON.parse(fs.readFileSync(savepath, 'utf8'));
 			 keys=data.keys;
 			 rootToken=data.rootToken;
@@ -96,6 +107,18 @@ async function vaultstart() {
 			console.log('Vault is already unsealed.');
 			const savepath = path.resolve(__dirname, 'secrets', 'vault_keys.json');
 			console.log('savepath1: ', savepath);
+
+			if (!fs.existsSync(savepath)) {
+				// Fallback for CI/Dev: if keys are missing but we are in dev mode with root token
+				if (process.env.VAULT_TOKEN === 'root') {
+					console.log('⚠️ No keys file found, but running with root token. Assuming dev mode.');
+					vault.token = 'root';
+					return await createBackendToken();
+				}
+				// If not root, we can't proceed without keys/token
+				throw new Error(`Vault is unsealed but keys file not found at ${savepath}`);
+			}
+
 			const data = JSON.parse(fs.readFileSync(savepath, 'utf8'));
 			keys=data.keys;
 			rootToken=data.rootToken;

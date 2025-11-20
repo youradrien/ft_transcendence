@@ -17,3 +17,5 @@ npm-debug.log*
 data/
 
 src/back-end/vault_handler/secrets/*
+
+vault/vault-data/
