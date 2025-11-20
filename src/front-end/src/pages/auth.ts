@@ -138,7 +138,12 @@ export default class AuthPage extends Page {
 
         const data = await response.json();
 
-        if (!response.ok) throw new Error(data?.error || 'Unknown error');
+        if (!response.ok) {
+          // Try to translate the error key if it exists
+          const errorKey = data?.error;
+          const translatedError = i18n.t(errorKey) !== errorKey ? i18n.t(errorKey) : errorKey;
+          throw new Error(translatedError || 'Unknown error');
+        }
         // Handle success (e.g. redirect to main page)
         alert(data.message || (isLogin ? i18n.t('logged_in') : i18n.t('registered')));
         this.router.navigate('/'); // go back to main page
