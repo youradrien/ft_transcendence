@@ -121,8 +121,8 @@ async function _get_messages(limit = 50) {
 // }
 
 async function _add_friend(userId, friendId) {
-  await db.run('INSERT INTO friends (user_id, friend_id) VALUES (?, ?)', [userId, friendId]);
-  await db.run('INSERT INTO friends (user_id, friend_id) VALUES (?, ?)', [friendId, userId]);
+	await db.run("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'accepted')", [userId, friendId]);
+	await db.run("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'pending')", [friendId, userId]);
 }
 
 async function _remove_friend(userId, friendId) {

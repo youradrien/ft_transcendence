@@ -63,8 +63,8 @@ export default class UserProfilePage extends Page {
     }
     const social_btns_HTML = !(user_api_call == "api/me-info") ? `
       <div style="display: flex; gap: 12px;">
-        <button style="${greenButtonStyle}">ADD FRIEND</button>
-        <button style="${greenButtonStyle}">SEND DM</button>
+        <button id="add-friend-btn" style="${greenButtonStyle}">ADD FRIEND</button>
+        <button id="send-dm-btn" style="${greenButtonStyle}">SEND DM</button>
       </div>
     ` : '';
     container.innerHTML = `
@@ -246,6 +246,44 @@ export default class UserProfilePage extends Page {
 
       </div>
     `;
+
+	// Button for adding the current user as a friend :
+	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;
+	if (addFriendBtn) {
+
+		addFriendBtn.onclick = async () => {
+			addFriendBtn.disabled = true;
+			addFriendBtn.textContent = "Sending...";
+
+			try {
+				const route = 'api/friends/add';
+				const response = await fetch(`http://localhost:3010/${route}`, {
+					method: 'POST',
+					credentials: 'include',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ username: USER_DATA.username })
+				});
+
+				const data = await response.json();
+
+				if (data.success) {
+					addFriendBtn.textContent = "Sent !";
+					addFriendBtn.style.backgroundColor = "#888";
+				} else {
+					addFriendBtn.disabled = false;
+					addFriendBtn.textContent = "ADD FRIEND";
+					alert(`Failed to sent friend request: ${data.error}`);
+				}
+			} catch (error) {
+				addFriendBtn.disabled = false;
+				addFriendBtn.textContent = "ADD FRIEND";
+				console.error('Error adding friend:', error);
+			}
+		};
+	}
+
     // fill ts with game infos
     try {
         const g = await fetch(`http://localhost:3010/api/${USER_DATA?.username}/games`, {

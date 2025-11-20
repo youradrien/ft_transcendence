@@ -7,7 +7,7 @@ const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const { pipeline } = require ('stream/promises');
-const { db } = require('../db.js'); // chemin relatif
+const { db, _add_friend } = require('../db.js'); // chemin relatif
 
 const { OAuth2Client } = require('google-auth-library');
 const FRONTEND_URL = 'http://localhost:5173/auth';
@@ -578,5 +578,90 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             friend_status // <-- nouveau champ pour le statut d'amitié
         });
     });
+
+	// FRIENDS GESTION !!
+
+	fastify.get('/api/friends', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+
+		try {
+			const userId = request.user.id;
+
+			const friendsRows = await db.all(
+				` SELECT u.id, u.username, u.avatar_url, u.last_online
+				FROM friends f
+				JOIN users u ON u.id = f.friend_id
+				WHERE f.user_id = ? AND f.status = 'accepted'`,
+				[userId]);
+
+			const friends = friendsRows.map(f => ({
+				id: f.id,
+				username: f.username,
+				avatar_url: f.avatar_url,
+				online: (new Date() - new Date(f.last_online)) <= 30 * 1000,
+				last_seen: f.last_online
+			}));
+
+			return reply.send({ success: true, friends });
+		} catch (err) {
+			console.error(err);
+			return reply.status(500).send({ success: false, error: 'db_error' });
+		}
+	});
+
+	/*
+		Route pour ajouter un ami.
+		Si A ajoute B, deux entrees sont crees dans la DB :
+
+			1/ A comme user et B comme relation avec statut 'accepted'
+			2/ B comme user avec A comme relation avec status 'pending'
+
+		Vu que pour le moment seulement un type d'amitie style "following" est implemente,
+		ca ne sert a rien de faire deux entrees (si A ajoute B, une entree avec A user et B relation
+		suffit !). Mais ce systeme est conserve pour se garder la possibilite d'etendre la feature
+		plus tard si voulu (gestion des amis type "reseau social" avec demandes en attente, refusees, accepetees, etc),
+		sans changer la DB.
+	*/
+
+	fastify.post('/api/friends/add', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+
+		const senderId = request.user.id;
+		const {username } = request.body;
+
+		try {
+			const target = await db.get("SELECT id FROM users WHERE username = ?", [username]);
+			if (!target)
+				return (reply.status(400).send({success: false, error: 'user_not_found'}));
+
+			const targetId = target.id;
+			if (senderId === targetId)
+				return (reply.status(400).send({success: false, error: 'cannot_add_yourself'}));
+
+			const existing = await db.get(
+				"SELECT * FROM friends WHERE user_id = ? AND friend_id = ?",
+				[senderId, targetId]
+			);
+
+			if (existing) {
+				if (existing.status === 'pending') {
+					await db.run(
+						"UPDATE friends SET status = 'accepted' WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
+						[senderId, targetId, targetId, senderId]
+					);
+					return (reply.send({ success: true, message: 'friendship_accepted'}));
+				} else {
+				return (reply.status(400).send({success: false, error: 'already_exists'}));
+				}
+			}
+
+			//create entries in table !
+			await _add_friend(senderId, targetId);
+
+			return (reply.send({ success: true}));
+		} catch (error) {
+			console.error("Friend add error: ", error);
+			return (reply.status(500).send({ success: false, error: "db_error" }));
+		}
+  	});
   }
+
   module.exports = userRoutes;
