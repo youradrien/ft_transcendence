@@ -1,0 +1,6 @@
+{
+  "hello": "Bonjour le monde",
+  "welcome": "Bienvenue sur Transcendence",
+  "login_success": "Connexion réussie",
+  "login_failed": "Échec de la connexion"
+}

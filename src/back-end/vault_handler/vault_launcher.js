@@ -52,6 +52,15 @@ async function vaultstart() {
 		await vault.unseal({ key: keys[0] });
 		console.log('Vault initialized and unsealed.');
 
+		// Save keys immediately to ensure persistence even if crash occurs
+		const secretsDir = path.resolve(__dirname, 'secrets');
+		if (!fs.existsSync(secretsDir)) {
+			fs.mkdirSync(secretsDir, { recursive: true });
+		}
+		const savepath = path.resolve(secretsDir, 'vault_keys.json');
+		fs.writeFileSync(savepath, JSON.stringify({keys, rootToken}, null, 2), { mode: 0o600 });
+		console.log('Vault keys saved to:', savepath);
+
 		//MOUNT le secret envgin
 		await vault.mount({ mount_point: 'secret', type: 'kv-v2', options: { version: '2' }});
 
