@@ -4,6 +4,8 @@ const jwt = require('@fastify/jwt');
 const cors = require('@fastify/cors');
 const multipart = require ('@fastify/multipart');
 const websocket = require('@fastify/websocket');
+const path = require('path');
+const i18n = require('fastify-i18n');
 
 // Configure Pino logger for better structured logging
 const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -47,33 +49,15 @@ const fastify = require('fastify')({
 });
 const { db, _INIT_DB } = require('./db.js'); // chemin relatif selon ton projet
 const bcrypt = require('bcrypt');
-const vault = require('node-vault')({
-   apiVersion: 'v1', // default
-  endpoint: 'http://vault:8200', // default
-  token: 'root' // optional client token; can be fetched after valid initialization of the server
-});
-
-// init vault server
-// vault.init({ secret_shares: 1, secret_threshold: 1 })
-//   .then( (result) => {
-//     var keys = result.keys;
-//     // set token for all following requests
-//     vault.token = result.root_token;
-//     // unseal vault server
-//     console.log("SUCESS UNSEALING:  " +result.root_token);
-//     return vault.unseal({ secret_shares: 1, key: keys[0] })
-//   })
-//   .catch(console.error);
 require('dotenv').config();
-vault.token = "root";
-// console.log(process.env.JWT_SECRET);
-vault.write('secret/data/hello', {data: { value: process.env.JWT_SECRET,  lease: '1s' } })
-  .then( async () => {
-    const a = await vault.read('secret/data/hello');
-    console.log(a);
-  })
-  //.then( () => vault.delete('secret/hello'))
-  .catch(console.error);
+
+
+/********************************************/
+/*************VAULT TERRITORY****************/
+/********************************************/
+const { vault, vaultstart, vaultdown, writeSecret, readSecret } = require('./vault_handler/vault_launcher.js');
+
+
 
 // global containers, for rooms ws (accessibles depuis toutes les routes)
 fastify.decorate("p_rooms", new Map());   // game rooms -> [player1, player2]
@@ -88,19 +72,33 @@ fastify.register(cors, {
   allowedHeaders: ['Content-Type', 'Authorization']
 });
 
-// JWT
-const jwtSecret =  process.env.JWT_SECRET;
+// Cookie (Registered before i18n to allow cookie-based locale detection)
 fastify.register(cookie);
-fastify.register(multipart);
-fastify.register(jwt, {
-        secret: jwtSecret || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
-        cookie: {
-          cookieName: "token",
-          signed : false
-        }
+
+// Hook: Sync backend locale with frontend cookie (via Accept-Language header)
+fastify.addHook('onRequest', async (request, reply) => {
+  const cookieHeader = request.headers.cookie;
+  if (cookieHeader) {
+    const match = cookieHeader.match(/app_locale=(en|fr)/);
+    if (match) {
+      request.headers['accept-language'] = match[1];
+    }
+  }
 });
-// websocket
-fastify.register(websocket);
+
+// i18n
+fastify.register(i18n, {
+  locales: ['en', 'fr'],
+  directory: path.join(__dirname, 'locales'),
+  defaultLocale: 'en',
+  messages: {
+    en: require('./locales/en.json'),
+    fr: require('./locales/fr.json')
+  }
+});
+
+// JWT
+
 
 // Add request logging hook with enriched context
 fastify.addHook('onRequest', async (request, reply) => {
@@ -132,10 +130,6 @@ fastify.addHook('onResponse', async (request, reply) => {
   request.log.info(logData);
 });
 
-// routes (REST api, ws)
-fastify.register(require('./routes/users.js'));
-fastify.register(require('./routes/pong.js'));
-
 // fake ahhh
 const gen_fake_games = (count = 1) => {
     for (let i = 0; i < count; i++) {
@@ -155,8 +149,51 @@ const gen_fake_games = (count = 1) => {
 // START SERV, and link db
 const start = async () => {
     try {
+      const token = await vaultstart();
+      vault.token = token;
+      const jwtSecret = await readSecret('jwt');
+
+      let oauthSecrets = await readSecret('oauth');
+      
+      const envOAuth = {
+          github_client_id: process.env.GITHUB_CLIENT_ID,
+          github_client_secret: process.env.GITHUB_CLIENT_SECRET,
+          google_client_id: process.env.GOOGLE_CLIENT_ID,
+          google_client_secret: process.env.GOOGLE_CLIENT_SECRET
+      };
+
+      if (envOAuth.github_client_id || envOAuth.google_client_id) {
+          console.log('🔄 Seeding/Updating OAuth secrets in Vault from .env');
+          await writeSecret('oauth', envOAuth);
+          oauthSecrets = envOAuth;
+      }
+
+      if (!oauthSecrets)
+          oauthSecrets = {};
+
+      fastify.decorate('oauth', oauthSecrets);
+      // ----------------------------------------
+
+      fastify.register(multipart);
+      // -- moved into VAULT()  <---
+      fastify.register(jwt, {
+              secret: jwtSecret?.value || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
+              cookie: {
+                cookieName: "token",
+                signed : false
+              }
+      });
+      console.log('jwt apres lecture vault:',jwtSecret?.value);
+      // websocket
+      fastify.register(websocket);
+
+      // routes (REST api, ws)
+      fastify.register(require('./routes/users.js'));
+      fastify.register(require('./routes/pong.js'));
+
       await _INIT_DB(); // ✅ DB init here <------------
       gen_fake_games(Math.floor(Math.random() * 2)); // 
+      // gen_fake_users(db);
       await fastify.listen({ port: 3010, host: '0.0.0.0' });
       console.log('🚀 server is running at http://localhost:3010');
     } catch (err) {
@@ -196,7 +233,7 @@ const gen_fake_users = async (db, count = 2) => {
     );
   }
 };
-gen_fake_users(db);
+// gen_fake_users(db);
 
 // last time seen (user field)
 fastify.decorate('updateLastOnline', async function(userId) {
@@ -216,18 +253,39 @@ fastify.decorate('updateLastOnline', async function(userId) {
 fastify.decorate("authenticate", async function(request, reply)
 {
     try {
-        const token = request.cookies.token;
+        let token = request.cookies ? request.cookies.token : null;
+        
+        // Fallback: manually parse cookie if fastify-cookie didn't populate it
+        if (!token && request.headers.cookie) {
+            const rawCookies = request.headers.cookie.split(';');
+            for (const c of rawCookies) {
+                const [key, value] = c.trim().split('=');
+                if (key === 'token') {
+                    token = value;
+                    break;
+                }
+            }
+        }
+
         if (!token)
         {
-          return reply.code(401).send({success:false, error:"no_token_in_cookie"})
+          if (reply)
+            return reply.code(401).send({success:false, error:"no_token_in_cookie"})
+          else
+            throw new Error("no_token_in_cookie");
         }
-        const decoded = await request.jwtVerify(token);
-        // console.log('Decoded JWT:', decoded);
+        
+        // Verify the token explicitly
+        const decoded = await fastify.jwt.verify(token);
+        
         request.user = decoded;
         await fastify.updateLastOnline(decoded.id); // Update last_online here
     } catch (err)
     {
-        return reply.code(401).send({success:false, error:"invalid_token"})    
+        if (reply)
+            return reply.code(401).send({success:false, error:"invalid_token"})
+        else
+            throw err;
     }
 });
 
@@ -251,3 +309,37 @@ fastify.get('/api', async (request, reply) => {
   };
 });
 
+// Route GET /api/i18n-test (pour tester i18n)
+fastify.get('/api/i18n-test', async (request, reply) => {
+  return {
+    hello: request.i18n.t('hello'),
+    welcome: request.i18n.t('welcome'),
+    locale: request.i18n.locale
+  };
+});
+
+// Capture les signaux de terminaison
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down Vault...');
+  await vaultdown();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down Vault...');
+  await vaultdown();
+  process.exit(0);
+});
+
+// Pour les erreurs non attrapées
+process.on('uncaughtException', async (err) => {
+  console.error('Erreur non gérée :', err);
+  await vaultdown();
+  process.exit(1);
+});
+
+process.on('unhandledRejection', async (reason) => {
+  console.error('Promise rejetée non gérée :', reason);
+  await vaultdown();
+  process.exit(1);
+});

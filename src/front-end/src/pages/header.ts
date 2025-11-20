@@ -1,4 +1,6 @@
 import Page from '../template/page.ts';
+import { i18n } from '../i18n';
+
 export default class Header extends Page {
   async render(): Promise<HTMLElement> {
     const container = document.createElement('div');
@@ -25,14 +27,14 @@ export default class Header extends Page {
     container.innerHTML = `
         <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-      <h1 style = "margin-bottom: 5px; ">Transcendance</h1>
+      <h1 style = "margin-bottom: 5px; ">${i18n.t('app_title')}</h1>
 
       <div id="online-count" style="
         font-size: 12px;
         color: #6bff6bff;
         margin-bottom: 30px;
       ">
-         playerz online
+         ${i18n.t('players_online', { count: '...' })}
       </div>
 
       <div style="
@@ -40,15 +42,29 @@ export default class Header extends Page {
         gap: 12px;
         flex-wrap: wrap;
         justify-content: center;
+        align-items: center;
       ">
-        <button id="homeBtn" >Home</button>
-        <button id="playBtn" >Play</button>
-        <button id="leaderboardBtn" >Leaderboard</button>
-        <button id="tournamentBtn">Tournament 🏆</button>
-        <button id="friendsBtn">Friends</button>
-        <button id="logoutBtn" style="background-color: #f44336; color: white;">Logout</button>
+        <button id="homeBtn" >${i18n.t('home')}</button>
+        <button id="playBtn" >${i18n.t('play')}</button>
+        <button id="leaderboardBtn" >${i18n.t('leaderboard')}</button>
+        <button id="tournamentBtn">${i18n.t('tournament')}</button>
+        <button id="friendsBtn">${i18n.t('friends')}</button>
+        <button id="logoutBtn" style="background-color: #f44336; color: white;">${i18n.t('logout')}</button>
+        
+        <div style="margin-left: 10px;">
+            <select id="langSelect" style="padding: 5px; border-radius: 5px; font-family: inherit;">
+                <option value="en" ${i18n.currentLocale === 'en' ? 'selected' : ''}>🇬🇧 EN</option>
+                <option value="fr" ${i18n.currentLocale === 'fr' ? 'selected' : ''}>🇫🇷 FR</option>
+            </select>
+        </div>
       </div>
     `;
+
+    // Language switcher event
+    container.querySelector('#langSelect')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        i18n.setLocale(target.value as 'en' | 'fr');
+    });
 
     // Button event handlers
     container.querySelector('#leaderboardBtn')?.addEventListener('click', () => {
@@ -113,9 +129,9 @@ export default class Header extends Page {
         });
         const json = await res.json();
         if (json.success) {
-          _count.innerText = `${json.data.online_players} playerz online.`;
+          _count.innerText = i18n.t('players_online', { count: json.data.online_players });
         }
-      } catch (err) { _count.innerText = '⚠️ Server error'; }
+      } catch (err) { _count.innerText = i18n.t('server_error'); }
     };
     // auto-refresh every 45 seconds
     updateOnlineCount();

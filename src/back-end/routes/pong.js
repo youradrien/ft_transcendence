@@ -26,7 +26,7 @@ const attach_socket_handler = async (socket, USER_ID, fastify, ai_game = false) 
                     }
                 }
                 if (!_game){ 
-                    connection.socket.send(JSON.stringify({ type: 'error', message: 'no' }));
+                    socket.send(JSON.stringify({ type: 'error', message: 'no' }));
                     return;
                 }
                 if(!ai_game) // multiplayer 1v1
@@ -186,8 +186,13 @@ async function pong_routes(fastify, options)
             USER_ID = req.user.id;
         } catch (err) {
             console.log('JWT verification failed:', err.message);
-            connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
-            connection.socket.close();
+            if (connection.socket && typeof connection.socket.send === 'function') {
+                connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
+                connection.socket.close();
+            } else if (connection && typeof connection.send === 'function') {
+                 connection.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
+                 connection.close();
+            }
             return;
         }
         // user is already in room?
@@ -430,8 +435,13 @@ async function pong_routes(fastify, options)
             USER_ID = req.user.id;
         } catch (err) {
             console.log('JWT verification failed:', err.message);
-            connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
-            connection.socket.close();
+            if (connection.socket && typeof connection.socket.send === 'function') {
+                connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
+                connection.socket.close();
+            } else if (connection && typeof connection.send === 'function') {
+                 connection.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
+                 connection.close();
+            }
             return;
         }
 
@@ -556,8 +566,13 @@ async function pong_routes(fastify, options)
             USER_ID = req.user.id;
         } catch (err) {
             console.log('JWT verification failed:', err.message);
-            connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
-            connection.socket.close();
+            if (connection.socket && typeof connection.socket.send === 'function') {
+                connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
+                connection.socket.close();
+            } else if (connection && typeof connection.send === 'function') {
+                 connection.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
+                 connection.close();
+            }
             return;
         }
 

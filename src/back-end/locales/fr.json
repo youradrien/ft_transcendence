@@ -1,0 +1,7 @@
+{
+  "hello": "Bonjour le monde",
+  "welcome": "Bienvenue sur Transcendence",
+  "login_success": "Connexion réussie",
+  "login_failed": "Échec de la connexion",
+  "error_user_not_found": "Nom d'utilisateur ou mot de passe incorrect"
+}

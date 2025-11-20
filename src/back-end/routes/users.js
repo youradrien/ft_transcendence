@@ -10,11 +10,6 @@ const { pipeline } = require ('stream/promises');
 const { db, _add_friend } = require('../db.js'); // chemin relatif
 
 const { OAuth2Client } = require('google-auth-library');
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, 'http://localhost:3010/api/auth/google/callback'); 
 const FRONTEND_URL = 'http://localhost:5173/auth';
 
 
@@ -33,13 +28,54 @@ async function getJWTContent(user_id)
 
 async function userRoutes(fastify, options) // Options permet de passer des variables personnalisées
 {
+    // Retrieve OAuth secrets from Fastify decorator (loaded from Vault)
+    const { 
+        github_client_id: GITHUB_CLIENT_ID, 
+        github_client_secret: GITHUB_CLIENT_SECRET, 
+        google_client_id: GOOGLE_CLIENT_ID, 
+        google_client_secret: GOOGLE_CLIENT_SECRET 
+    } = fastify.oauth || {};
+
+    // Initialize Google Client with secrets
+    const client = new OAuth2Client(
+        GOOGLE_CLIENT_ID, 
+        GOOGLE_CLIENT_SECRET, 
+        'http://localhost:3010/api/auth/google/callback'
+    );
+
     fastify.get('/api/test', async (request, reply) => {
             return "test akbar";
     });
 
+    const registerSchema = {
+        body: {
+            type: 'object',
+            required: ['username', 'password'],
+            properties: {
+                username: { type: 'string', minLength: 3, maxLength: 20 },
+                password: { 
+                    type: 'string', 
+                    // min 12 chars, 1 lower, 1 upper, 1 number, 1 special
+                    pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{12,64}$' 
+                }
+            }
+        }
+    };
 
-    // REGISTER
-    fastify.post('/api/register', async (request, reply) => {
+    fastify.post('/api/register', { schema: registerSchema, attachValidation: true }, async (request, reply) => {
+        if (request.validationError) {
+            request.log.warn({
+                event_type: 'registration_failed',
+                reason: 'validation_error',
+                error: request.validationError.message
+            });
+            const isPassword = request.validationError.message.includes('password');
+            return reply.status(400).send({ 
+                success: false, 
+                error: isPassword ? 'password_too_weak' : 'invalid_username_format' 
+            });
+        }
+
         const data = request.body;
         const { username, password } = data;
         
@@ -168,7 +204,9 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                     reason: 'user_not_found',
                     username
                 });
-                return reply.status(401).send({success:false, error : 'username_not_exist'});
+                return reply.status(401).send({
+                    success: false,
+                    error : request.i18n.t('error_user_not_found')});
             }
         } catch (err){
             request.log.error({
@@ -186,7 +224,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                 username,
                 user_id: user.id
             });
-            return reply.status(401).send({success:false, error : 'password_not_valid'});
+            return reply.status(401).send({success:false, error : request.i18n.t('error_user_not_found')});
         }
         if (user.secret_totp)
         {
@@ -273,6 +311,9 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     // GITHUB OAUTH2
     //PREMIERE ROUTE = CLIQUE SUR LOGIN AVEC GHUB
   fastify.get('/api/auth/github/login', async (req, reply) => {
+        if (!GITHUB_CLIENT_ID) {
+             return reply.status(500).send({ success: false, error: 'github_auth_not_configured' });
+        }
         const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user`;
         return reply.redirect(githubAuthURL);
     });
@@ -281,6 +322,10 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     fastify.get('/api/auth/github/callback', async (req, reply) => {
         const code = req.query.code;
         if (!code) return reply.status(400).send('Code not provided');
+
+        if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+             return reply.status(500).send({ success: false, error: 'github_auth_not_configured' });
+        }
 
         try {
             //CODE D'ECHANGE DONNE CONTRE UN ACCESS TOKEN 2EME ETAPE DE GITHUB OAUTH
