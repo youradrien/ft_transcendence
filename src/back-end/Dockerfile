@@ -16,4 +16,4 @@ COPY . .
 
 # Expose port and start
 EXPOSE 3010
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

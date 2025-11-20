@@ -2,13 +2,13 @@ name: ELK Stack Test
 
 on:
   push:
-    branches: [ main, dev, tests/ci_cd ]
+    branches: [ "**" ]
     # paths:
     #   - 'monitoring/**'
     #   - 'docker-compose.yml'
     #   - '.github/workflows/elk-test.yml'
   pull_request:
-    branches: [ main ]
+    branches: [ "**" ]
     # paths:
     #   - 'monitoring/**'
 
@@ -141,6 +141,64 @@ jobs:
           else
             echo "⚠️  No logs found (this might be expected in CI)"
           fi
+
+      # ---------------------------------------------------------
+      # NEW: Integration (Backend -> Logstash -> Elasticsearch)
+      # ---------------------------------------------------------
+      - name: Start App Stack (Vault + Backend)
+        run: |
+          echo "Starting Vault and Backend containers..."
+          
+          # Ensure secrets directory exists for vault_launcher.js to write keys
+          mkdir -p src/back-end/vault_handler/secrets
+          chmod 777 src/back-end/vault_handler/secrets
+
+          docker compose -f docker-compose.yml up -d --build vault backend
+
+      - name: Wait for Backend to be ready
+        run: |
+          echo "Waiting for Backend to be ready..."
+          # Loop to check if backend is responding (it might take time to init Vault)
+          for i in {1..60}; do
+            if curl -s http://localhost:3010/api > /dev/null; then
+              echo "✅ Backend is ready and responding!"
+              break
+            fi
+            echo "Attempt $i/60... (Backend initializing...)"
+            sleep 2
+          done
+
+      - name: Generate Real Traffic
+        run: |
+          echo "mmaking requests to generate real logs..."
+          # Hit the API
+          curl -s http://localhost:3010/api
+          curl -s http://localhost:3010/api
+          sleep 5 # so logstash has a moment to process the logs
+
+      - name: Verify Backend Logs in Elasticsearch
+        run: |
+          echo "Searching for real backend logs..."
+          
+          # Search for logs specifically from the backend service
+          # look for service.name="backend"
+          LOG_COUNT=$(curl -s -u elastic:elastic_password \
+            "http://localhost:9200/ft_transcendence-*/_count?q=service.name:backend" | \
+            grep -o '"count":[0-9]*' | cut -d':' -f2)
+            
+          echo "Real Backend logs found: $LOG_COUNT"
+          
+          if [ "$LOG_COUNT" -gt 0 ]; then
+            echo "SUCCESS: The Backend is successfully sending logs to ELK!"
+          else
+            echo "FAILURE: Backend is running, but NO logs appeared in ELK."
+            echo "This means the connection between Backend and Logstash is broken."
+            
+            echo "--- Backend Docker Logs (for debugging) ---"
+            docker logs backend
+            exit 1
+          fi
+      # ---------------------------------------------------------
 
       - name: Check for JSON parse failures
         run: |

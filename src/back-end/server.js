@@ -47,33 +47,15 @@ const fastify = require('fastify')({
 });
 const { db, _INIT_DB } = require('./db.js'); // chemin relatif selon ton projet
 const bcrypt = require('bcrypt');
-const vault = require('node-vault')({
-   apiVersion: 'v1', // default
-  endpoint: 'http://vault:8200', // default
-  token: 'root' // optional client token; can be fetched after valid initialization of the server
-});
-
-// init vault server
-// vault.init({ secret_shares: 1, secret_threshold: 1 })
-//   .then( (result) => {
-//     var keys = result.keys;
-//     // set token for all following requests
-//     vault.token = result.root_token;
-//     // unseal vault server
-//     console.log("SUCESS UNSEALING:  " +result.root_token);
-//     return vault.unseal({ secret_shares: 1, key: keys[0] })
-//   })
-//   .catch(console.error);
 require('dotenv').config();
-vault.token = "root";
-// console.log(process.env.JWT_SECRET);
-vault.write('secret/data/hello', {data: { value: process.env.JWT_SECRET,  lease: '1s' } })
-  .then( async () => {
-    const a = await vault.read('secret/data/hello');
-    console.log(a);
-  })
-  //.then( () => vault.delete('secret/hello'))
-  .catch(console.error);
+
+
+/********************************************/
+/*************VAULT TERRITORY****************/
+/********************************************/
+const { vault, vaultstart, vaultdown, writeSecret, readSecret } = require('./vault_handler/vault_launcher.js');
+
+
 
 // global containers, for rooms ws (accessibles depuis toutes les routes)
 fastify.decorate("p_rooms", new Map());   // game rooms -> [player1, player2]
@@ -89,18 +71,7 @@ fastify.register(cors, {
 });
 
 // JWT
-const jwtSecret =  process.env.JWT_SECRET;
-fastify.register(cookie);
-fastify.register(multipart);
-fastify.register(jwt, {
-        secret: jwtSecret || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
-        cookie: {
-          cookieName: "token",
-          signed : false
-        }
-});
-// websocket
-fastify.register(websocket);
+
 
 // Add request logging hook with enriched context
 fastify.addHook('onRequest', async (request, reply) => {
@@ -155,8 +126,25 @@ const gen_fake_games = (count = 1) => {
 // START SERV, and link db
 const start = async () => {
     try {
+      const token = await vaultstart();
+      vault.token = token;
+      const jwtSecret = await readSecret('jwt');
+      fastify.register(cookie);
+      fastify.register(multipart);+
+      // -- moved into VAULT()  <---
+      fastify.register(jwt, {
+              secret: jwtSecret?.value || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
+              cookie: {
+                cookieName: "token",
+                signed : false
+              }
+      });
+      console.log('jwt apres lecture vault:',jwtSecret?.value);
+      // websocket
+      fastify.register(websocket);
       await _INIT_DB(); // ✅ DB init here <------------
       gen_fake_games(Math.floor(Math.random() * 2)); // 
+      // gen_fake_users(db);
       await fastify.listen({ port: 3010, host: '0.0.0.0' });
       console.log('🚀 server is running at http://localhost:3010');
     } catch (err) {
@@ -196,7 +184,7 @@ const gen_fake_users = async (db, count = 2) => {
     );
   }
 };
-gen_fake_users(db);
+// gen_fake_users(db);
 
 // last time seen (user field)
 fastify.decorate('updateLastOnline', async function(userId) {
@@ -251,3 +239,28 @@ fastify.get('/api', async (request, reply) => {
   };
 });
 
+// Capture les signaux de terminaison
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down Vault...');
+  await vaultdown();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down Vault...');
+  await vaultdown();
+  process.exit(0);
+});
+
+// Pour les erreurs non attrapées
+process.on('uncaughtException', async (err) => {
+  console.error('Erreur non gérée :', err);
+  await vaultdown();
+  process.exit(1);
+});
+
+process.on('unhandledRejection', async (reason) => {
+  console.error('Promise rejetée non gérée :', reason);
+  await vaultdown();
+  process.exit(1);
+});
