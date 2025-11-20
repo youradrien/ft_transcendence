@@ -47,9 +47,35 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             return "test akbar";
     });
 
+    const registerSchema = {
+        body: {
+            type: 'object',
+            required: ['username', 'password'],
+            properties: {
+                username: { type: 'string', minLength: 3, maxLength: 20 },
+                password: { 
+                    type: 'string', 
+                    // min 12 chars, 1 lower, 1 upper, 1 number, 1 special
+                    pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{12,64}$' 
+                }
+            }
+        }
+    };
 
-    // REGISTER
-    fastify.post('/api/register', async (request, reply) => {
+    fastify.post('/api/register', { schema: registerSchema, attachValidation: true }, async (request, reply) => {
+        if (request.validationError) {
+            request.log.warn({
+                event_type: 'registration_failed',
+                reason: 'validation_error',
+                error: request.validationError.message
+            });
+            const isPassword = request.validationError.message.includes('password');
+            return reply.status(400).send({ 
+                success: false, 
+                error: isPassword ? 'password_too_weak' : 'invalid_username_format' 
+            });
+        }
+
         const data = request.body;
         const { username, password } = data;
         

@@ -22,5 +22,7 @@
   "fill_all_fields": "Veuillez remplir tous les champs.",
   "logged_in": "Connecté !",
   "registered": "Inscrit !",
-  "error_prefix": "Erreur : "
+  "error_prefix": "Erreur : ",
+  "password_too_weak": "Mot de passe trop faible (min 12 car., 1 maj, 1 min, 1 chiffre, 1 spécial)",
+  "invalid_username_format": "Nom d'utilisateur invalide (3-20 caractères)"
 }
