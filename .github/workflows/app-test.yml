@@ -74,7 +74,10 @@ jobs:
 
       - name: Test backend server starts
         run: |
-          ls -al vault/vault-config/certs & cat vault/vault-config/certs/vault.crt
+
+          ls -la && cat /app/certs/vault.crt
+          docker ps
+          docker exec -it ft_transcendence-backend-1 ls -la /app/certs
           cd src/back-end
           # Create the secrets directory required by vault_launcher.js
           mkdir -p vault_handler/secrets
