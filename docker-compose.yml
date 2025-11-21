@@ -18,7 +18,6 @@ services:
       driver: "syslog"
       options:
         syslog-address: "tcp://localhost:5000"
-        # syslog-address: "udp://127.0.0.1:5000" #mac os workaround
         tag: "frontend"
         syslog-format: "rfc5424"
     labels:
@@ -35,14 +34,13 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - VAULT_ADDR=http://vault:8200
+      - VAULT_ADDR=https://vault:8200
     networks:
       - ft_transcendence_net
     logging:
       driver: "syslog"
       options:
         syslog-address: "tcp://localhost:5000"
-        # syslog-address: "udp://127.0.0.1:5000" #mac os workaround
         tag: "backend"
         syslog-format: "rfc5424"
     labels:
@@ -50,8 +48,8 @@ services:
       service.type: "api"
       app.component: "server"
     volumes:
-      # - ./vault-config/vault.crt:/app/certs/vault.crt:ro # Monte le certificat pour que Node.js puisse le lire
-      - ./src/back-end/vault_handler:/app/vault_handler  # <-- watch for changes
+      - ./vault/vault-config/certs/vault.crt:/app/certs/vault.crt:ro # Monte le certificat pour que Node.js puisse le lire
+      - ./src/back-end/vault_handler:/app/vault_handler
     entrypoint: ["node", "server.js"]
     depends_on:
       - vault
@@ -82,11 +80,11 @@ services:
     cap_add:
       - IPC_LOCK                             # prevent memory swap for secrets
     environment:
-      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_ADDR=https://localhost:8200
     volumes:
       - ./vault/vault-data:/vault/file             # persistent data
       - ./vault/vault-config:/vault/config         # mount config and certs
-    # command: server -config /vault/config/vault.hcl # Utilise notre fichier de config
+      - ./vault/vault-config/certs:/vault/config/certs:ro       # mount certs (read-only)
     entrypoint: ["vault", "server", "-config=/vault/config/vault.hcl"]
     networks:
       - ft_transcendence_net

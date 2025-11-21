@@ -152,7 +152,6 @@ const start = async () => {
       const token = await vaultstart();
       vault.token = token;
       const jwtSecret = await readSecret('jwt');
-
       let oauthSecrets = await readSecret('oauth');
       
       const envOAuth = {
