@@ -76,11 +76,10 @@ jobs:
         run: |
 
           ls -la
-          docker ps
-          docker exec -it ft_transcendence-backend-1 ls -la /app
           cd src/back-end
           # Create the secrets directory required by vault_launcher.js
           mkdir -p vault_handler/secrets
+          mkdir -p app/certs
           
           timeout 10s node server.js &
           sleep 3
