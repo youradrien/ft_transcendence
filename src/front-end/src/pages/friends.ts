@@ -71,6 +71,66 @@ export default class Friends extends Page {
 	}
   }
 
+  async FETCH_FRIEND_REQUESTS(): Promise<Friend[]> {
+    try {
+        const res = await fetch('http://localhost:3010/api/friends/requests', {
+            method: 'GET',
+            credentials: 'include',
+        });
+        const data = await res.json();
+        if (!data.success) {
+            console.error('Failure while fetching friend requests', data.error);
+            return [];
+        }
+        return data.requests as Friend[];
+    } catch (err) {
+        console.error('Error fetching friend requests', err);
+        return [];
+    }
+  }
+
+  async ACCEPT_FRIEND_REQUEST(username: string): Promise<boolean> {
+    try {
+        const res = await fetch(`http://localhost:3010/api/friends/requests/accept/${username}`, {
+            method: 'POST',
+            credentials: 'include',
+        });
+        const data = await res.json();
+        return data.success === true;
+    } catch (err) {
+        console.error('Error accepting friend request', err);
+        return false;
+    }
+  }
+
+  async DECLINE_FRIEND_REQUEST(username: string): Promise<boolean> {
+    try {
+        const res = await fetch(`http://localhost:3010/api/friends/requests/decline/${username}`, {
+            method: 'POST',
+            credentials: 'include',
+        });
+        const data = await res.json();
+        return data.success === true;
+    } catch (err) {
+        console.error('Error declining friend request', err);
+        return false;
+    }
+  }
+
+  async SEND_FRIEND_REQUEST(username: string): Promise<boolean> {
+    try {
+        const res = await fetch(`http://localhost:3010/api/friends/add/${username}`, {
+            method: 'POST',
+            credentials: 'include',
+        });
+        const data = await res.json();
+        return data.success === true;
+    } catch (err) {
+        console.error('Error sending friend request', err);
+        return false;
+    }
+  }
+
   // Method for removing a friend.
   async REMOVE_FRIEND(username: string): Promise<boolean> {
 
@@ -177,11 +237,11 @@ export default class Friends extends Page {
 	unfBtn.textContent = "Unfriend";
 	Object.assign(unfBtn.style, {
 		background: "#ff4444",
-      color: "white",
-      border: "none",
-      borderRadius: "6px",
-      padding: "6px 10px",
-      cursor: "pointer"
+		color: "white",
+		border: "none",
+		borderRadius: "6px",
+		padding: "6px 10px",
+		cursor: "pointer"
 	});
 	unfBtn.onclick = async (e) => {
 		e.stopPropagation();
@@ -219,31 +279,99 @@ export default class Friends extends Page {
 	return card;
   }
 
+	createFriendRequestCard(friend: Friend, acceptCallback: (username: string) => void, declineCallback: (username: string) => void): HTMLElement {
+		const card = this.createFriendCard(friend, () => {});
+
+		card.style.background = "#002244"; 
+
+		const right = card.querySelector('div:last-child');
+		right!.innerHTML = '';
+
+		const acceptBtn = document.createElement('button');
+		acceptBtn.textContent = "Accept";
+		Object.assign(acceptBtn.style, {
+			background: "#44ff44",
+			color: "white",
+			border: "none",
+			borderRadius: "6px",
+			padding: "6px 10px",
+			cursor: "pointer"
+	});
+
+	// Accepting the request (button "Accept")
+	acceptBtn.onclick = async (e) => {
+		e.stopPropagation();
+		acceptBtn.disabled = true;
+		acceptBtn.textContent = "Accepting...";
+
+		const success = await this.ACCEPT_FRIEND_REQUEST(friend.username);
+
+		if (success) acceptCallback(friend.username);
+		else {
+			acceptBtn.disabled = false;
+			acceptBtn.textContent = "Accept";
+			alert("Failed to accept friend request");
+		}
+	};
+
+	// Declining a request (button "Decline")
+	const declineBtn = document.createElement('button');
+	declineBtn.textContent = "Decline";
+	Object.assign(declineBtn.style, {
+		background: "#ff4444",
+		color: "white",
+		border: "none",
+		borderRadius: "6px",
+		padding: "6px 10px",
+		cursor: "pointer"
+	});
+	declineBtn.onclick = async (e) => {
+		e.stopPropagation();
+		declineBtn.disabled = true;
+		declineBtn.textContent = "Declining...";
+	
+		const success = await this.DECLINE_FRIEND_REQUEST(friend.username);
+
+		if (success) declineCallback(friend.username);
+		else {
+			declineBtn.disabled = false;
+			declineBtn.textContent = "Decline";
+			alert("Failed to decline friend request");
+		}
+	};
+
+	right!.appendChild(acceptBtn);
+	right!.appendChild(declineBtn);
+
+	return card;
+}
+
+
 
 	// PAGE RENDERING :
 
- async render(): Promise<HTMLElement> {
+	async render(): Promise<HTMLElement> {
     const container = document.createElement("div");
     container.id = this.id;
     Object.assign(container.style, {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      padding: "40px",
-      backgroundColor: "#181818d1",
-      color: "white",
-      fontFamily: '"Press Start 2P", cursive',
-      minHeight: "70vh",
-      borderRadius: "18px"
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "40px",
+        backgroundColor: "#181818d1",
+        color: "white",
+        fontFamily: '"Press Start 2P", cursive',
+        minHeight: "70vh",
+        borderRadius: "18px"
     });
 
     const content = document.createElement("div");
     Object.assign(content.style, {
-      width: "100%",
-      maxWidth: "850px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "16px"
+        width: "100%",
+        maxWidth: "850px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "16px"
     });
 
     content.innerHTML = `<h1 style="font-size: 24px; margin-bottom: 10px;">FRIENDS</h1>`;
@@ -251,40 +379,66 @@ export default class Friends extends Page {
 
     const listContainer = document.createElement("div");
     Object.assign(listContainer.style, {
-      width: "100%",
-      display: "flex",
-      flexDirection: "column",
-      gap: "12px",
-	  boxSizing: "border-box"
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+        boxSizing: "border-box"
     });
     content.appendChild(listContainer);
 
     let friends = await this.FETCH_FRIENDS();
+    let requests = await this.FETCH_FRIEND_REQUESTS();
+
+    // sécurité si l’API retourne null ou autre
+    if (!Array.isArray(friends)) friends = [];
+    if (!Array.isArray(requests)) requests = [];
+
+    console.log("Friends:", friends);
+    console.log("Friend requests:", requests);
 
     const renderList = () => {
-      listContainer.innerHTML = "";
-      if (friends.length === 0) {
-        const empty = document.createElement("div");
-        empty.textContent = "No friends yet.";
-        empty.style.opacity = "0.8";
-        listContainer.appendChild(empty);
-        return;
-      }
+        listContainer.innerHTML = "";
 
-      friends.forEach(friend => {
-        const card = this.createFriendCard(friend, (username) => {
-          friends = friends.filter(f => f.username !== username);
-          renderList();
+        if (friends.length === 0 && requests.length === 0) {
+            const empty = document.createElement("div");
+            empty.textContent = "No friends or requests yet.";
+            empty.style.opacity = "0.8";
+            listContainer.appendChild(empty);
+            return;
+        }
+
+        // Afficher amis
+        friends.forEach(friend => {
+            const card = this.createFriendCard(friend, (username) => {
+                friends = friends.filter(f => f.username !== username);
+                renderList();
+            });
+            listContainer.appendChild(card);
         });
-        listContainer.appendChild(card);
-      });
+
+        // Afficher demandes
+        requests.forEach(req => {
+            if (!req || !req.username) return; // sécurité
+            const card = this.createFriendRequestCard(req,
+                (username) => {  // Accept
+                    friends = friends.concat(req);
+                    requests = requests.filter(r => r.username !== username);
+                    renderList();
+                },
+                (username) => {  // Decline
+                    requests = requests.filter(r => r.username !== username);
+                    renderList();
+                }
+            );
+            listContainer.appendChild(card);
+        });
     };
 
     renderList();
     return container;
   }
 }
-
 
 ////// CARD CONTAINER STRUCTURE ///////
 

@@ -7,7 +7,7 @@ const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const { pipeline } = require ('stream/promises');
-const { db, _add_friend, _remove_friend } = require('../db.js'); // chemin relatif
+const { db, _add_friend, _remove_friend, _delete_friend_request } = require('../db.js'); // chemin relatif
 
 const { OAuth2Client } = require('google-auth-library');
 const FRONTEND_URL = 'http://localhost:5173/auth';
@@ -608,6 +608,129 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 		}
 	});
 
+	fastify.get('/api/friends/requests', { preValidation: [fastify.authenticate] }, async (req, reply) => {
+
+		const userId = req.user.id;
+		try {
+			const requests = await db.all(`
+				SELECT u.id, u.username, u.avatar_url, u.last_online
+				FROM friend_requests fr
+				JOIN users u ON u.id = fr.sender_id
+				WHERE fr.receiver_id = ? AND fr.status = 'pending'`,
+			[userId]);
+
+			const formatted = requests.map(f => ({
+				id: f.id,
+				username: f.username,
+				avatar_url: f.avatar_url,
+				online: (new Date() - new Date(f.last_online)) <= 30 * 1000,
+				last_seen: f.last_online
+			}));
+
+			reply.send({ success: true, requests: formatted} );
+		} catch (error) {
+			console.error(error);
+			reply.status(500).send({ success: false, error: 'db_error' });
+		}
+	});
+
+	// SENDING A FRIEND REQUEST :
+
+	fastify.post('/api/friends/requests', { preValidation: [fastify.authenticate] }, async (req, reply) => {
+
+		const senderId = req.user.id;
+		const { username } = req.body;
+
+		try {
+			const target = await db.get("SELECT id FROM users WHERE username = ?", [username]);
+			if (!target)
+				return reply.status(400).send({ success: false, error: 'user_not_found'});
+
+			const receiverId = target.id;
+			if (receiverId === senderId) {
+				return reply.status(400).send({ success: false, error: 'cannot_add_yourself'});
+			}
+
+			const existing = await db.get(`
+				SELECT * FROM friend_requests
+				WHERE sender_id = ? AND receiver_id = ?`, [senderId, receiverId]);
+			if (existing)
+				return reply.status(400).send({ success: false, error: 'already_requested'});
+
+			await db.run(`
+				INSERT INTO friend_requests (sender_id, receiver_id)
+				VALUES (?, ?)`,
+			[senderId, receiverId]);
+
+			reply.send({ success: true });
+		} catch (error) {
+			console.error(error);
+			reply.status(500).send({ success: false, error: 'db_error' });
+		}
+	});
+
+	// ACCEPTING A FRIEND REQUEST :
+
+	fastify.post('/api/friends/requests/accept/:username', { preValidation: [fastify.authenticate] }, async (req, reply) => {
+
+		const receiverId = req.user.id;
+		const { username } = req.params;
+
+		try {
+			const sender = await db.get("SELECT id FROM users WHERE username = ?", [username]);
+			if (!sender)
+				return reply.status(400).send({ success: false, error: 'user_not_found' });
+
+			const senderId = sender.id;
+
+			const request = await db.get(`
+				SELECT * FROM friend_requests
+				WHERE sender_id = ? AND receiver_id = ? AND status = 'pending'`,
+			[senderId, receiverId]);
+
+			if (!request)
+				return reply.status(400).send({ success: false, error: 'request_not_found' });
+
+			await _add_friend(receiverId, senderId);
+
+			await _delete_friend_request(request.id);
+			reply.send({ success: true });
+		} catch (err) {
+			console.error(err);
+			reply.status(500).send({ success: false, error: 'db_error' });
+		}
+	})
+
+	// DECLINING A FRIEND REQUEST :
+
+	fastify.post('/api/friends/requests/decline/:username', { preValidation: [fastify.authenticate] }, async (req, reply) => {
+
+		const receiverId = req.user.id;
+		const { username } = req.params;
+
+		try {
+			const sender = await db.get("SELECT id FROM users WHERE username = ?", [username]);
+			if (!sender)
+				return reply.status(400).send({ success: false, error: 'user_not_found' });
+
+			const senderId = sender.id;
+
+			const request = await db.get(`
+				SELECT * FROM friend_requests
+				WHERE sender_id = ? AND receiver_id = ? AND status = 'pending'`, 
+				[senderId, receiverId]);
+
+			if (!request)
+				return reply.status(400).send({ success: false, error: 'request_not_found' });
+
+			await _delete_friend_request(request.id);
+			reply.send({ success: true });
+
+		} catch (err) {
+			console.error(err);
+			reply.status(500).send({ success: false, error: 'db_error' });
+		}
+	});
 	/*
 		Route pour ajouter un ami.
 		Si A ajoute B, deux entrees sont crees dans la DB :
@@ -661,46 +784,33 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 			console.error("Friend add error: ", error);
 			return (reply.status(500).send({ success: false, error: "db_error" }));
 		}
-  	});
+	});
 
-	fastify.delete('/api/friends/:username', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+	fastify.delete('/api/friends/:username', { preValidation: [fastify.authenticate] }, async (req, reply) => {
+
+		const userId = req.user.id;
+		const { username } = req.params;
 
 		try {
-			const userId = request.user.id;
-			const { username } = request.params;
-
 			const target = await db.get("SELECT id FROM users WHERE username = ?", [username]);
-			if (!target) {
-				return reply.status(400).send({
-					success: false,
-					error: "user_not_found"});
-			}
-
+			if (!target) return reply.status(400).send({ success: false, error: 'user_not_found' });
 			const targetId = target.id;
 
-			const existing = await db.get(
-				`SELECT * FROM friends
-				WHERE user_id = ? AND friend_id = ?`,
-				[userId, targetId]
-			);
-			if (!existing) {
-				return reply.status(400).send({
-					success: false,
-					error: "not_following",
-				});
-			}
+			const existing = await db.get(`
+				SELECT * FROM friends WHERE user_id = ? AND friend_id = ? AND status = 'accepted'`, 
+				[userId, targetId]);
 
-			await _remove_friend(userId, targetId);
-			return (reply.send({ success: true }));
+			if (!existing) return reply.status(400).send({ success: false, error: 'not_friends' });
 
-		} catch (error) {
-			console.error("Delete friend error: ", error);
-			return reply.status(500).send({
-				success: false,
-				error: "db_error"
-			});
+			await db.run(`DELETE FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)`,
+			[userId, targetId, targetId, userId]);
+
+			reply.send({ success: true });
+		} catch (err) {
+			console.error(err);
+			reply.status(500).send({ success: false, error: 'db_error' });
 		}
-	})
-  };
+	});
+}
 
   module.exports = userRoutes;
