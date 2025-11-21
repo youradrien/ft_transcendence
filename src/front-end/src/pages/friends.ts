@@ -279,78 +279,118 @@ export default class Friends extends Page {
 	return card;
   }
 
-	createFriendRequestCard(friend: Friend, acceptCallback: (username: string) => void, declineCallback: (username: string) => void): HTMLElement {
-		const card = this.createFriendCard(friend, () => {});
+  createFriendRequestCard(friend: Friend, acceptCallback: (username: string) => void, declineCallback: (username: string) => void): HTMLElement {
+    const card = document.createElement("div");
+    Object.assign(card.style, {
+        width: "100%",
+        display: "flex",
+        justifyContent: "space-between", // avatar + nom à gauche, boutons à droite
+        alignItems: "center",
+        padding: "12px 16px",
+        background: "#002244",
+        border: "2px solid #333",
+        borderRadius: "8px",
+        boxShadow: "0 0 8px rgba(0, 255, 0, 0.06)",
+        boxSizing: "border-box",
+        gap: "12px"
+    });
 
-		card.style.background = "#002244"; 
+    // Left: avatar + username + status
+    const left = document.createElement("div");
+    Object.assign(left.style, { display: "flex", alignItems: "center", gap: "12px" });
 
-		const right = card.querySelector('div:last-child');
-		right!.innerHTML = '';
+    const avatar = document.createElement("img");
+    avatar.src = friend.avatar_url;
+    avatar.alt = friend.username;
+    Object.assign(avatar.style, { width: "55px", height: "55px", borderRadius: "50%", border: "2px solid white" });
 
-		const acceptBtn = document.createElement('button');
-		acceptBtn.textContent = "Accept";
-		Object.assign(acceptBtn.style, {
-			background: "#44ff44",
-			color: "white",
-			border: "none",
-			borderRadius: "6px",
-			padding: "6px 10px",
-			cursor: "pointer"
-	});
+    const textWrap = document.createElement("div");
+    Object.assign(textWrap.style, { display: "flex", flexDirection: "column", justifyContent: "center" });
 
-	// Accepting the request (button "Accept")
-	acceptBtn.onclick = async (e) => {
-		e.stopPropagation();
-		acceptBtn.disabled = true;
-		acceptBtn.textContent = "Accepting...";
+    const usernameEl = document.createElement("div");
+    usernameEl.textContent = friend.username;
+    usernameEl.style.fontSize = "16px";
 
-		const success = await this.ACCEPT_FRIEND_REQUEST(friend.username);
+    const statusEl = document.createElement("div");
+    statusEl.textContent = friend.online ? "Online" : `Last seen: ${formatLastSeen(friend.last_seen)}`;
+    statusEl.style.fontSize = "12px";
+    statusEl.style.color = friend.online ? "lime" : "#fc2929ff";
 
-		if (success) acceptCallback(friend.username);
-		else {
-			acceptBtn.disabled = false;
-			acceptBtn.textContent = "Accept";
-			alert("Failed to accept friend request");
-		}
-	};
+    textWrap.appendChild(usernameEl);
+    textWrap.appendChild(statusEl);
+    left.appendChild(avatar);
+    left.appendChild(textWrap);
 
-	// Declining a request (button "Decline")
-	const declineBtn = document.createElement('button');
-	declineBtn.textContent = "Decline";
-	Object.assign(declineBtn.style, {
-		background: "#ff4444",
-		color: "white",
-		border: "none",
-		borderRadius: "6px",
-		padding: "6px 10px",
-		cursor: "pointer"
-	});
-	declineBtn.onclick = async (e) => {
-		e.stopPropagation();
-		declineBtn.disabled = true;
-		declineBtn.textContent = "Declining...";
-	
-		const success = await this.DECLINE_FRIEND_REQUEST(friend.username);
+    // Right: Accept / Decline buttons
+    const right = document.createElement("div");
+    Object.assign(right.style, { display: "flex", gap: "8px" });
 
-		if (success) declineCallback(friend.username);
-		else {
-			declineBtn.disabled = false;
-			declineBtn.textContent = "Decline";
-			alert("Failed to decline friend request");
-		}
-	};
+    const acceptBtn = document.createElement("button");
+    acceptBtn.textContent = "Accept";
+    Object.assign(acceptBtn.style, {
+        background: "#44ff44",
+        color: "white",
+        border: "none",
+        borderRadius: "6px",
+        padding: "6px 10px",
+        cursor: "pointer"
+    });
+    acceptBtn.onclick = async (e) => {
+        e.stopPropagation();
+        acceptBtn.disabled = true;
+        acceptBtn.textContent = "Accepting...";
+        const success = await this.ACCEPT_FRIEND_REQUEST(friend.username);
+        if (success) acceptCallback(friend.username);
+        else {
+            acceptBtn.disabled = false;
+            acceptBtn.textContent = "Accept";
+            alert("Failed to accept friend request");
+        }
+    };
 
-	right!.appendChild(acceptBtn);
-	right!.appendChild(declineBtn);
+    const declineBtn = document.createElement("button");
+    declineBtn.textContent = "Decline";
+    Object.assign(declineBtn.style, {
+        background: "#ff4444",
+        color: "white",
+        border: "none",
+        borderRadius: "6px",
+        padding: "6px 10px",
+        cursor: "pointer"
+    });
+    declineBtn.onclick = async (e) => {
+        e.stopPropagation();
+        declineBtn.disabled = true;
+        declineBtn.textContent = "Declining...";
+        const success = await this.DECLINE_FRIEND_REQUEST(friend.username);
+        if (success) declineCallback(friend.username);
+        else {
+            declineBtn.disabled = false;
+            declineBtn.textContent = "Decline";
+            alert("Failed to decline friend request");
+        }
+    };
 
-	return card;
+    right.appendChild(acceptBtn);
+    right.appendChild(declineBtn);
+
+    card.appendChild(left);
+    card.appendChild(right);
+
+    card.addEventListener("mouseenter", () => {
+        card.style.transform = "translateY(-6px) scale(1.02)";
+        card.style.boxShadow = "0 0 10px rgba(255,255,255,0.12)";
+    });
+    card.addEventListener("mouseleave", () => {
+        card.style.transform = "translateY(0) scale(1)";
+        card.style.boxShadow = "0 0 8px rgba(0,255,0,0.06)";
+    });
+
+    return card;
 }
 
-
-
 	// PAGE RENDERING :
-
-	async render(): Promise<HTMLElement> {
+async render(): Promise<HTMLElement> {
     const container = document.createElement("div");
     container.id = this.id;
     Object.assign(container.style, {
@@ -390,7 +430,6 @@ export default class Friends extends Page {
     let friends = await this.FETCH_FRIENDS();
     let requests = await this.FETCH_FRIEND_REQUESTS();
 
-    // sécurité si l’API retourne null ou autre
     if (!Array.isArray(friends)) friends = [];
     if (!Array.isArray(requests)) requests = [];
 
@@ -408,7 +447,7 @@ export default class Friends extends Page {
             return;
         }
 
-        // Afficher amis
+        // --- Afficher amis ---
         friends.forEach(friend => {
             const card = this.createFriendCard(friend, (username) => {
                 friends = friends.filter(f => f.username !== username);
@@ -417,9 +456,10 @@ export default class Friends extends Page {
             listContainer.appendChild(card);
         });
 
-        // Afficher demandes
+        // --- Afficher demandes en attente ---
         requests.forEach(req => {
-            if (!req || !req.username) return; // sécurité
+            if (!req || !req.username) return;
+
             const card = this.createFriendRequestCard(req,
                 (username) => {  // Accept
                     friends = friends.concat(req);
@@ -431,6 +471,7 @@ export default class Friends extends Page {
                     renderList();
                 }
             );
+
             listContainer.appendChild(card);
         });
     };
