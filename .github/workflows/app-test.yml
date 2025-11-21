@@ -80,6 +80,7 @@ jobs:
           # Create the secrets directory required by vault_launcher.js
           mkdir -p vault_handler/secrets
           mkdir -p app/certs
+          touch app/certs/vault.crt
           
           timeout 10s node server.js &
           sleep 3
