@@ -651,6 +651,16 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 				return reply.status(400).send({ success: false, error: 'cannot_add_yourself'});
 			}
 
+			const alreadyFriends = await db.get(`
+				SELECT * FROM friends
+				WHERE (user_id = ? AND friend_id = ?)
+				OR (user_id = ? AND friend_id = ?)`,
+				[senderId, receiverId, receiverId, senderId]);
+
+			if (alreadyFriends) {
+				return reply.status(400).send({ success: false, error: 'already_friends' });
+			}
+
 			const existing = await db.get(`
 				SELECT * FROM friend_requests
 				WHERE sender_id = ? AND receiver_id = ?`, [senderId, receiverId]);
