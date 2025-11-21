@@ -76,7 +76,10 @@ jobs:
         run: |
 
           ls -la
+          mkdir -p app/certs
+          touch app/certs/vault.crt
           cd src/back-end
+
           # Create the secrets directory required by vault_launcher.js
           mkdir -p vault_handler/secrets
           mkdir -p app/certs
