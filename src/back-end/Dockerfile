@@ -10,16 +10,9 @@ COPY package*.json ./
 
 # Install app dependencies
 RUN npm install
-RUN mkdir -p /app/certs
 
 # Copy the rest of the app
 COPY . .
-# Copy backend code
-COPY src/back-end /app
-
-# Copy certificate
-COPY vault/vault-config/certs/vault.crt /app/certs/vault.crt
-
 
 # Expose port and start
 EXPOSE 3010
