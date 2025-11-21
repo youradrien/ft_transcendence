@@ -75,7 +75,6 @@ jobs:
       - name: Test backend server starts
         run: |
 
-          ls -la
           mkdir -p app/certs
           touch app/certs/vault.crt
           cd src/back-end
@@ -85,6 +84,8 @@ jobs:
           mkdir -p app/certs
           touch app/certs/vault.crt
           
+          ls -la app/certs
+          ls -la vault_handler/secrets
           timeout 10s node server.js &
           sleep 3
           if pgrep -f "node server.js" > /dev/null; then
