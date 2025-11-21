@@ -7,7 +7,7 @@ const qrcode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const { pipeline } = require ('stream/promises');
-const { db, _add_friend } = require('../db.js'); // chemin relatif
+const { db, _add_friend, _remove_friend } = require('../db.js'); // chemin relatif
 
 const { OAuth2Client } = require('google-auth-library');
 const FRONTEND_URL = 'http://localhost:5173/auth';
@@ -662,6 +662,45 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 			return (reply.status(500).send({ success: false, error: "db_error" }));
 		}
   	});
-  }
+
+	fastify.delete('/api/friends/:username', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+
+		try {
+			const userId = request.user.id;
+			const { username } = request.params;
+
+			const target = await db.get("SELECT id FROM users WHERE username = ?", [username]);
+			if (!target) {
+				return reply.status(400).send({
+					success: false,
+					error: "user_not_found"});
+			}
+
+			const targetId = target.id;
+
+			const existing = await db.get(
+				`SELECT * FROM friends
+				WHERE user_id = ? AND friend_id = ?`,
+				[userId, targetId]
+			);
+			if (!existing) {
+				return reply.status(400).send({
+					success: false,
+					error: "not_following",
+				});
+			}
+
+			await _remove_friend(userId, targetId);
+			return (reply.send({ success: true }));
+
+		} catch (error) {
+			console.error("Delete friend error: ", error);
+			return reply.status(500).send({
+				success: false,
+				error: "db_error"
+			});
+		}
+	})
+  };
 
   module.exports = userRoutes;

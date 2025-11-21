@@ -71,6 +71,26 @@ export default class Friends extends Page {
 	}
   }
 
+  // Method for removing a friend.
+  async REMOVE_FRIEND(username: string): Promise<boolean> {
+
+	try {
+		const res = await fetch(`http://localhost:3010/api/friends/${username}`, {
+			method: 'DELETE',
+			credentials: 'include',
+		});
+		const data = await res.json();
+		if (!data.success) {
+			console.error('Failure while removing friend', data.error);
+			return false;
+		}
+		return true;
+	} catch (error) {
+		console.error('Error while deleting friend', error);
+		return false;
+	}
+  }
+
   createFriendCard(friend: Friend, removeCallBack: (username: string) => void): HTMLElement {
 
 	const card = document.createElement("div");
@@ -163,11 +183,18 @@ export default class Friends extends Page {
       padding: "6px 10px",
       cursor: "pointer"
 	});
-	unfBtn.onclick = (e) => {
+	unfBtn.onclick = async (e) => {
 		e.stopPropagation();
 		unfBtn.disabled = true;
 		unfBtn.textContent = "Removing...";
-		//Callback provided by page = delete friend and refresh page !!
+
+		const success = await this.REMOVE_FRIEND(friend.username);
+		if (!success) {
+			unfBtn.disabled = false;
+			unfBtn.textContent = "Unfriend";
+			alert("Failed to remove friend.");
+			return ;
+		}
 		removeCallBack(friend.username);
 	};
 
