@@ -1,4 +1,5 @@
 import Page from '../template/page.ts';
+import { API_URL } from '../app.ts';
 
 type FriendFromAPI = {
 
@@ -47,7 +48,7 @@ export default class Friends extends Page {
   async FETCH_FRIENDS(): Promise<Friend[]> {
 
 	try {
-		const res = await fetch('http://localhost:3010/api/friends', {
+		const res = await fetch(`${API_URL}/api/friends`, {
 			method: 'GET',
 			credentials: 'include',
 		});

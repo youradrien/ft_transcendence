@@ -8,6 +8,8 @@ import Header from './pages/header';
 import Leaderboard from './pages/leaderboard';
 import Friends from './pages/friends';
 import Tournament from './pages/tournament';
+// src/config/api.ts
+export const API_URL = import.meta.env.VITE_API_URL;
 
 export class App {
   private router = new Router('app');
@@ -18,7 +20,8 @@ export class App {
 
   private async check_authentication(): Promise<boolean>{
     try {
-        const res = await fetch('http://localhost:3010/api/me', { credentials: 'include' });
+        // console.log(API_URL);
+        const res = await fetch(`${API_URL}/api/me`, { credentials: 'include' });
         const data = await res.json();
         if (data && data.success)
           {

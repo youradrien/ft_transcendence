@@ -62,11 +62,74 @@ const { vault, vaultstart, vaultdown, writeSecret, readSecret } = require('./vau
 // global containers, for rooms ws (accessibles depuis toutes les routes)
 fastify.decorate("p_rooms", new Map());   // game rooms -> [player1, player2]
 fastify.decorate("p_waitingPlayers", new Map());        // matchId -> game state
-
+// potentiellement 1 seul tournament
+fastify.decorate('p_tournament', {
+    active: false,
+    player_sockets: new Map(), // {userId → socket}
+    players: [],         // array of 8 plyr-info-objs: {username, pfp, elo..}
+    game_states: [ // game states will still be in p_rooms, to be visibile to everyone
+      [], [], []
+    ],
+    bracket: [  // en gros, une array-bracket qui contient des array de matchups: [ [p1,p2], [p3,p4], [p2, p6]...]
+        [null, null, null, null], // quarterfinals 
+        [null, null], // semi-finals
+        [null] // final
+    ],        
+    currentRound: 0,     // 0=QF, 1=SF, 2=Final
+    currentMatch: 0,     
+    results: { // match winners: [similaire aux brackets, contient infos sur WINNER/LOOSER/SCORES etc...]
+      quarter: [null, null, null, null],
+      semi_finals: [null, null],
+      final: null
+    },      
+    prize: 1200 // prix en elo?   
+});
 
 // CORS (our frontend)
+/*
 fastify.register(cors, {
-  origin: 'http://localhost:5173', // ✅ must match EXACTLY
+  origin: ['http://localhost:5173'], // ✅ must match EXACTLY
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+});
+// add LAN: any intranet machine
+fastify.register(cors, {
+  origin: (origin, cb) => {
+    // allow no origin requests mobile (apps, curl)
+    if (!origin) 
+      return cb(null, true);
+
+    if (origin.startsWith("http://10.16.") ||
+        origin == "") {
+      return cb(null, true);
+    }
+
+    cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+});
+
+*/
+fastify.register(cors, {
+  origin: (origin, cb) => {
+    //  no-origin requests (mobile apps, curl, etc.)
+    if (!origin) return cb(null, true);
+
+    // localhost
+    if (origin === "http://localhost:5173") {
+      return cb(null, true);
+    }
+
+    // any intranet machine in 10.x.x.x
+    if (origin.startsWith("http://10.")) {
+      return cb(null, true);
+    }
+
+    // Otherwise block
+    cb(new Error("Not allowed by CORS"));
+  },
+
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']

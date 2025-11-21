@@ -1,3 +1,4 @@
+import { API_URL } from '../app.ts';
 import Page from '../template/page.ts';
 
 type Player = {
@@ -13,7 +14,7 @@ export default class LeaderboardPage extends Page {
 
   async FETCH_PLAYERS(): Promise<Player[]> {
     try {
-      const R = await fetch('http://localhost:3010/api/leaderboard', {
+      const R = await fetch(`${API_URL}/api/leaderboard`, {
         credentials: 'include'
       });
       if (!R.ok)

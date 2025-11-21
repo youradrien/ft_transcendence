@@ -64,6 +64,9 @@ export default class TournamentPage extends Page {
         padding: 2rem;
         color: #f1f1f1;
         font-family: 'Press Start 2P', cursive;
+        background: radial-gradient(circle at center, #3b88ff33 0%, #1a1a1a4f 60%, #09090900 100%);
+        background-size: cover;
+        background-attachment: fixed;
       }
       h1, h2 {
         text-align: center;
@@ -86,7 +89,6 @@ export default class TournamentPage extends Page {
       }
       button {
         cursor: pointer;
-        background: #2e9afe;
         color: white;
       }
       button:hover {
@@ -271,9 +273,9 @@ export default class TournamentPage extends Page {
       <div id="registration-box">
         <h2>Player Registration</h2>
         <input id="player-name" placeholder="Enter alias..." maxlength="12" />
-        <button id="add-player-btn">Add player</button>
+        <button id="add-player-btn">Join Tournament</button>
         <p id="players-list">0 / ${this.maxPlayers} players registered</p>
-        <button id="start-btn" disabled>Start Tournament</button>
+        <button id="start-btn" disabled>Pay to force-start tournament 200$💰 </button>
       </div>
 
       

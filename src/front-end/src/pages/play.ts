@@ -1,5 +1,6 @@
 import Page from '../template/page.ts';
 import Pong from '../component/pong.ts';
+import { API_URL } from '../app.ts';
 
 export default class PlayPage extends Page {
   async render(): Promise<HTMLElement> {
@@ -314,7 +315,7 @@ export default class PlayPage extends Page {
     // Fetch active games helper
     const fetch_games = async () => {
         try {
-            const res = await fetch('http://localhost:3010/api/pong/active-games', {
+            const res = await fetch(`${API_URL}/api/pong/active-games`, {
                 credentials: 'include'
             });
             const data = await res.json();
@@ -360,7 +361,7 @@ export default class PlayPage extends Page {
 
     // (FETCH) stats of current serv state - initial page load
     try {
-        const ress = await fetch('http://localhost:3010/api/pong/active-games', {
+        const ress = await fetch(`${API_URL}/api/pong/active-games`, {
           credentials: 'include'
         });
         const dataa = await ress.json();
@@ -405,7 +406,7 @@ export default class PlayPage extends Page {
         const ga = document.querySelector('#game-area');
         if (ga)
           ga.innerHTML = '';
-        const res = await fetch('http://localhost:3010/api/pong/status', {
+        const res = await fetch(`${API_URL}/api/pong/status`, {
           credentials: 'include'
         });
         const data = await res.json();
@@ -437,7 +438,7 @@ export default class PlayPage extends Page {
     aiBtn.onclick = async () => {
         if(queued_up) return;
         try {
-            aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
+            aiSocket = new WebSocket('ws://localhost:/api/pong/ai/ws'); 
             aiBtn.innerText = '🤖 Connecting to AI...';
             aiBtn.disabled = true;
             

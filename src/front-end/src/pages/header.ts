@@ -1,5 +1,6 @@
 import Page from '../template/page.ts';
 import { i18n } from '../i18n';
+import { API_URL } from '../app.ts';
 
 export default class Header extends Page {
   async render(): Promise<HTMLElement> {
@@ -84,7 +85,7 @@ export default class Header extends Page {
     });
     container.querySelector('#logoutBtn')?.addEventListener('click', async () => {
       try {
-        const res = await fetch('http://localhost:3010/api/logout', {
+        const res = await fetch(`${API_URL}api/logout`, {
           method: 'POST',
           credentials: 'include',
         });
@@ -124,7 +125,7 @@ export default class Header extends Page {
     const _count = container.querySelector('#online-count') as HTMLElement;
     const updateOnlineCount = async () => {
       try {
-        const res = await fetch('http://localhost:3010/api/users/online', {
+        const res = await fetch(`${API_URL}/api/users/online`, {
           credentials: 'include',
         });
         const json = await res.json();
