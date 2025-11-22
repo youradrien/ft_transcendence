@@ -6,8 +6,8 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=false
-      - ELASTIC_PASSWORD=elastic_password
-      - KIBANA_PASSWORD=kibana_password
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - bootstrap.memory_lock=true
     # ulimits:      # peu pas a cause de 42 mais sinon ca aide pour la memoire
@@ -31,8 +31,8 @@ services:
     container_name: kibana
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=kibana_system
-      - ELASTICSEARCH_PASSWORD=kibana_password
+      - ELASTICSEARCH_USERNAME=${KIBANA_USER}
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
       - SERVER_SSL_ENABLED=true
       - SERVER_SSL_CERTIFICATE=/usr/share/kibana/config/certs/kibana.crt
       - SERVER_SSL_KEY=/usr/share/kibana/config/certs/kibana.key
@@ -62,8 +62,8 @@ services:
       - ./logstash/config/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
     environment:
       - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
-      - LOGSTASH_ES_USER=elastic
-      - LOGSTASH_ES_PASSWORD=elastic_password
+      - LOGSTASH_ES_USER=${ELASTIC_USER}
+      - LOGSTASH_ES_PASSWORD=${ELASTIC_PASSWORD}
     depends_on:
       elasticsearch:
         condition: service_healthy
