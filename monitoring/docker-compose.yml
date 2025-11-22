@@ -33,15 +33,20 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=kibana_password
+      - SERVER_SSL_ENABLED=true
+      - SERVER_SSL_CERTIFICATE=/usr/share/kibana/config/certs/kibana.crt
+      - SERVER_SSL_KEY=/usr/share/kibana/config/certs/kibana.key
     ports:
       - "5601:5601"
+    volumes:
+      - ./certs:/usr/share/kibana/config/certs:ro
     depends_on:
       elasticsearch:
         condition: service_healthy
     networks:
       - ft_transcendence_net
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      test: ["CMD-SHELL", "curl -k -f https://localhost:5601/api/status || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
