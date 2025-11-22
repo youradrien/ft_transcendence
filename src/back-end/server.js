@@ -314,6 +314,7 @@ fastify.get('/api/i18n-test', async (request, reply) => {
   return {
     hello: request.i18n.t('hello'),
     welcome: request.i18n.t('welcome'),
+    hola: request.i18n.t('hola'),
     locale: request.i18n.locale
   };
 });
