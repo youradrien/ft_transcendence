@@ -1,4 +1,5 @@
 import Page from '../template/page.ts';
+import { i18n } from '../i18n';
 
 type FriendFromAPI = {
 
@@ -13,23 +14,23 @@ type FriendFromAPI = {
 function formatLastSeen(dateString: string | null | undefined) {
 
 	if (!dateString)
-		return "unknown";
+		return i18n.t('unknown');
 
 	const date = new Date(dateString);
 	const diffMs = Date.now() - date.getTime();
 
 	const minutes = Math.floor(diffMs / 60000);
 	if (minutes < 1)
-		return "Just now";
+		return i18n.t('just_now');
 	if (minutes < 60)
-		return `${minutes} min ago`;
+		return i18n.t('min_ago', { count: minutes });
 
 	const hours = Math.floor(minutes / 60);
 	if (hours < 24)
-		return `${hours} hours ago`;
+		return i18n.t('hours_ago', { count: hours });
 
 	const days = Math.floor(hours / 24);
-	return `${days} day${days > 1 ? "s" : ""} ago`;
+	return i18n.t('days_ago', { count: days, plural: days > 1 ? "s" : "" });
 }
 
 type Friend = {

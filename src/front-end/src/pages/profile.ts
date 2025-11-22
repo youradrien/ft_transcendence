@@ -1,4 +1,5 @@
 import Page from '../template/page.ts';
+import { i18n } from '../i18n';
           declare const Chart: any;
 
 /* 
@@ -49,7 +50,7 @@ export default class UserProfilePage extends Page {
         }
     } catch (error) {
       console.error('Failed to load user profile:', error);
-      // document.getElementById('profile')!.innerHTML = `<p>User not found.</p>`;
+      // document.getElementById('profile')!.innerHTML = `<p>${i18n.t('user_not_found')}</p>`;
     }
     let win_rate: string;
     if (USER_DATA?.wins != null && USER_DATA?.losses != null && USER_DATA.losses > 0) {
@@ -63,8 +64,8 @@ export default class UserProfilePage extends Page {
     }
     const social_btns_HTML = !(user_api_call == "api/me-info") ? `
       <div style="display: flex; gap: 12px;">
-        <button id="add-friend-btn" style="${greenButtonStyle}">ADD FRIEND</button>
-        <button id="send-dm-btn" style="${greenButtonStyle}">SEND DM</button>
+        <button id="add-friend-btn" style="${greenButtonStyle}">${i18n.t('add_friend')}</button>
+        <button id="send-dm-btn" style="${greenButtonStyle}">${i18n.t('send_dm')}</button>
       </div>
     ` : '';
     container.innerHTML = `
@@ -168,17 +169,17 @@ export default class UserProfilePage extends Page {
               color: ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
               text-shadow: 0 0 4px ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
             ">
-              ${USER_DATA?.is_online ? 'Online' : 'Offline'}
+              ${USER_DATA?.is_online ? i18n.t('online') : i18n.t('offline')}
             </span>
           </div>
         </div>
 
 
 
-        <h1 style="font-size: 18px; margin: 10px; color: white; text-align: left;">WINRATE ${win_rate}</h1>
+        <h1 style="font-size: 18px; margin: 10px; color: white; text-align: left;">${i18n.t('winrate')} ${win_rate}</h1>
         <div style"display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 30px;">
-          <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">last seen: ${USER_DATA?.last_online}</h1>
-          <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">member since: ${USER_DATA?.created_at}</h1>
+          <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">${i18n.t('last_seen')} ${USER_DATA?.last_online}</h1>
+          <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">${i18n.t('member_since')} ${USER_DATA?.created_at}</h1>
         </div>
 
         <div style="display: flex; margin-top: 30px; gap: 30px; flex-wrap: wrap; justify-content: center;">
@@ -189,12 +190,12 @@ export default class UserProfilePage extends Page {
                 overflow-y: scroll;
                 animation: fadeInUp 0.6s ease-out;
           >
-            <h2 style="margin: 0 0 16px 0;">GAME-HISTORY</h2>
+            <h2 style="margin: 0 0 16px 0;">${i18n.t('game_history')}</h2>
             <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-              <span style="color: lime;">WINNER</span>
-              <span style="color: red;">LOSER</span>
+              <span style="color: lime;">${i18n.t('winner_caps')}</span>
+              <span style="color: red;">${i18n.t('loser')}</span>
             </div>
-            <div style="background: #222; padding: 8px; margin-bottom: 6px;">PLAYER-1 &nbsp;&nbsp;&nbsp; PLAYER-2</div>
+            <div style="background: #222; padding: 8px; margin-bottom: 6px;">${i18n.t('player_1')} &nbsp;&nbsp;&nbsp; ${i18n.t('player_2')}</div>
           </div>
 
           <!-- STATISTICS -->
@@ -206,7 +207,7 @@ export default class UserProfilePage extends Page {
             <div style="border: 2px solid #333; padding: 16px; 
                 animation: fadeInUp 1.1s ease-out;
             ">
-              <h3 style="margin: 0 0 12px 0;">WINS &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; LOSSES</h3>
+              <h3 style="margin: 0 0 12px 0;">${i18n.t('wins')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${i18n.t('losses')}</h3>
               <div style="font-size: 32px;">
                 <span style="color: lime;">${USER_DATA?.wins}</span> &nbsp;&nbsp;&nbsp;&nbsp;
                 <span style="color: red;">${USER_DATA?.losses}</span>
@@ -217,7 +218,7 @@ export default class UserProfilePage extends Page {
             <div style="border: 2px solid #333; padding: 16px;
                     animation: fadeInUp 1.3s ease-out;
             ">
-              <h3 style="margin: 0 0 12px 0;">ACHIEVEMENTS</h3>
+              <h3 style="margin: 0 0 12px 0;">${i18n.t('achievements')}</h3>
               <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 12px;">
                 <div style="width: 40px; height: 40px; background: #fff;"></div>
                 <div style="width: 40px; height: 40px; background: #666;"></div>
@@ -232,10 +233,10 @@ export default class UserProfilePage extends Page {
 
         <!-- DASHBOARD SECTION -->
         <div class="panel dashboard-panel">
-            <h3>📊 PERFORMANCE DASHBOARD</h3>
+            <h3>📊 ${i18n.t('performance_dashboard')}</h3>
             <div style="display: flex; flex-direction: row; justify-content: space-between; width: 89%;  ">
-              <h2 style="margin: 0;">WINS/LOSSES </h2>
-              <h2 style="margin: 0;">GAMES ANALYSIS </h2>
+              <h2 style="margin: 0;">${i18n.t('wins_losses')} </h2>
+              <h2 style="margin: 0;">${i18n.t('games_analysis')} </h2>
             </div>
             <div class="charts-row">
               
@@ -253,7 +254,7 @@ export default class UserProfilePage extends Page {
 
 		addFriendBtn.onclick = async () => {
 			addFriendBtn.disabled = true;
-			addFriendBtn.textContent = "Sending...";
+			addFriendBtn.textContent = i18n.t('sending');
 
 			try {
 				const route = 'api/friends/add';
@@ -269,16 +270,16 @@ export default class UserProfilePage extends Page {
 				const data = await response.json();
 
 				if (data.success) {
-					addFriendBtn.textContent = "Sent !";
+					addFriendBtn.textContent = i18n.t('sent');
 					addFriendBtn.style.backgroundColor = "#888";
 				} else {
 					addFriendBtn.disabled = false;
-					addFriendBtn.textContent = "ADD FRIEND";
-					alert(`Failed to sent friend request: ${data.error}`);
+					addFriendBtn.textContent = i18n.t('add_friend_btn');
+					alert(`${i18n.t('friend_request_failed')}${data.error}`);
 				}
 			} catch (error) {
 				addFriendBtn.disabled = false;
-				addFriendBtn.textContent = "ADD FRIEND";
+				addFriendBtn.textContent = i18n.t('add_friend_btn');
 				console.error('Error adding friend:', error);
 			}
 		};
@@ -342,7 +343,7 @@ export default class UserProfilePage extends Page {
             e.innerHTML = `
               <span style="color: lime; font-size: 11px; ">${winnerName} (${w})</span>
               <span style="color: white;"> ${game.p1_name == USER_DATA?.username ? game.p1_name : p1Link} 
-                vs  ${game.p2_name == USER_DATA?.username ? game.p2_name : p2Link} </span>
+                ${i18n.t('vs')}  ${game.p2_name == USER_DATA?.username ? game.p2_name : p2Link} </span>
               <span style="color: red; font-size: 11px; ">${L} (${l})</span>
             `;
             const h = container.querySelector('#game-history');
@@ -370,7 +371,7 @@ export default class UserProfilePage extends Page {
             new Chart(ctx1, {
               type: 'doughnut',
               data: {
-                labels: ['Wins', 'Losses'],
+                labels: [i18n.t('chart_wins'), i18n.t('chart_losses')],
                 datasets: [{
                   data: [winRate, lossRate],
                   backgroundColor: ['#09ff00ff', '#ff1e1eff'],
@@ -409,7 +410,7 @@ export default class UserProfilePage extends Page {
                 const labels:string[] = ["----"], differences: number[] = [0];
                 u.games.forEach((game: any, index: number) => {
                   // label: "player1 vs player2"
-                  labels.push(`${index}: ${game.p1_name} vs ${game.p2_name}`);
+                  labels.push(`${index}: ${game.p1_name} ${i18n.t('vs')} ${game.p2_name}`);
                   // difference: (player1 - player2)
                   let diff;
                   if (USER_DATA.username === game.p1_name)
@@ -426,7 +427,7 @@ export default class UserProfilePage extends Page {
                   data: {
                     labels: labels,
                     datasets: [{
-                      label: 'Score Difference',
+                      label: i18n.t('chart_score_difference'),
                       data: differences,
                       fill: false,
                       borderColor: '#00ffff',
@@ -461,9 +462,9 @@ export default class UserProfilePage extends Page {
                 new Chart(ctx2, {
                   type: 'line',
                   data: {
-                    labels: ['Game 1', 'Game 2', 'Game 3', 'Game 4', 'Game 5', 'Game 6'],
+                    labels: [1, 2, 3, 4, 5, 6].map(n => i18n.t('game_label', { n })),
                     datasets: [{
-                      label: 'Score Difference',
+                      label: i18n.t('chart_score_difference'),
                       data: [3, -2, 1, 4, -1, 8],
                       fill: false,
                       borderColor: '#00ffff',
@@ -490,7 +491,7 @@ export default class UserProfilePage extends Page {
                     plugins: {
                       title: {
                         display: true,
-                        text: 'This chart will show the score difference between players across recent matches',
+                        text: i18n.t('chart_description'),
                         color: '#11ff00ff',
                         font: { family: 'Press Start 2P', size: 18 },
                         padding: { top: 5, bottom: 9 }

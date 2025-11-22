@@ -1,4 +1,5 @@
 import Page from "../template/page";
+import { i18n } from '../i18n';
 
 interface Match {
   p1?: string;
@@ -266,23 +267,23 @@ export default class TournamentPage extends Page {
     </style>
 
     <div id="tournament-wrapper">
-      <h1>🏆 Tournament Mode</h1>
+      <h1>${i18n.t('tournament_mode')}</h1>
 
       <div id="registration-box">
-        <h2>Player Registration</h2>
-        <input id="player-name" placeholder="Enter alias..." maxlength="12" />
-        <button id="add-player-btn">Add player</button>
-        <p id="players-list">0 / ${this.maxPlayers} players registered</p>
-        <button id="start-btn" disabled>Start Tournament</button>
+        <h2>${i18n.t('player_registration')}</h2>
+        <input id="player-name" placeholder="${i18n.t('enter_alias')}" maxlength="12" />
+        <button id="add-player-btn">${i18n.t('add_player')}</button>
+        <p id="players-list">0 / ${this.maxPlayers} ${i18n.t('players_registered', { count: 0, max: this.maxPlayers })}</p>
+        <button id="start-btn" disabled>${i18n.t('start_tournament')}</button>
       </div>
 
       
-    <h2>Bracket</h2>
+    <h2>${i18n.t('bracket')}</h2>
     <div id="bracket">
 
         <!-- Quarterfinals -->
         <div class="round-box">
-            <h3>Quarterfinals</h3>
+            <h3>${i18n.t('quarterfinals')}</h3>
             <div class="round qf">
             <div class="match">
                 <div class="player"><div class="pfp">A</div><span>Alice</span></div>
@@ -309,15 +310,15 @@ export default class TournamentPage extends Page {
 
         <!-- Semifinals -->
         <div class="round-box">
-            <h3>Semifinals</h3>
+            <h3>${i18n.t('semifinals')}</h3>
             <div class="round sf">
                 <div class="match mid">
-                    <div class="player winner">Winner 1</div>
-                    <div class="player winner">Winner 2</div>
+                    <div class="player winner">${i18n.t('winner')} 1</div>
+                    <div class="player winner">${i18n.t('winner')} 2</div>
                 </div>
                 <div class="match mid">
-                    <div class="player winner">Winner 3</div>
-                    <div class="player winner">Winner 4</div>
+                    <div class="player winner">${i18n.t('winner')} 3</div>
+                    <div class="player winner">${i18n.t('winner')} 4</div>
                 </div>
             </div>
         </div>
@@ -325,11 +326,11 @@ export default class TournamentPage extends Page {
 
         <!-- Final -->
         <div class="round-box">
-            <h3>FINAL 🏁</h3>
+            <h3>${i18n.t('final')}</h3>
             <div class="round final">
             <div class="match final-match">
-                <div class="player champion">Champion</div>
-                <div class="player champion">Finalist</div>
+                <div class="player champion">${i18n.t('champion')}</div>
+                <div class="player champion">${i18n.t('finalist')}</div>
             </div>
             </div>
         </div>
@@ -338,7 +339,7 @@ export default class TournamentPage extends Page {
 
 
       <div id="history-box">
-        <h2>Tournament History</h2>
+        <h2>${i18n.t('tournament_history')}</h2>
         <div id="history-list"></div>
       </div>
     </div>
@@ -358,7 +359,7 @@ export default class TournamentPage extends Page {
     // ------------------------------------
 
     const updatePlayerList = () => {
-      playersList.innerText = `${this.registeredPlayers.length} / ${this.maxPlayers} players registered`;
+      playersList.innerText = i18n.t('players_registered', { count: this.registeredPlayers.length, max: this.maxPlayers });
       startBtn.disabled = this.registeredPlayers.length !== this.maxPlayers;
     };
 
@@ -370,7 +371,7 @@ export default class TournamentPage extends Page {
         entry.className = "history-entry";
         entry.innerHTML = `
           <div class="history-title">🏆 ${t.name} — ${t.date}</div>
-          <div><strong>Winner:</strong> <span style="color:#00ff90">${t.winner}</span></div>
+          <div><strong>${i18n.t('winner')}:</strong> <span style="color:#00ff90">${t.winner}</span></div>
           <div><strong>Players:</strong> ${t.players.join(", ")}</div>
         `;
         historyDiv.appendChild(entry);
@@ -386,7 +387,7 @@ export default class TournamentPage extends Page {
       if (!name) return;
 
       if (this.registeredPlayers.length >= this.maxPlayers) {
-        alert("Tournament is full!");
+        alert(i18n.t('tournament_full'));
         return;
       }
       this.registeredPlayers.push(name);

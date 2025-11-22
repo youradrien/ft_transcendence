@@ -1,7 +1,8 @@
 import en from './locales/en.json';
 import fr from './locales/fr.json';
+import es from './locales/es.json';
 
-type Locale = 'en' | 'fr';
+type Locale = 'en' | 'fr' | 'es';
 type Translations = typeof en;
 
 class I18n {
@@ -21,7 +22,8 @@ class I18n {
 
     this.translations = {
       en,
-      fr
+      fr,
+      es
     };
   }
 
