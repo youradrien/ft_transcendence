@@ -99,5 +99,8 @@
   "chart_score_difference": "Score Difference",
   "chart_description": "This chart will show the score difference between players across recent matches",
   "game_label": "Game {{n}}",
-  "vs": "vs"
+  "vs": "vs",
+  "TOURNAMENT_MODE": "TOURNAMENT MODE",
+  "mode_tournament": "START PLAY TOURNAMENT MODE NOW !",
+  "play_tournament": "➡️ JOIN TOURNAMENT "
 }

@@ -58,13 +58,17 @@ export default class TournamentPage extends Page {
   async render(): Promise<HTMLElement> {
     const container = document.createElement("div");
     container.id = this.id;
-
+    let tournament_online: boolean = false;
     container.innerHTML = `
     <style>
       #tournament-wrapper {
         padding: 2rem;
         color: #f1f1f1;
         font-family: 'Press Start 2P', cursive;
+        background: radial-gradient(circle at center, #3b88ff33 0%, #1a1a1a4f 60%, #09090900 100%);
+        background-size: cover;
+        background-attachment: fixed;
+        animation: fadeInUp 0.5s ease-out;
       }
       h1, h2 {
         text-align: center;
@@ -77,6 +81,7 @@ export default class TournamentPage extends Page {
         max-width: 500px;
         margin: 0 auto 2rem auto;
         text-align: center;
+        border: 2px solid #00000029;
       }
       input, button {
         padding: 10px;
@@ -87,7 +92,6 @@ export default class TournamentPage extends Page {
       }
       button {
         cursor: pointer;
-        background: #2e9afe;
         color: white;
       }
       button:hover {
@@ -263,27 +267,52 @@ export default class TournamentPage extends Page {
             border-top: 4px solid gold;
         }
 
-
+        @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
     </style>
 
     <div id="tournament-wrapper">
-      <h1>${i18n.t('tournament_mode')}</h1>
+      <h1>🏆 Tournament Mode</h1>
+      <h3 style= "margin-top: 0px;">8 PLAYERS Competitive</h3>
+      <div style="display: flex; align-items: center; gap: 8px; margin-left:auto; justify-content: center;">
+          <span style="
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: ${tournament_online ? '#00ff44' : '#ff4c4c'};
+            box-shadow: 0 0 8px ${tournament_online? '#00ff44' : '#ff4c4c'};
+            transition: background-color 0.3s, box-shadow 0.3s;
+          "></span>
+          <span style="
+            font-size: 14px;
+            color: ${tournament_online ? '#00ff44' : '#ff4c4c'};
+            text-shadow: 0 0 4px ${tournament_online ? '#00ff44' : '#ff4c4c'};
+          ">
+            ${tournament_online ? i18n.t('online') : i18n.t('offline')}
+          </span>
+      </div>
 
       <div id="registration-box">
-        <h2>${i18n.t('player_registration')}</h2>
-        <input id="player-name" placeholder="${i18n.t('enter_alias')}" maxlength="12" />
-        <button id="add-player-btn">${i18n.t('add_player')}</button>
-        <p id="players-list">0 / ${this.maxPlayers} ${i18n.t('players_registered', { count: 0, max: this.maxPlayers })}</p>
-        <button id="start-btn" disabled>${i18n.t('start_tournament')}</button>
+        <h2>Player Registration</h2>
+        <input id="player-name" placeholder="Enter alias..." maxlength="12" />
+        <button id="add-player-btn">Join Tournament</button>
+        <p id="players-list">0 / ${this.maxPlayers} players registered</p>
+        <p>🔵 IN PROGRESS</p>
+        <p id="players-list">🟡 Preparing / Lobby Open </p>
+        <p id="players-list"> 🟣 Completed </p>
+        <button id="start-btn" disabled>Pay to Start Tournament</button>
       </div>
 
       
-    <h2>${i18n.t('bracket')}</h2>
+    <h2>Bracket</h2>
     <div id="bracket">
 
         <!-- Quarterfinals -->
         <div class="round-box">
-            <h3>${i18n.t('quarterfinals')}</h3>
+            <h3>Quarterfinals</h3>
             <div class="round qf">
             <div class="match">
                 <div class="player"><div class="pfp">A</div><span>Alice</span></div>
@@ -310,15 +339,15 @@ export default class TournamentPage extends Page {
 
         <!-- Semifinals -->
         <div class="round-box">
-            <h3>${i18n.t('semifinals')}</h3>
+            <h3>Semifinals</h3>
             <div class="round sf">
                 <div class="match mid">
-                    <div class="player winner">${i18n.t('winner')} 1</div>
-                    <div class="player winner">${i18n.t('winner')} 2</div>
+                    <div class="player winner">Winner 1</div>
+                    <div class="player winner">Winner 2</div>
                 </div>
                 <div class="match mid">
-                    <div class="player winner">${i18n.t('winner')} 3</div>
-                    <div class="player winner">${i18n.t('winner')} 4</div>
+                    <div class="player winner">Winner 3</div>
+                    <div class="player winner">Winner 4</div>
                 </div>
             </div>
         </div>
@@ -326,11 +355,11 @@ export default class TournamentPage extends Page {
 
         <!-- Final -->
         <div class="round-box">
-            <h3>${i18n.t('final')}</h3>
+            <h3>FINAL 🏁</h3>
             <div class="round final">
             <div class="match final-match">
-                <div class="player champion">${i18n.t('champion')}</div>
-                <div class="player champion">${i18n.t('finalist')}</div>
+                <div class="player champion">Champion</div>
+                <div class="player champion">Finalist</div>
             </div>
             </div>
         </div>
@@ -339,7 +368,7 @@ export default class TournamentPage extends Page {
 
 
       <div id="history-box">
-        <h2>${i18n.t('tournament_history')}</h2>
+        <h2>Tournament History</h2>
         <div id="history-list"></div>
       </div>
     </div>
@@ -359,7 +388,7 @@ export default class TournamentPage extends Page {
     // ------------------------------------
 
     const updatePlayerList = () => {
-      playersList.innerText = i18n.t('players_registered', { count: this.registeredPlayers.length, max: this.maxPlayers });
+      playersList.innerText = `${this.registeredPlayers.length} / ${this.maxPlayers} players registered`;
       startBtn.disabled = this.registeredPlayers.length !== this.maxPlayers;
     };
 
@@ -371,7 +400,7 @@ export default class TournamentPage extends Page {
         entry.className = "history-entry";
         entry.innerHTML = `
           <div class="history-title">🏆 ${t.name} — ${t.date}</div>
-          <div><strong>${i18n.t('winner')}:</strong> <span style="color:#00ff90">${t.winner}</span></div>
+          <div><strong>Winner:</strong> <span style="color:#00ff90">${t.winner}</span></div>
           <div><strong>Players:</strong> ${t.players.join(", ")}</div>
         `;
         historyDiv.appendChild(entry);
@@ -387,7 +416,7 @@ export default class TournamentPage extends Page {
       if (!name) return;
 
       if (this.registeredPlayers.length >= this.maxPlayers) {
-        alert(i18n.t('tournament_full'));
+        alert("Tournament is full!");
         return;
       }
       this.registeredPlayers.push(name);
