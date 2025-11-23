@@ -55,6 +55,7 @@
   "play_vs_ai": "🤖 JOUER CONTRE IA",
   "user_not_found": "Utilisateur non trouvé",
   "add_friend": "AJOUTER AMI",
+  "unfriend": "SUPPRIMER AMI",
   "send_dm": "ENVOYER MP",
   "tournament_mode": "🏆 Mode Tournoi",
   "player_registration": "Inscription des joueurs",
@@ -99,5 +100,6 @@
   "chart_score_difference": "Différence de score",
   "chart_description": "Ce graphique montrera la différence de score entre les joueurs lors des matchs récents",
   "game_label": "Partie {{n}}",
-  "vs": "vs"
+  "vs": "vs",
+  "processing" : "en cours"
 }

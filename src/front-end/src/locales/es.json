@@ -93,11 +93,13 @@
   "sending": "Enviando...",
   "sent": "¡Enviado!",
   "add_friend_btn": "AÑADIR AMIGO",
+  "unfriend": "ELIMINAR AMIGO",
   "friend_request_failed": "Error al enviar solicitud de amistad: ",
   "chart_wins": "Victorias",
   "chart_losses": "Derrotas",
   "chart_score_difference": "Diferencia de puntuación",
   "chart_description": "Este gráfico mostrará la diferencia de puntuación entre los jugadores en partidos recientes",
   "game_label": "Partida {{n}}",
-  "vs": "vs"
+  "vs": "vs",
+  "processing" : "tratamiento"
 }

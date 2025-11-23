@@ -11,6 +11,15 @@ component page PROFILE (pour voir le profil des autres)
 */
 export default class UserProfilePage extends Page {
 
+  async getFriendshipStatus(username: string): Promise<boolean> {
+
+    const res = await fetch(`http://localhost:3010/api/friends/status/${username}`, {
+        method: 'GET',
+        credentials: 'include'
+    });
+    const data = await res.json();
+    return data.success && data.friends === true;
+  }
 
   async render(): Promise<HTMLElement> {
     const container = document.createElement('div');
@@ -65,6 +74,7 @@ export default class UserProfilePage extends Page {
     const social_btns_HTML = !(user_api_call == "api/me-info") ? `
       <div style="display: flex; gap: 12px;">
         <button id="add-friend-btn" style="${greenButtonStyle}">${i18n.t('add_friend')}</button>
+        <button id="unfriend-btn" style="${greenButtonStyle} display:none; background-color:#ff4444;">${i18n.t('unfriend')}</button>
         <button id="send-dm-btn" style="${greenButtonStyle}">${i18n.t('send_dm')}</button>
       </div>
     ` : '';
@@ -284,6 +294,44 @@ export default class UserProfilePage extends Page {
 			}
 		};
 	}
+
+	if (match) {
+		const isFriend = await this.getFriendshipStatus(USER_DATA.username);
+		const unfriendBtn = container.querySelector('#unfriend-btn') as HTMLButtonElement;
+
+		if (isFriend) {
+			addFriendBtn.style.display = 'none';
+			unfriendBtn.style.display = 'inline-block';
+		} else {
+			addFriendBtn.style.display = 'inline-block';
+			unfriendBtn.style.display = 'none';
+		}
+
+		if (unfriendBtn) {
+			unfriendBtn.onclick = async () => {
+
+				unfriendBtn.disabled = true;
+				unfriendBtn.textContent = i18n.t('processing');
+
+				const res = await fetch(`http://localhost:3010/api/friends/${USER_DATA.username}`, {
+					method: 'DELETE',
+					credentials: 'include'
+				});
+
+				const data = await res.json();
+				if (data.success) {
+					unfriendBtn.style.display = 'none';
+					addFriendBtn.style.display = 'inline-block';
+					addFriendBtn.textContent = i18n.t('add_friend');
+					addFriendBtn.disabled = false;
+				} else {
+					alert("Error: " + data.error);
+					unfriendBtn.disabled = false;
+					unfriendBtn.textContent = i18n.t('unfriend');
+				}
+			};
+		}
+	}	
 
     // fill ts with game infos
     try {

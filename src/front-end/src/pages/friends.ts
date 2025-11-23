@@ -10,7 +10,6 @@ type FriendFromAPI = {
 	last_seen: string;
 };
 
-
 function formatLastSeen(dateString: string | null | undefined) {
 
 	if (!dateString)
@@ -72,85 +71,80 @@ export default class Friends extends Page {
 	}
   }
 
-  async FETCH_FRIEND_REQUESTS(): Promise<Friend[]> {
-    try {
-        const res = await fetch('http://localhost:3010/api/friends/requests', {
-            method: 'GET',
-            credentials: 'include',
-        });
-        const data = await res.json();
-        if (!data.success) {
-            console.error('Failure while fetching friend requests', data.error);
-            return [];
-        }
-        return data.requests as Friend[];
-    } catch (err) {
-        console.error('Error fetching friend requests', err);
-        return [];
-    }
-  }
+  //Get all user's friend requests:
+	async FETCH_FRIEND_REQUESTS(): Promise<Friend[]> {
 
-  async ACCEPT_FRIEND_REQUEST(username: string): Promise<boolean> {
-    try {
-        const res = await fetch(`http://localhost:3010/api/friends/requests/accept/${username}`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        const data = await res.json();
-        return data.success === true;
-    } catch (err) {
-        console.error('Error accepting friend request', err);
-        return false;
-    }
-  }
+		try {
+				const res = await fetch('http://localhost:3010/api/friends/requests', {
+				method: 'GET',
+				credentials: 'include',
+			});
 
-  async DECLINE_FRIEND_REQUEST(username: string): Promise<boolean> {
-    try {
-        const res = await fetch(`http://localhost:3010/api/friends/requests/decline/${username}`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        const data = await res.json();
-        return data.success === true;
-    } catch (err) {
-        console.error('Error declining friend request', err);
-        return false;
-    }
-  }
+			const data = await res.json();
+			if (!data.success) {
+				console.error('Failure while fetching friend requests', data.error);
+				return [];
+			}
+			return data.requests as Friend[];
+		} catch (err) {
+			console.error('Error fetching friend requests', err);
+			return [];
+		}
+	}
 
-  async SEND_FRIEND_REQUEST(username: string): Promise<boolean> {
-    try {
-        const res = await fetch(`http://localhost:3010/api/friends/add/${username}`, {
-            method: 'POST',
-            credentials: 'include',
-        });
-        const data = await res.json();
-        return data.success === true;
-    } catch (err) {
-        console.error('Error sending friend request', err);
-        return false;
-    }
-  }
+  //Method for accepting a friend request :
+	async ACCEPT_FRIEND_REQUEST(username: string): Promise<boolean> {
 
-  // Method for removing a friend.
-  async REMOVE_FRIEND(username: string): Promise<boolean> {
-
-	try {
-		const res = await fetch(`http://localhost:3010/api/friends/${username}`, {
-			method: 'DELETE',
-			credentials: 'include',
+		try {
+			const res = await fetch(`http://localhost:3010/api/friends/requests/accept/${username}`, {
+				method: 'POST',
+				credentials: 'include',
 		});
-		const data = await res.json();
-		if (!data.success) {
-			console.error('Failure while removing friend', data.error);
+			const data = await res.json();
+			return data.success === true;
+		} catch (err) {
+			console.error('Error accepting friend request', err);
 			return false;
 		}
-		return true;
-	} catch (error) {
-		console.error('Error while deleting friend', error);
-		return false;
 	}
-  }
+
+  // Method for declinig a friend request :
+	async DECLINE_FRIEND_REQUEST(username: string): Promise<boolean> {
+
+		try {
+			const res = await fetch(`http://localhost:3010/api/friends/requests/decline/${username}`, {
+				method: 'POST',
+				credentials: 'include',
+		});
+			const data = await res.json();
+			return data.success === true;
+		} catch (err) {
+		console.error('Error declining friend request', err);
+		return false;
+		}
+	}
+
+  // Method for removing a friend.
+	async REMOVE_FRIEND(username: string): Promise<boolean> {
+
+		try {
+			const res = await fetch(`http://localhost:3010/api/friends/${username}`, {
+				method: 'DELETE',
+				credentials: 'include',
+			});
+			const data = await res.json();
+			if (!data.success) {
+				console.error('Failure while removing friend', data.error);
+				return false;
+			}
+			return true;
+		} catch (error) {
+			console.error('Error while deleting friend', error);
+			return false;
+		}
+	}
+
+  // FRIEND CARD :
 
   createFriendCard(friend: Friend, removeCallBack: (username: string) => void): HTMLElement {
 
@@ -232,8 +226,6 @@ export default class Friends extends Page {
 		gap: "8px"
 	});
 
-	//Button "Unfriend" :
-
 	const unfBtn = document.createElement("button");
 	unfBtn.textContent = "Unfriend";
 	Object.assign(unfBtn.style, {
@@ -280,12 +272,14 @@ export default class Friends extends Page {
 	return card;
   }
 
+  // FRIEND REQUEST CARD :
+
   createFriendRequestCard(friend: Friend, acceptCallback: (username: string) => void, declineCallback: (username: string) => void): HTMLElement {
     const card = document.createElement("div");
     Object.assign(card.style, {
         width: "100%",
         display: "flex",
-        justifyContent: "space-between", // avatar + nom à gauche, boutons à droite
+        justifyContent: "space-between",
         alignItems: "center",
         padding: "12px 16px",
         background: "#002244",
@@ -390,95 +384,97 @@ export default class Friends extends Page {
     return card;
 }
 
-	// PAGE RENDERING :
+	///// PAGE RENDERING /////
+
 async render(): Promise<HTMLElement> {
-    const container = document.createElement("div");
-    container.id = this.id;
-    Object.assign(container.style, {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "40px",
-        backgroundColor: "#181818d1",
-        color: "white",
-        fontFamily: '"Press Start 2P", cursive',
-        minHeight: "70vh",
-        borderRadius: "18px"
-    });
 
-    const content = document.createElement("div");
-    Object.assign(content.style, {
-        width: "100%",
-        maxWidth: "850px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px"
-    });
+	const container = document.createElement("div");
+	container.id = this.id;
+	Object.assign(container.style, {
+		display: "flex",
+		flexDirection: "column",
+		alignItems: "center",
+		padding: "40px",
+		backgroundColor: "#181818d1",
+		color: "white",
+		fontFamily: '"Press Start 2P", cursive',
+		minHeight: "70vh",
+		borderRadius: "18px"
+	});
 
-    content.innerHTML = `<h1 style="font-size: 24px; margin-bottom: 10px;">FRIENDS</h1>`;
-    container.appendChild(content);
+	const content = document.createElement("div");
+	Object.assign(content.style, {
+		width: "100%",
+		maxWidth: "850px",
+		display: "flex",
+		flexDirection: "column",
+		gap: "16px"
+	});
 
-    const listContainer = document.createElement("div");
-    Object.assign(listContainer.style, {
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-        boxSizing: "border-box"
-    });
-    content.appendChild(listContainer);
+	content.innerHTML = `<h1 style="font-size: 24px; margin-bottom: 10px;">FRIENDS</h1>`;
+	container.appendChild(content);
 
-    let friends = await this.FETCH_FRIENDS();
-    let requests = await this.FETCH_FRIEND_REQUESTS();
+	const listContainer = document.createElement("div");
+	Object.assign(listContainer.style, {
+		width: "100%",
+		display: "flex",
+		flexDirection: "column",
+		gap: "12px",
+		boxSizing: "border-box"
+	});
+	content.appendChild(listContainer);
 
-    if (!Array.isArray(friends)) friends = [];
-    if (!Array.isArray(requests)) requests = [];
+	let friends = await this.FETCH_FRIENDS();
+	let requests = await this.FETCH_FRIEND_REQUESTS();
 
-    console.log("Friends:", friends);
-    console.log("Friend requests:", requests);
+	if (!Array.isArray(friends)) friends = [];
+	if (!Array.isArray(requests)) requests = [];
 
-    const renderList = () => {
-        listContainer.innerHTML = "";
+	console.log("Friends:", friends);
+	console.log("Friend requests:", requests);
 
-        if (friends.length === 0 && requests.length === 0) {
-            const empty = document.createElement("div");
-            empty.textContent = "No friends or requests yet.";
-            empty.style.opacity = "0.8";
-            listContainer.appendChild(empty);
-            return;
-        }
+	const renderList = () => {
+		listContainer.innerHTML = "";
 
-        // --- Afficher amis ---
-        friends.forEach(friend => {
-            const card = this.createFriendCard(friend, (username) => {
-                friends = friends.filter(f => f.username !== username);
-                renderList();
-            });
-            listContainer.appendChild(card);
-        });
+		if (friends.length === 0 && requests.length === 0) {
+			const empty = document.createElement("div");
+			empty.textContent = "No friends or requests yet.";
+			empty.style.opacity = "0.8";
+			listContainer.appendChild(empty);
+			return ;
+		}
 
-        // --- Afficher demandes en attente ---
-        requests.forEach(req => {
-            if (!req || !req.username) return;
+		// Friends:
+		friends.forEach(friend => {
+			const card = this.createFriendCard(friend, (username) => {
+				friends = friends.filter(f => f.username !== username);
+				renderList();
+			});
+			listContainer.appendChild(card);
+		});
 
-            const card = this.createFriendRequestCard(req,
-                (username) => {  // Accept
-                    friends = friends.concat(req);
-                    requests = requests.filter(r => r.username !== username);
-                    renderList();
-                },
-                (username) => {  // Decline
-                    requests = requests.filter(r => r.username !== username);
-                    renderList();
-                }
-            );
+		// Requests:
+		requests.forEach(req => {
+			if (!req || !req.username) return;
 
-            listContainer.appendChild(card);
-        });
-    };
+			const card = this.createFriendRequestCard(req,
+				(username) => {
+					friends = friends.concat(req);
+					requests = requests.filter(r => r.username !== username);
+					renderList();
+				},
+				(username) => {
+					requests = requests.filter(r => r.username !== username);
+					renderList();
+				}
+			);
 
-    renderList();
-    return container;
+			listContainer.appendChild(card);
+		});
+	};
+
+	renderList();
+	return container;
   }
 }
 

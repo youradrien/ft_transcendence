@@ -55,6 +55,7 @@
   "play_vs_ai": "🤖 PLAY VS AI",
   "user_not_found": "User not found",
   "add_friend": "ADD FRIEND",
+  "unfriend": "UNFRIEND",
   "send_dm": "SEND DM",
   "tournament_mode": "🏆 Tournament Mode",
   "player_registration": "Player Registration",
@@ -99,5 +100,6 @@
   "chart_score_difference": "Score Difference",
   "chart_description": "This chart will show the score difference between players across recent matches",
   "game_label": "Game {{n}}",
-  "vs": "vs"
+  "vs": "vs",
+  "processing" : "in process"
 }

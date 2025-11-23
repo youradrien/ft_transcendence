@@ -579,8 +579,9 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
         });
     });
 
-	// FRIENDS GESTION !!
+	/// FRIENDS GESTION !! ///
 
+	// Get all user's friends :
 	fastify.get('/api/friends', { preValidation: [fastify.authenticate] }, async (request, reply) => {
 
 		try {
@@ -608,6 +609,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 		}
 	});
 
+	// Get all user's friends requests :
 	fastify.get('/api/friends/requests', { preValidation: [fastify.authenticate] }, async (req, reply) => {
 
 		const userId = req.user.id;
@@ -634,8 +636,29 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 		}
 	});
 
-	// SENDING A FRIEND REQUEST :
+	// Seeing if someone is already a friend :
+	fastify.get('/api/friends/status/:username', { preValidation: [fastify.authenticate ] }, async (req, reply) => {
 
+		const currentUserId = req.user.id;
+		const username = req.params.username;
+
+		try {
+			const row = await db.get(
+				`SELECT 1
+				FROM friends f
+				JOIN users u ON u.id = f.friend_id
+				WHERE f.user_id = ? AND u.username = ? AND f.status = 'accepted'`,
+				[currentUserId, username]
+			);
+
+			return reply.send({ success: true, friends: !!row });
+		} catch (error) {
+			console.error(error);
+			return reply.status(500).send({ success: false, error: "db_error" });
+		}
+	});
+
+	// Sending a friend request :
 	fastify.post('/api/friends/requests', { preValidation: [fastify.authenticate] }, async (req, reply) => {
 
 		const senderId = req.user.id;
@@ -679,8 +702,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 		}
 	});
 
-	// ACCEPTING A FRIEND REQUEST :
-
+	// Accepting a friend request :
 	fastify.post('/api/friends/requests/accept/:username', { preValidation: [fastify.authenticate] }, async (req, reply) => {
 
 		const receiverId = req.user.id;
@@ -711,8 +733,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 		}
 	})
 
-	// DECLINING A FRIEND REQUEST :
-
+	// Decline a friend request :
 	fastify.post('/api/friends/requests/decline/:username', { preValidation: [fastify.authenticate] }, async (req, reply) => {
 
 		const receiverId = req.user.id;
@@ -741,61 +762,8 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 			reply.status(500).send({ success: false, error: 'db_error' });
 		}
 	});
-	/*
-		Route pour ajouter un ami.
-		Si A ajoute B, deux entrees sont crees dans la DB :
 
-			1/ A comme user et B comme relation avec statut 'accepted'
-			2/ B comme user avec A comme relation avec status 'pending'
-
-		Vu que pour le moment seulement un type d'amitie style "following" est implemente,
-		ca ne sert a rien de faire deux entrees (si A ajoute B, une entree avec A user et B relation
-		suffit !). Mais ce systeme est conserve pour se garder la possibilite d'etendre la feature
-		plus tard si voulu (gestion des amis type "reseau social" avec demandes en attente, refusees, accepetees, etc),
-		sans changer la DB.
-	*/
-
-	fastify.post('/api/friends/add', { preValidation: [fastify.authenticate] }, async (request, reply) => {
-
-		const senderId = request.user.id;
-		const {username } = request.body;
-
-		try {
-			const target = await db.get("SELECT id FROM users WHERE username = ?", [username]);
-			if (!target)
-				return (reply.status(400).send({success: false, error: 'user_not_found'}));
-
-			const targetId = target.id;
-			if (senderId === targetId)
-				return (reply.status(400).send({success: false, error: 'cannot_add_yourself'}));
-
-			const existing = await db.get(
-				"SELECT * FROM friends WHERE user_id = ? AND friend_id = ?",
-				[senderId, targetId]
-			);
-
-			if (existing) {
-				if (existing.status === 'pending') {
-					await db.run(
-						"UPDATE friends SET status = 'accepted' WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)",
-						[senderId, targetId, targetId, senderId]
-					);
-					return (reply.send({ success: true, message: 'friendship_accepted'}));
-				} else {
-				return (reply.status(400).send({success: false, error: 'already_exists'}));
-				}
-			}
-
-			//create entries in table !
-			await _add_friend(senderId, targetId);
-
-			return (reply.send({ success: true}));
-		} catch (error) {
-			console.error("Friend add error: ", error);
-			return (reply.status(500).send({ success: false, error: "db_error" }));
-		}
-	});
-
+	// Remove a friend :
 	fastify.delete('/api/friends/:username', { preValidation: [fastify.authenticate] }, async (req, reply) => {
 
 		const userId = req.user.id;
