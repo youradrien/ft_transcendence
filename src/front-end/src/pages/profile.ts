@@ -2,6 +2,8 @@ import Page from '../template/page.ts';
 import { i18n } from '../i18n';
           declare const Chart: any;
 
+type FriendshipStatus = 'friends' | 'pending' | 'none';
+
 /* 
 en gros
 component page PROFILE (pour voir le profil des autres)
@@ -11,15 +13,35 @@ component page PROFILE (pour voir le profil des autres)
 */
 export default class UserProfilePage extends Page {
 
-  async getFriendshipStatus(username: string): Promise<boolean> {
+  async getFriendshipStatus(username: string): Promise<FriendshipStatus> {
+    try {
+        const res = await fetch(`http://localhost:3010/api/friends/status/${username}`, {
+            credentials: 'include',
+        });
 
-    const res = await fetch(`http://localhost:3010/api/friends/status/${username}`, {
-        method: 'GET',
-        credentials: 'include'
-    });
-    const data = await res.json();
-    return data.success && data.friends === true;
-  }
+        if (!res.ok) {
+            console.error('Failed to fetch friendship status:', res.statusText);
+            return 'none';
+        }
+
+        const data = await res.json();
+
+        if (!data.success) {
+            console.error('API returned error:', data.error);
+            return 'none';
+        }
+
+        if (['friends', 'pending', 'none'].includes(data.status)) {
+            return data.status as FriendshipStatus;
+        } else {
+            console.warn('Unexpected friendship status:', data.status);
+            return 'none';
+        }
+    } catch (err) {
+        console.error('Error fetching friendship status:', err);
+        return 'none';
+    }
+}
 
   async render(): Promise<HTMLElement> {
     const container = document.createElement('div');
@@ -74,7 +96,8 @@ export default class UserProfilePage extends Page {
     const social_btns_HTML = !(user_api_call == "api/me-info") ? `
       <div style="display: flex; gap: 12px;">
         <button id="add-friend-btn" style="${greenButtonStyle}">${i18n.t('add_friend')}</button>
-        <button id="unfriend-btn" style="${greenButtonStyle} display:none; background-color:#ff4444;">${i18n.t('unfriend')}</button>
+        <button id="unfriend-btn" style="${greenButtonStyle}; display:none; background-color:#ff4444;">${i18n.t('unfriend')}</button>
+        <button id="pending-btn" style="${greenButtonStyle}; display:none; background-color:#ffcc33;">${i18n.t('request_pending')}</button>
         <button id="send-dm-btn" style="${greenButtonStyle}">${i18n.t('send_dm')}</button>
       </div>
     ` : '';
@@ -296,42 +319,79 @@ export default class UserProfilePage extends Page {
 	}
 
 	if (match) {
-		const isFriend = await this.getFriendshipStatus(USER_DATA.username);
-		const unfriendBtn = container.querySelector('#unfriend-btn') as HTMLButtonElement;
 
-		if (isFriend) {
-			addFriendBtn.style.display = 'none';
-			unfriendBtn.style.display = 'inline-block';
-		} else {
-			addFriendBtn.style.display = 'inline-block';
-			unfriendBtn.style.display = 'none';
-		}
+    const statusRes = await fetch(`http://localhost:3010/api/friends/status/${USER_DATA.username}`, {
+        credentials: 'include'
+    });
+    const statusData = await statusRes.json();
+    const status = statusData.status;
 
-		if (unfriendBtn) {
-			unfriendBtn.onclick = async () => {
+    const unfriendBtn = container.querySelector('#unfriend-btn') as HTMLButtonElement;
+    const pendingBtn = container.querySelector('#pending-btn') as HTMLButtonElement;
 
-				unfriendBtn.disabled = true;
-				unfriendBtn.textContent = i18n.t('processing');
+    if (status === 'friends') {
+        addFriendBtn.style.display = 'none';
+        pendingBtn.style.display = 'none';
+        unfriendBtn.style.display = 'inline-block';
+    } else if (status === 'pending') {
+        addFriendBtn.style.display = 'none';
+        unfriendBtn.style.display = 'none';
+        pendingBtn.style.display = 'inline-block';
+    } else {
+        addFriendBtn.style.display = 'inline-block';
+        unfriendBtn.style.display = 'none';
+        pendingBtn.style.display = 'none';
+    }
 
-				const res = await fetch(`http://localhost:3010/api/friends/${USER_DATA.username}`, {
-					method: 'DELETE',
-					credentials: 'include'
-				});
+    if (unfriendBtn) {
+        unfriendBtn.onclick = async () => {
+            unfriendBtn.disabled = true;
+            unfriendBtn.textContent = i18n.t('processing');
 
-				const data = await res.json();
-				if (data.success) {
-					unfriendBtn.style.display = 'none';
-					addFriendBtn.style.display = 'inline-block';
-					addFriendBtn.textContent = i18n.t('add_friend');
-					addFriendBtn.disabled = false;
-				} else {
-					alert("Error: " + data.error);
-					unfriendBtn.disabled = false;
-					unfriendBtn.textContent = i18n.t('unfriend');
-				}
-			};
-		}
-	}	
+            const res = await fetch(`http://localhost:3010/api/friends/${USER_DATA.username}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                unfriendBtn.style.display = 'none';
+                addFriendBtn.style.display = 'inline-block';
+                addFriendBtn.textContent = i18n.t('add_friend');
+                addFriendBtn.disabled = false;
+            } else {
+                alert("Error: " + data.error);
+                unfriendBtn.disabled = false;
+                unfriendBtn.textContent = i18n.t('unfriend');
+            }
+        };
+    }
+
+    if (pendingBtn) {
+        pendingBtn.onclick = async () => {
+            pendingBtn.disabled = true;
+            pendingBtn.textContent = i18n.t('processing');
+
+            const res = await fetch(`http://localhost:3010/api/friends/requests/${USER_DATA.username}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                pendingBtn.style.display = 'none';
+                addFriendBtn.style.display = 'inline-block';
+                addFriendBtn.textContent = i18n.t('add_friend');
+                addFriendBtn.disabled = false;
+            } else {
+                alert("Error: " + data.error);
+                pendingBtn.disabled = false;
+                pendingBtn.textContent = i18n.t('request_pending');
+            }
+        };
+    }
+
+	}
 
     // fill ts with game infos
     try {

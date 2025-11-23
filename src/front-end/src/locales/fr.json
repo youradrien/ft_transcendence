@@ -101,5 +101,6 @@
   "chart_description": "Ce graphique montrera la différence de score entre les joueurs lors des matchs récents",
   "game_label": "Partie {{n}}",
   "vs": "vs",
-  "processing" : "en cours"
+  "processing" : "en cours",
+  "request_pending" : "DEMANDE EN COURS"
 }

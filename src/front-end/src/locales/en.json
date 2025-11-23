@@ -101,5 +101,6 @@
   "chart_description": "This chart will show the score difference between players across recent matches",
   "game_label": "Game {{n}}",
   "vs": "vs",
-  "processing" : "in process"
+  "processing" : "in process",
+  "request_pending" : "REQUEST SENT"
 }

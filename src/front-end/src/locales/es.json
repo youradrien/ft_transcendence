@@ -101,5 +101,6 @@
   "chart_description": "Este gráfico mostrará la diferencia de puntuación entre los jugadores en partidos recientes",
   "game_label": "Partida {{n}}",
   "vs": "vs",
-  "processing" : "tratamiento"
+  "processing" : "tratamiento",
+  "request_pending" : "DEMANDA ENVIADA"
 }
