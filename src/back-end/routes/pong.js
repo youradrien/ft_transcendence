@@ -125,6 +125,43 @@ function handle_tournament_start(fastify) {
     // Start first match
     t_run_next_match(fastify);
 }
+*/
+const broadcast_tournament = async (fastify, payload = {} /*peut etre <USER_ID> pour self-send letat du tournament et opti mais flemme */) => {
+    const t = fastify.p_tournament;
+
+    // pre-built (non-user specific) state
+    const base = {
+        type: 'tournament-update',
+        tournament: {
+            active: t.active,
+            players: t.players,
+            bracket: t.bracket,
+            results: t.results,
+            current_bracket: t.current_bracket,
+            currentMatch: t.currentMatch,
+            tournament_prize: t.prize,
+            tournament_status: t.status,
+            players_status: t.players_status
+        },
+        ...payload, // event-specific extra data
+    };
+    for (const [_id, s] of t.player_sockets.entries()) {
+        if (s.readyState === 1) {
+
+            const _registered = t.players.some(p => p.userId === _id);
+
+            const personalized = {
+                ...base,
+                self_registered: _registered
+            };
+            console.log("sending: " + personalized);
+            s.send(JSON.stringify(personalized));
+        }
+    }
+
+}
+
+
 // [TOURNAMENT - REGISTRATION]
 const handle_tournament_registration = async (USER_ID, fastify)  => {
     const t = fastify.p_tournament;
@@ -134,7 +171,9 @@ const handle_tournament_registration = async (USER_ID, fastify)  => {
     if (!t.active) {
         t.active = true;
         t.players = [];
-        t.currentRound = 0;
+        t.players_status = [];
+
+        t.current_bracket = 0;
         t.currentMatch = 0;
 
         t.bracket = [
@@ -147,6 +186,8 @@ const handle_tournament_registration = async (USER_ID, fastify)  => {
             semi:     [null, null],
             final:    null
         };
+        t.prize =  Math.floor(Math.random() * (2500 - 800 + 100)) + 800; // rand int between 8 and 2
+        t.status = "preparing";
     }
 
     // alr registered?
@@ -168,24 +209,26 @@ const handle_tournament_registration = async (USER_ID, fastify)  => {
         userId: USER_ID,
         username: row.username,
         pfp: row.avatar_url,
-        elo: row.elo
+        elo: row.elo,
+        tournament_pseudo: "ezrz"
     };
+    t.players_status[t.players?.length] = "waiting";
     t.players.push(player_info);
 
-    broadcastTournament(fastify, {
-        type: 'player-joined',
-        player: player_info,
-        count: t.players.length
+    broadcast_tournament(fastify, {
+        event: 'player-joined',
+        player: player_info
     });
 
     // start tournament when 8/8 reached
     if (t.players.length === 8) {
-        handle_tournament_start(fastify);
+       // handle_tournament_start(fastify);
     }
 }
 
 
-*/
+
+
 const attach_socket_handler = async (socket, USER_ID, fastify, ai_game = false) =>{
     if( !socket ){
         return ;
@@ -853,6 +896,56 @@ async function pong_routes(fastify, options)
             if (game.interval)
                 clearInterval(game.interval);
             p_rooms.delete(game_id);
+        });
+    });
+
+
+
+    // PONG TOURNAMENT
+    fastify.get('/api/pong/tournament/ws', { websocket: true }, async (connection, req) => {
+        const t = fastify.p_tournament;
+        let USER_ID;
+        // auth
+        try {
+            await fastify.authenticate(req);
+            USER_ID = req.user.id;
+        } catch {
+            connection.socket.send(JSON.stringify({ type: 'error', msg: 'Unauthorized' }));
+            return connection.socket.close();
+        }
+
+
+        // [store/update] socket reference
+        t.player_sockets.set(USER_ID, connection.socket);
+
+
+        const alr_set = t.player_sockets.has(USER_ID);
+        if (!alr_set || 1 === 1) // flemme dopti enfzite
+        {
+            broadcast_tournament(fastify, {
+                event: 'player-socket',
+                id: USER_ID
+            });
+        }else{
+        
+            connection.socket.send(
+                JSON.stringify(t)
+            );
+        }
+
+
+        // incoming messages
+        connection.socket.on('message', async (m) => {
+            const data = JSON.parse(m);
+
+            if (data.type === 'register') { // register
+                await handle_tournament_registration(USER_ID, fastify);
+            }
+        });
+
+        // bind-disconnection
+        connection.socket.on('close', () => {
+            t.player_sockets.delete(USER_ID);
         });
     });
 }
