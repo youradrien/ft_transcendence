@@ -1,5 +1,6 @@
 import Page from '../template/page.ts';
 import Pong from '../component/pong.ts';
+import { i18n } from '../i18n';
 
 export default class PlayPage extends Page {
   async render(): Promise<HTMLElement> {
@@ -19,16 +20,16 @@ export default class PlayPage extends Page {
       ">
         <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-        <h1 style="margin-bottom: 1rem; font-size: 32px; animation: fadeInUp 0.38s ease-out;">ONLINE 🎮</h1>
-        <p style="margin-bottom: 0.2rem;  font-size: 14px; animation: fadeInUp 0.5s ease-out;" id="player-status">Looking for players...</p>
-        <p style="margin-bottom: 0.2rem;  font-size: 14px; animation: fadeInUp 0.63s ease-out;" id="rooms-status">Looking for any rooms?...</p>
+        <h1 style="margin-bottom: 1rem; font-size: 32px; animation: fadeInUp 0.38s ease-out;">${i18n.t('online_title')}</h1>
+        <p style="margin-bottom: 0.2rem;  font-size: 14px; animation: fadeInUp 0.5s ease-out;" id="player-status">${i18n.t('looking_for_players')}</p>
+        <p style="margin-bottom: 0.2rem;  font-size: 14px; animation: fadeInUp 0.63s ease-out;" id="rooms-status">${i18n.t('looking_for_rooms')}</p>
 
         ${!joined_game ? `
             <div id="active-games" style="margin: 0 auto; margin-top: 3rem;
                 min-width: 600px; 
                 animation: fadeInUp 0.82s ease-out;
             ">
-              <h2 style="margin-bottom: 1rem; font-size: 32px;">⚡ Active Games</h2>
+              <h2 style="margin-bottom: 1rem; font-size: 32px;">${i18n.t('active_games')}</h2>
               <div id="game-list" style="display: flex; flex-direction: column; gap: 1rem;"></div>
             </div>
           `
@@ -51,12 +52,12 @@ export default class PlayPage extends Page {
           color: #fff;
           animation: fadeInUp 0.6s ease-out;
         ">
-          <h3 style="font-size: 14px; margin-bottom: 1rem;">📟 ARCADE PANEL</h3>
-          <p id="ap-player" style="font-size: 10px; opacity: 0.9;">Player: ...</p>
-          <p id="ap-queue"  style="font-size: 10px; opacity: 0.9;">Queue: ...</p>
-          <p id="ap-rooms"  style="font-size: 10px; opacity: 0.9;">Rooms: ...</p>
-          <p id="ap-tournaments"  style="font-size: 10px; opacity: 0.9;">Tournaments: ...</p>
-          <p id="ap-tournaments"  style="font-size: 10px; opacity: 0.9;">Average elo: ...</p>
+          <h3 style="font-size: 14px; margin-bottom: 1rem;">${i18n.t('arcade_panel')}</h3>
+          <p id="ap-player" style="font-size: 10px; opacity: 0.9;">${i18n.t('player_label', { name: '...' })}</p>
+          <p id="ap-queue"  style="font-size: 10px; opacity: 0.9;">${i18n.t('queue_label', { count: '...' })}</p>
+          <p id="ap-rooms"  style="font-size: 10px; opacity: 0.9;">${i18n.t('rooms_label', { count: '...' })}</p>
+          <p id="ap-tournaments"  style="font-size: 10px; opacity: 0.9;">${i18n.t('tournaments_label', { count: '...' })}</p>
+          <p id="ap-tournaments"  style="font-size: 10px; opacity: 0.9;">${i18n.t('average_elo_label', { elo: '...' })}</p>
 
           <div style="
             margin-top: 1rem;
@@ -66,23 +67,23 @@ export default class PlayPage extends Page {
             box-shadow: 0 0 10px #0095ff;
           "></div>
           <p style="font-size: 9px; margin-top: 1rem; opacity: 0.7;">
-            Tip: Press ESC to quit a match instantly.
+            ${i18n.t('tip_esc')}
           </p>
         </div>
 
           
           <div class="title-banner" id ="title-banner"  style="animation: fadeInUp 0.8s ease-out;">
-              <h1 style="margin-bottom: 2px; font-size: 36px; ">🏓 PONG ARCADE</h1>
-              <p style="margin-top: 3px;">Choose your game mode</p>
+              <h1 style="margin-bottom: 2px; font-size: 36px; ">${i18n.t('pong_arcade')}</h1>
+              <p style="margin-top: 3px;">${i18n.t('choose_game_mode')}</p>
               <div class="neon-divider"></div>
           </div>
 
 
           <div class="menu-box" id="menu-box" style="animation: fadeInUp 1s ease-out;">
-              <h1 class="menu-title">GAME MODES</h1>
-              <button id="singleBtn" class="arcade-btn arcade-yellow">🎯 SINGLE PLAYER</button>
+              <h1 class="menu-title">${i18n.t('game_modes')}</h1>
+              <button id="singleBtn" class="arcade-btn arcade-yellow">${i18n.t('single_player')}</button>
               <button id="multiBtn" class="arcade-btn arcade-blue" style="position:relative;">
-                🚀 MULTIPLAYER
+                ${i18n.t('multiplayer')}
                 <span id="queue-count" style="
                   position: absolute;
                   top: -10px;
@@ -96,7 +97,7 @@ export default class PlayPage extends Page {
                   box-shadow: 0 0 6px rgba(0,0,0,0.4);
                 ">0</span>
               </button>
-              <button id="aiBtn" class="arcade-btn arcade-orange">🤖 PLAY VS AI</button>
+              <button id="aiBtn" class="arcade-btn arcade-orange">${i18n.t('play_vs_ai')}</button>
           </div>
 
         <style>
