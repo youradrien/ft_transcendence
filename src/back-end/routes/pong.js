@@ -177,9 +177,9 @@ const handle_tournament_registration = async (USER_ID, fastify)  => {
         t.currentMatch = 0;
 
         t.bracket = [
-            [null, null, null, null],
-            [null, null],
-            [null]
+            [null, null, null, null,    null, null, null, null], // quarterfinals 
+            [null, null,   null, null], // semi-finals
+            [null, null] // final
         ];
         t.results = {
             quarter:  [null, null, null, null],
@@ -213,6 +213,7 @@ const handle_tournament_registration = async (USER_ID, fastify)  => {
         tournament_pseudo: "ezrz"
     };
     t.players_status[t.players?.length] = "waiting";
+    t.bracket[0][t.players?.length] =  (player_info);
     t.players.push(player_info);
 
     broadcast_tournament(fastify, {

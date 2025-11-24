@@ -348,23 +348,23 @@ export default class TournamentPage extends Page {
             <h3>Quarterfinals</h3>
             <div class="round qf">
             <div class="match">
-                <div class="player"><div class="pfp">A</div><span>Alice</span></div>
-                <div class="player"><div class="pfp">B</div><span>Bob</span></div>
+                <div id="qf-1" class="player"><div class="pfp">A</div><span>Alice</span></div>
+                <div id="qf-2" class="player"><div class="pfp">B</div><span>Bob</span></div>
             </div>
 
             <div class="match">
-                <div class="player"><div class="pfp">C</div><span>Charlie</span></div>
-                <div class="player"><div class="pfp">D</div><span>David</span></div>
+                <div id="qf-3" class="player"><div class="pfp">C</div><span>Charlie</span></div>
+                <div id="qf-4" class="player"><div class="pfp">D</div><span>David</span></div>
             </div>
 
             <div class="match">
-                <div class="player"><div class="pfp">E</div><span>Eva</span></div>
-                <div class="player"><div class="pfp">F</div><span>Ferdy</span></div>
+                <div id="qf-5" class="player"><div class="pfp">E</div><span>Eva</span></div>
+                <div id="qf-6" class="player"><div class="pfp">F</div><span>Ferdy</span></div>
             </div>
 
             <div class="match">
-                <div class="player"><div class="pfp">G</div><span>Gino</span></div>
-                <div class="player"><div class="pfp">H</div><span>Helena</span></div>
+                <div id="qf-7" class="player"><div class="pfp">G</div><span>Gino</span></div>
+                <div id="qf-8" class="player"><div class="pfp">H</div><span>Helena</span></div>
             </div>
             </div>
         </div>
@@ -375,12 +375,12 @@ export default class TournamentPage extends Page {
             <h3>Semifinals</h3>
             <div class="round sf">
                 <div class="match mid">
-                    <div class="player winner">Winner 1</div>
-                    <div class="player winner">Winner 2</div>
+                    <div id="sf-1" class="player winner">Winner 1</div>
+                    <div id="sf-2"class="player winner">Winner 2</div>
                 </div>
                 <div class="match mid">
-                    <div class="player winner">Winner 3</div>
-                    <div class="player winner">Winner 4</div>
+                    <div id="sf-3" class="player winner">Winner 3</div>
+                    <div id="sf-4" class="player winner">Winner 4</div>
                 </div>
             </div>
         </div>
@@ -493,6 +493,26 @@ export default class TournamentPage extends Page {
         if(self_registered) {
           addBtn.innerHTML = 'JOINED';
           addBtn.style.backgroundColor = '#00b7ffff';
+        }
+        // brackets
+        for(let i = 0; i < 3; i++)
+        {  
+          let s:string[] = ["qf", "sf", "f"];
+          for(let j = 0; j < tournament_data?.bracket[i].length; j++)
+          {
+            let player = tournament_data?.bracket[i][j];
+            if(player != null)
+            {
+              const match = document.getElementById(s[i] + "-" + (j + 1)) as HTMLElement;
+
+              if(match) {
+                  const d = match.querySelector("div") as HTMLElement;  // returns first span OR div
+                  const e = match.querySelector("span") as HTMLElement;  // returns first span OR div
+                  d.innerHTML = `<img src=${player?.pfp} />`;
+                  e.innerHTML = `${player?.username};`
+              }
+            }
+          }
         }
     };
 
