@@ -102,5 +102,7 @@
   "game_label": "Partie {{n}}",
   "vs": "vs",
   "processing" : "en cours",
-  "request_pending" : "DEMANDE EN COURS"
+  "request_pending" : "DEMANDE EN COURS",
+  "pending_decline" : "ANNULER DEMANDE",
+  "request_received" : "DEMANDE RECUE"
 }

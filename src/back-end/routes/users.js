@@ -637,7 +637,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 	});
 
 	// Seeing if someone is already a friend or a requester :
-	fastify.get('/api/friends/status/:username', { preValidation : [fastify.authenticate] }, async (req, reply) => {
+	fastify.get('/api/friends/status/:username', { preValidation: [fastify.authenticate] }, async (req, reply) => {
 
 		const currentUserId = req.user.id;
 		const username = req.params.username;
@@ -647,28 +647,35 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 				SELECT 1
 				FROM friends f
 				JOIN users u ON u.id = f.friend_id
-				WHERE f.user_id = ? AND u.username = ? AND f.status = 'accepted'`,
-			[currentUserId, username]);
+				WHERE f.user_id = ? AND u.username = ? AND f.status = 'accepted'
+			`, [currentUserId, username]);
 
 			if (friendRow) {
-				return reply.send({ success: true, status: 'friends' });
+				return reply.send({ success: true, status: 'friends', pendingType: null });
 			}
 
 			const pendingRow = await db.get(`
-				SELECT 1
+				SELECT fr.sender_id, fr.receiver_id
 				FROM friend_requests fr
-				JOIN users u ON u.id = fr.receiver_id
-				WHERE (fr.sender_id = ? AND u.username = ? AND fr.status = 'pending')
-					OR (fr.receiver_id = ? AND u.username = ? AND fr.status = 'pending')`,
-			[currentUserId, username, currentUserId, username]);
+				JOIN users sender ON sender.id = fr.sender_id
+				JOIN users receiver ON receiver.id = fr.receiver_id
+				WHERE fr.status = 'pending' AND (
+					(sender.id = ? AND receiver.username = ?) OR 
+					(receiver.id = ? AND sender.username = ?)
+			)
+			`, [currentUserId, username, currentUserId, username]);
 
 			if (pendingRow) {
-				return reply.send({ success: true, status: 'pending' });
+				if (pendingRow.sender_id === currentUserId) {
+					return reply.send({ success: true, status: 'pending', pendingType: 'sent' });
+				} else {
+					return reply.send({ success: true, status: 'pending', pendingType: 'received' });
+				}
 			}
-			return reply.send({ success: true, status: 'none'});
+			return reply.send({ success: true, status: 'none', pendingType: null });
 		} catch (error) {
 			console.error(error);
-			return reply.status(500).send({ success: false, error: 'db_error' });
+			return reply.status(500).send({ success: false, error: 'db_error', pendingType: null });
 		}
 	});
 

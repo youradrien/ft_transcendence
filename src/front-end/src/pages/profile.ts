@@ -112,7 +112,7 @@ export default class UserProfilePage extends Page {
       <div style="display: flex; gap: 12px;">
         <button id="add-friend-btn" style="${greenButtonStyle}">${i18n.t('add_friend')}</button>
         <button id="unfriend-btn" style="${greenButtonStyle}; display:none; background-color:#ff4444;">${i18n.t('unfriend')}</button>
-        <button id="pending-btn" style="${greenButtonStyle}; display:none; background-color:#ffcc33;">${i18n.t('request_pending')}</button>
+        <button id="pending-btn" style="${greenButtonStyle}; display:none; background-color:#ffcc33;">${i18n.t('pending_decline')}</button>
         <button id="send-dm-btn" style="${greenButtonStyle}">${i18n.t('send_dm')}</button>
       </div>
     ` : '';
@@ -341,18 +341,28 @@ export default class UserProfilePage extends Page {
 		});
 		const statusData = await statusRes.json();
 		const status = statusData.status;
+		const pendingType = statusData.pendingType || null;
 
 		const unfriendBtn = container.querySelector('#unfriend-btn') as HTMLButtonElement;
 		const pendingBtn = container.querySelector('#pending-btn') as HTMLButtonElement;
 
 		if (status === 'friends') {
+
 			addFriendBtn.style.display = 'none';
 			pendingBtn.style.display = 'none';
 			unfriendBtn.style.display = 'inline-block';
 		} else if (status === 'pending') {
+
 			addFriendBtn.style.display = 'none';
 			unfriendBtn.style.display = 'none';
 			pendingBtn.style.display = 'inline-block';
+
+			if (pendingType === 'received') {
+				pendingBtn.disabled = true;
+				pendingBtn.textContent = i18n.t('request_received');
+			} else {
+				 pendingBtn.disabled = false;
+			}
 		} else {
 			addFriendBtn.style.display = 'inline-block';
 			unfriendBtn.style.display = 'none';

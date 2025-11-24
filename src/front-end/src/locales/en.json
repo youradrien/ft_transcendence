@@ -102,5 +102,7 @@
   "game_label": "Game {{n}}",
   "vs": "vs",
   "processing" : "in process",
-  "request_pending" : "REQUEST SENT"
+  "request_pending" : "REQUEST SENT",
+  "pending_decline" : "CANCEL REQUEST",
+  "request_received" : "REQUEST RECEIVED"
 }

@@ -102,5 +102,7 @@
   "game_label": "Partida {{n}}",
   "vs": "vs",
   "processing" : "tratamiento",
-  "request_pending" : "DEMANDA ENVIADA"
+  "request_pending" : "DEMANDA ENVIADA",
+  "pending_decline" : "CANCELAR SOLICITUD",
+  "request_received" : "SOLICITUD RECIDIBA"
 }
