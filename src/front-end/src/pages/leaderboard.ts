@@ -1,4 +1,5 @@
 import Page from '../template/page.ts';
+import { i18n } from '../i18n';
 
 type Player = {
   username: string;
@@ -43,7 +44,7 @@ export default class LeaderboardPage extends Page {
       borderRadius: '18px'
     });
     container.innerHTML = `
-      <h1 style="font-size: 24px; margin-bottom: 30px;">LEADERBOARD</h1>
+      <h1 style="font-size: 24px; margin-bottom: 30px;">${i18n.t('leaderboard_title')}</h1>
       <div id="leaderboard" style="
         width: 100%;
         max-width: 850px;
@@ -52,7 +53,7 @@ export default class LeaderboardPage extends Page {
         gap: 16px;
         cursor: crosshair;
       ">
-        ${_playerz.length === 0 ? '<div>No players found.</div>' : ''}
+        ${_playerz.length === 0 ? `<div>${i18n.t('no_players_found')}</div>` : ''}
       </div>
     `;
 

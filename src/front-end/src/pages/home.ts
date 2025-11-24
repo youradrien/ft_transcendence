@@ -1,5 +1,6 @@
 import Page from '../template/page.ts';
 import Profile from './profile.ts'; // adjust path as needed
+import { i18n } from '../i18n';
 
 type User = {
   username: string;
@@ -36,7 +37,7 @@ export default class MainPage extends Page {
       const pfp_element = await pfp.render();
       content.appendChild(pfp_element);
     } else {
-      content.innerHTML = `<p style="color: red;">Could not load your profile.</p>`;
+      content.innerHTML = `<p style="color: red;">${i18n.t('profile_load_error')}</p>`;
     }
 
     container.appendChild(content);
