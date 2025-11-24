@@ -307,6 +307,18 @@ export default class TournamentPage extends Page {
             ${tournament_online ? i18n.t('online') : i18n.t('offline')}
           </span>
       </div>
+      <div  style="display: flex; align-items: center; gap: 8px; margin-left:auto; justify-content: center;" >
+          <span 
+          id="t-prize" 
+          style="
+            font-size: 18px;
+            margin-top: 12px;
+            color: #fffb00;
+            text-shadow: 0 0 4px #ffd000ff;
+          ">
+           -
+          </span>
+      </div>
 
       <div id="registration-box">
         <h2>Player Registration</h2>
@@ -334,7 +346,12 @@ export default class TournamentPage extends Page {
               Inactive: empty Tournament
             </span>
         </div>
-        <button id="start-btn" disabled>Pay to Start Tournament</button>
+        <button id="force-start-btn" disabled>FORCE-START Tournament </button>
+        <span style="
+              font-size: 12px;
+              color: #ffffffff;
+              text-shadow: 0 0 4px #ffffffff;
+            " id="t-cost"> </span>
       </div>
 
     <h2>Players</h2>
@@ -405,7 +422,7 @@ export default class TournamentPage extends Page {
     // === DOM elm ===
     const nameInput = container.querySelector("#player-name") as HTMLInputElement;
     const addBtn = container.querySelector("#add-player-btn") as HTMLButtonElement;
-    const startBtn = container.querySelector("#start-btn") as HTMLButtonElement;
+    const f_startBtn = container.querySelector("#force-start-btn") as HTMLButtonElement;
     let ws_tournament: WebSocket;
 
 
@@ -430,6 +447,14 @@ export default class TournamentPage extends Page {
         // plyr count
         const c = document.getElementById("player-count") as HTMLElement;
         c.innerHTML = `${tournament_data.players.length} / 8 players joined.`;
+        // prize
+        const tp = document.getElementById("t-prize") as HTMLElement;
+        if(tournament_data?.tournament_prize){
+          tp.innerHTML = `TOURNAMENT PRIZE:  +${tournament_data?.tournament_prize}elo 🥇`;
+        }
+        // cost 
+        const tc = document.getElementById("t-cost") as HTMLElement;
+        tc.innerHTML = `${tournament_data?.tournament_prize / 4} ELO`;
 
         // plyr list
         const plyr_display = document.getElementById("players-display") as HTMLElement;
@@ -493,6 +518,7 @@ export default class TournamentPage extends Page {
         if(self_registered) {
           addBtn.innerHTML = 'JOINED';
           addBtn.style.backgroundColor = '#00b7ffff';
+          _registered = (true);
         }
         // brackets
         for(let i = 0; i < 3; i++)
@@ -509,7 +535,7 @@ export default class TournamentPage extends Page {
                   const d = match.querySelector("div") as HTMLElement;  // returns first span OR div
                   const e = match.querySelector("span") as HTMLElement;  // returns first span OR div
                   d.innerHTML = `<img src=${player?.pfp} />`;
-                  e.innerHTML = `${player?.username};`
+                  e.innerHTML = `${player?.username}`
               }
             }
           }
@@ -568,8 +594,16 @@ export default class TournamentPage extends Page {
     // ------------------------------------
     //     START TOURNAMENT
     // ------------------------------------
-    startBtn.onclick = () => {
+    f_startBtn.onclick = async () => {
+        if (! _registered || ws_tournament == null) {
+          return;
+        }
 
+
+        ws_tournament.send(JSON.stringify({
+            type: "register"
+        }));
+        nameInput.value = "";
     };
 
 

@@ -12,7 +12,7 @@ const t_run_next_match = async (fastify) => {
     const t = fastify.p_tournament;
 
     const match = t.bracket[ t.currentRound ][ t.currentMatch ];
-    if (!match) {
+    if (!match || !t.active || t.status == "inactive") {
         return;
     }
 
@@ -126,6 +126,11 @@ function handle_tournament_start(fastify) {
     t_run_next_match(fastify);
 }
 */
+
+
+
+
+
 const broadcast_tournament = async (fastify, payload = {} /*peut etre <USER_ID> pour self-send letat du tournament et opti mais flemme */) => {
     const t = fastify.p_tournament;
 
@@ -163,7 +168,7 @@ const broadcast_tournament = async (fastify, payload = {} /*peut etre <USER_ID> 
 
 
 // [TOURNAMENT - REGISTRATION]
-const handle_tournament_registration = async (USER_ID, fastify)  => {
+const handle_tournament_registration = async (USER_ID, fastify, bot_registration = false)  => {
     const t = fastify.p_tournament;
 
     // start new tournament if noneactive
@@ -189,6 +194,33 @@ const handle_tournament_registration = async (USER_ID, fastify)  => {
         t.prize =  Math.floor(Math.random() * (2500 - 800 + 100)) + 800; // rand int between 8 and 2
         t.status = "preparing";
     }
+
+    if(bot_registration)
+    {
+        let p = ["GUNDILL", "KENNY", "CARTMAN", "ABOUDA", "THOMAS", "ENZO", "JULES", "GAUTHIER", "HUGO"];
+        let pfps = [
+            'https://api.dicebear.com/9.x/bottts/svg?seed=Sara',
+            'https://api.dicebear.com/9.x/bottts/svg?seed=Nolan',
+            'https://api.dicebear.com/9.x/bottts/svg?seed=Emery',
+            'https://api.dicebear.com/9.x/bottts/svg?seed=Mackenzie',
+            'https://api.dicebear.com/9.x/bottts/svg?seed=George'
+        ]
+        const bot_info = {
+            userId: '',
+            username: 'BOT_' + t.players?.length,
+            pfp: pfps[ Math.floor(Math.random() * (pfps.length - 0 + 1)) + 0],
+            elo:  Math.floor(Math.random() * (5000 - 600 + 100)) + 600,
+            tournament_pseudo: p[Math.floor(Math.random() * (p.length - 0 + 1)) + 0]
+        };
+        t.players_status[t.players?.length] = "waiting";
+        t.bracket[0][t.players?.length] =  (bot_info);
+        t.players.push(bot_info);
+        if (t.players.length === 8) {
+            // handle_tournament_start(fastify);
+        }
+        return ;
+    }
+
 
     // alr registered?
     if (t.players.find(p => p.userId === USER_ID))
@@ -227,7 +259,40 @@ const handle_tournament_registration = async (USER_ID, fastify)  => {
     }
 }
 
+// [TOURNAMENT - FORCE-START]
+const tournament_force_start = async (USER_ID, fastify, socket) => {
+    const t = fastify.p_tournament;
 
+    // make sure user is apart from the tournament
+    const b = t.players.find(p => p.userId === USER_ID);
+    if ( !b || !t.active || t.status != "preparing"
+        || t.players.length == 8 || t.players.length == 0
+    )
+    {
+        socket.send(JSON.stringify({ type: "failed"  }));
+        return ;
+    }
+    // quick db fetch
+    const row = await fastify.db.get(
+        `SELECT username, elo FROM users WHERE id = ?`, 
+        [USER_ID]
+    );
+    if(!t.prize || row.elo < (t.prize / 4))
+    {
+        // lol
+        socket.send(JSON.stringify({
+            type: "too_poor"
+        }));
+        return ;
+    }
+    let i = t.players.length;
+    while(i < 8){
+        // register bots
+        handle_tournament_registration(USER_ID, fastify, true);
+        i++;
+    }
+
+};
 
 
 const attach_socket_handler = async (socket, USER_ID, fastify, ai_game = false) =>{
@@ -420,6 +485,18 @@ async function pong_routes(fastify, options)
             }
             return;
         }
+        // + ! make sure mf isnt suscribed in a tournament!
+        // tournament is preparing OR running
+        const b = t.status === "open" || t.status === "preparing" || t.status === "in-progress";
+        const user_in_tournament = t.players.some(p => p && p.id === USER_ID);
+        if (b && user_in_tournament) {
+            connection.socket.send(JSON.stringify({ 
+                type: "error", 
+                message: "cant queue while participating in a tournament." 
+            }));
+            return connection.socket.close();
+        }
+
         // user is already in room?
         for (const [roomId, _g] of fastify.p_rooms.entries()) {
             if (Array.isArray(_g.players) && _g.players.includes(USER_ID)) {
@@ -941,6 +1018,9 @@ async function pong_routes(fastify, options)
 
             if (data.type === 'register') { // register
                 await handle_tournament_registration(USER_ID, fastify);
+            }
+            if (data.type === 'force_start') { // force_start
+                await tournament_force_start(USER_ID, fastify, connection.socket);
             }
         });
 
