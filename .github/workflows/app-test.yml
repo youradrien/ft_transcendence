@@ -78,7 +78,12 @@ jobs:
           cd src/back-end
           # Create the secrets directory required by vault_launcher.js
           mkdir -p vault_handler/secrets
-          
+          # Ensure Vault cert is available at /app/certs/vault.crt (expected by vault_launcher.js)
+          sudo mkdir -p /app/certs || true
+          if [ -f "../../vault/vault-config/certs/vault.crt" ]; then
+            sudo cp ../../vault/vault-config/certs/vault.crt /app/certs/vault.crt
+          fi
+
           timeout 10s node server.js &
           sleep 3
           if pgrep -f "node server.js" > /dev/null; then
@@ -90,7 +95,7 @@ jobs:
           fi
         env:
           NODE_ENV: test
-          VAULT_ADDR: https://vault:8200
+          VAULT_ADDR: http://vault:8200
           VAULT_TOKEN: root
 
   docker-build:
