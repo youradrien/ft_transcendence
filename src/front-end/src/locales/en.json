@@ -107,5 +107,10 @@
   "request_received" : "REQUEST RECEIVED",
   "TOURNAMENT_MODE": "TOURNAMENT MODE",
   "mode_tournament": "START PLAY TOURNAMENT MODE NOW !",
-  "play_tournament": "➡️ JOIN TOURNAMENT "
+  "play_tournament": "➡️ JOIN TOURNAMENT ",
+  "no_friends_title" : "No friends or requests yet",
+  "friends_page_title" : "FRIENDS",
+  "unfriend_button" : "Unfriend",
+  "accept_button" : "accept",
+  "decline_button" : "refuse"
 }

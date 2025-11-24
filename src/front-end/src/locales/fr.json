@@ -107,5 +107,10 @@
   "request_received" : "DEMANDE RECUE",
   "TOURNAMENT_MODE": "MODE TOURNOI",
   "mode_tournament": "JOUER AU MODE TOURNAMENT DÈS MAINTENANT !",
-   "play_tournament": "➡️ REJOINDRE LE TOURNOI"
+   "play_tournament": "➡️ REJOINDRE LE TOURNOI",
+   "no_friends_title" : "Pas d'amis, pas de demandes",
+   "friends_page_title" : "AMIS",
+   "unfriend_button" : "Supprimer",
+   "accept_button" : "accepter",
+   "decline_button" : "refuser"
 }

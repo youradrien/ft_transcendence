@@ -227,7 +227,7 @@ export default class Friends extends Page {
 	});
 
 	const unfBtn = document.createElement("button");
-	unfBtn.textContent = "Unfriend";
+	unfBtn.textContent = `${i18n.t('unfriend_button')}`;
 	Object.assign(unfBtn.style, {
 		background: "#ff4444",
 		color: "white",
@@ -244,7 +244,6 @@ export default class Friends extends Page {
 		const success = await this.REMOVE_FRIEND(friend.username);
 		if (!success) {
 			unfBtn.disabled = false;
-			unfBtn.textContent = "Unfriend";
 			alert("Failed to remove friend.");
 			return ;
 		}
@@ -257,6 +256,7 @@ export default class Friends extends Page {
 	card.appendChild(right);
 
 	//Mouse events listening :
+
 	card.addEventListener("mouseenter", () => {
 		card.style.transform = "translateY(-6px) scale(1.02)";
 		card.style.boxShadow = "0 0 10px rgba(255,255,255,0.12)";
@@ -321,7 +321,7 @@ export default class Friends extends Page {
     Object.assign(right.style, { display: "flex", gap: "8px" });
 
     const acceptBtn = document.createElement("button");
-    acceptBtn.textContent = "Accept";
+    acceptBtn.textContent = `${i18n.t('accept_button')}`;
     Object.assign(acceptBtn.style, {
         background: "#44ff44",
         color: "white",
@@ -333,7 +333,6 @@ export default class Friends extends Page {
     acceptBtn.onclick = async (e) => {
         e.stopPropagation();
         acceptBtn.disabled = true;
-        acceptBtn.textContent = "Accepting...";
         const success = await this.ACCEPT_FRIEND_REQUEST(friend.username);
         if (success) acceptCallback(friend.username);
         else {
@@ -344,7 +343,7 @@ export default class Friends extends Page {
     };
 
     const declineBtn = document.createElement("button");
-    declineBtn.textContent = "Decline";
+    declineBtn.textContent = `${i18n.t('decline_button')}`;
     Object.assign(declineBtn.style, {
         background: "#ff4444",
         color: "white",
@@ -356,7 +355,6 @@ export default class Friends extends Page {
     declineBtn.onclick = async (e) => {
         e.stopPropagation();
         declineBtn.disabled = true;
-        declineBtn.textContent = "Declining...";
         const success = await this.DECLINE_FRIEND_REQUEST(friend.username);
         if (success) declineCallback(friend.username);
         else {
@@ -411,7 +409,7 @@ async render(): Promise<HTMLElement> {
 		gap: "16px"
 	});
 
-	content.innerHTML = `<h1 style="font-size: 24px; margin-bottom: 10px;">FRIENDS</h1>`;
+	content.innerHTML = `<h1 style="font-size: 24px; margin-bottom: 10px;">${i18n.t('friends_page_title')}</h1>`;
 	container.appendChild(content);
 
 	const listContainer = document.createElement("div");
@@ -438,7 +436,7 @@ async render(): Promise<HTMLElement> {
 
 		if (friends.length === 0 && requests.length === 0) {
 			const empty = document.createElement("div");
-			empty.textContent = "No friends or requests yet.";
+			empty.textContent = `${i18n.t('no_friends_title')}`;
 			empty.style.opacity = "0.8";
 			listContainer.appendChild(empty);
 			return ;
