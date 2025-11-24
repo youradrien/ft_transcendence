@@ -1,4 +1,5 @@
 import Page from '../template/page.ts';
+import { i18n } from '../i18n';
 
 export default class SinglePong extends Page {
   private multiplayer: boolean;
@@ -49,7 +50,7 @@ async render(): Promise<HTMLElement> {
     p1_div.style.alignItems = 'center';
     const p1 = document.createElement('span');
     p1.id = 'player1-score';
-    p1.textContent = 'Player 1: 0';
+    p1.textContent = i18n.t('player1_score', { score: 0 });
     const img_p1 = document.createElement('img');
     img_p1.id = 'player1-pfp';
     img_p1.src = this?.game_data?.player_pfps?.[0]?.[0] || 'https://avatars.githubusercontent.com/u/9919?s=200&v=4';
@@ -65,7 +66,7 @@ async render(): Promise<HTMLElement> {
     // --- Max score ---
     const max_score = document.createElement('span');
     max_score.id = 'max-score';
-    max_score.textContent = `Max Score: ${this.game_data ? this.game_data.max_score : 20}`;
+    max_score.textContent = i18n.t('max_score', { score: this.game_data ? this.game_data.max_score : 20 });
     max_score.style.opacity = '0.7';
     max_score.style.fontSize = '0.85rem';
     max_score.style.flex = '1';
@@ -82,7 +83,7 @@ async render(): Promise<HTMLElement> {
     p2_div.style.alignItems = 'center';
     const p2 = document.createElement('span');
     p2.id = 'player2-score';
-    p2.textContent = 'Player 2: 0';
+    p2.textContent = i18n.t('player2_score', { score: 0 });
     const img_p2 = document.createElement('img');
     img_p2.id = 'player2-pfp';
     img_p2.src = this.game_data?.player_pfps?.[0]?.[1] || 'https://avatars.githubusercontent.com/u/9919?s=200&v=4';

@@ -56,6 +56,7 @@ export default class Header extends Page {
             <select id="langSelect" style="padding: 5px; border-radius: 5px; font-family: inherit;">
                 <option value="en" ${i18n.currentLocale === 'en' ? 'selected' : ''}>🇬🇧 EN</option>
                 <option value="fr" ${i18n.currentLocale === 'fr' ? 'selected' : ''}>🇫🇷 FR</option>
+                <option value="es" ${i18n.currentLocale === 'es' ? 'selected' : ''}>🇪🇸 ES</option>
             </select>
         </div>
       </div>
@@ -64,7 +65,7 @@ export default class Header extends Page {
     // Language switcher event
     container.querySelector('#langSelect')?.addEventListener('change', (e) => {
         const target = e.target as HTMLSelectElement;
-        i18n.setLocale(target.value as 'en' | 'fr');
+        i18n.setLocale(target.value as 'en' | 'fr' | 'es');
     });
 
     // Button event handlers
