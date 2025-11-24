@@ -93,6 +93,7 @@
   "sending": "Enviando...",
   "sent": "¡Enviado!",
   "add_friend_btn": "AÑADIR AMIGO",
+  "unfriend": "ELIMINAR AMIGO",
   "friend_request_failed": "Error al enviar solicitud de amistad: ",
   "chart_wins": "Victorias",
   "chart_losses": "Derrotas",
@@ -100,7 +101,16 @@
   "chart_description": "Este gráfico mostrará la diferencia de puntuación entre los jugadores en partidos recientes",
   "game_label": "Partida {{n}}",
   "vs": "vs",
+  "processing" : "tratamiento",
+  "request_pending" : "DEMANDA ENVIADA",
+  "pending_decline" : "CANCELAR SOLICITUD",
+  "request_received" : "SOLICITUD RECIDIBA",
   "TOURNAMENT_MODE": "TOURNAMENT MODE",
   "mode_tournament": "messi!",
-  "play_tournament": "➡️ JOIN TOURNAMENT "
+  "play_tournament": "➡️ JOIN TOURNAMENT ",
+  "no_friends_title" : "Sin amigos ni peticiones",
+  "friends_page_title" : "AMIGOS",
+  "unfriend_button" : "Borrar",
+  "accept_button" : "aceptar",
+  "decline_button" : "rechazar"
 }

@@ -10,7 +10,6 @@ type FriendFromAPI = {
 	last_seen: string;
 };
 
-
 function formatLastSeen(dateString: string | null | undefined) {
 
 	if (!dateString)
@@ -71,6 +70,81 @@ export default class Friends extends Page {
 		return [];
 	}
   }
+
+  //Get all user's friend requests:
+	async FETCH_FRIEND_REQUESTS(): Promise<Friend[]> {
+
+		try {
+				const res = await fetch('http://localhost:3010/api/friends/requests', {
+				method: 'GET',
+				credentials: 'include',
+			});
+
+			const data = await res.json();
+			if (!data.success) {
+				console.error('Failure while fetching friend requests', data.error);
+				return [];
+			}
+			return data.requests as Friend[];
+		} catch (err) {
+			console.error('Error fetching friend requests', err);
+			return [];
+		}
+	}
+
+  //Method for accepting a friend request :
+	async ACCEPT_FRIEND_REQUEST(username: string): Promise<boolean> {
+
+		try {
+			const res = await fetch(`http://localhost:3010/api/friends/requests/accept/${username}`, {
+				method: 'POST',
+				credentials: 'include',
+		});
+			const data = await res.json();
+			return data.success === true;
+		} catch (err) {
+			console.error('Error accepting friend request', err);
+			return false;
+		}
+	}
+
+  // Method for declinig a friend request :
+	async DECLINE_FRIEND_REQUEST(username: string): Promise<boolean> {
+
+		try {
+			const res = await fetch(`http://localhost:3010/api/friends/requests/decline/${username}`, {
+				method: 'POST',
+				credentials: 'include',
+		});
+			const data = await res.json();
+			return data.success === true;
+		} catch (err) {
+		console.error('Error declining friend request', err);
+		return false;
+		}
+	}
+
+  // Method for removing a friend.
+	async REMOVE_FRIEND(username: string): Promise<boolean> {
+
+		try {
+			const res = await fetch(`http://localhost:3010/api/friends/${username}`, {
+				method: 'DELETE',
+				credentials: 'include',
+			});
+			const data = await res.json();
+			if (!data.success) {
+				console.error('Failure while removing friend', data.error);
+				return false;
+			}
+			return true;
+		} catch (error) {
+			console.error('Error while deleting friend', error);
+			return false;
+		}
+	}
+
+  // FRIEND CARD :
 
   createFriendCard(friend: Friend, removeCallBack: (username: string) => void): HTMLElement {
 
@@ -152,23 +226,27 @@ export default class Friends extends Page {
 		gap: "8px"
 	});
 
-	//Button "Unfriend" :
-
 	const unfBtn = document.createElement("button");
-	unfBtn.textContent = "Unfriend";
+	unfBtn.textContent = `${i18n.t('unfriend_button')}`;
 	Object.assign(unfBtn.style, {
 		background: "#ff4444",
-      color: "white",
-      border: "none",
-      borderRadius: "6px",
-      padding: "6px 10px",
-      cursor: "pointer"
+		color: "white",
+		border: "none",
+		borderRadius: "6px",
+		padding: "6px 10px",
+		cursor: "pointer"
 	});
-	unfBtn.onclick = (e) => {
+	unfBtn.onclick = async (e) => {
 		e.stopPropagation();
 		unfBtn.disabled = true;
 		unfBtn.textContent = "Removing...";
-		//Callback provided by page = delete friend and refresh page !!
+
+		const success = await this.REMOVE_FRIEND(friend.username);
+		if (!success) {
+			unfBtn.disabled = false;
+			alert("Failed to remove friend.");
+			return ;
+		}
 		removeCallBack(friend.username);
 	};
 
@@ -178,6 +256,7 @@ export default class Friends extends Page {
 	card.appendChild(right);
 
 	//Mouse events listening :
+
 	card.addEventListener("mouseenter", () => {
 		card.style.transform = "translateY(-6px) scale(1.02)";
 		card.style.boxShadow = "0 0 10px rgba(255,255,255,0.12)";
@@ -193,72 +272,209 @@ export default class Friends extends Page {
 	return card;
   }
 
+  // FRIEND REQUEST CARD :
 
-	// PAGE RENDERING :
-
- async render(): Promise<HTMLElement> {
-    const container = document.createElement("div");
-    container.id = this.id;
-    Object.assign(container.style, {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      padding: "40px",
-      backgroundColor: "#181818d1",
-      color: "white",
-      fontFamily: '"Press Start 2P", cursive',
-      minHeight: "70vh",
-      borderRadius: "18px"
+  createFriendRequestCard(friend: Friend, acceptCallback: (username: string) => void, declineCallback: (username: string) => void): HTMLElement {
+    const card = document.createElement("div");
+    Object.assign(card.style, {
+        width: "100%",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "12px 16px",
+        background: "#002244",
+        border: "2px solid #333",
+        borderRadius: "8px",
+        boxShadow: "0 0 8px rgba(0, 255, 0, 0.06)",
+        boxSizing: "border-box",
+        gap: "12px"
     });
 
-    const content = document.createElement("div");
-    Object.assign(content.style, {
-      width: "100%",
-      maxWidth: "850px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "16px"
+    // Left: avatar + username + status
+    const left = document.createElement("div");
+    Object.assign(left.style, { display: "flex", alignItems: "center", gap: "12px" });
+
+    const avatar = document.createElement("img");
+    avatar.src = friend.avatar_url;
+    avatar.alt = friend.username;
+    Object.assign(avatar.style, { width: "55px", height: "55px", borderRadius: "50%", border: "2px solid white" });
+
+    const textWrap = document.createElement("div");
+    Object.assign(textWrap.style, { display: "flex", flexDirection: "column", justifyContent: "center" });
+
+    const usernameEl = document.createElement("div");
+    usernameEl.textContent = friend.username;
+    usernameEl.style.fontSize = "16px";
+
+    const statusEl = document.createElement("div");
+    statusEl.textContent = friend.online ? "Online" : `Last seen: ${formatLastSeen(friend.last_seen)}`;
+    statusEl.style.fontSize = "12px";
+    statusEl.style.color = friend.online ? "lime" : "#fc2929ff";
+
+    textWrap.appendChild(usernameEl);
+    textWrap.appendChild(statusEl);
+    left.appendChild(avatar);
+    left.appendChild(textWrap);
+
+    // Right: Accept / Decline buttons
+    const right = document.createElement("div");
+    Object.assign(right.style, { display: "flex", gap: "8px" });
+
+    const acceptBtn = document.createElement("button");
+    acceptBtn.textContent = `${i18n.t('accept_button')}`;
+    Object.assign(acceptBtn.style, {
+        background: "#44ff44",
+        color: "white",
+        border: "none",
+        borderRadius: "6px",
+        padding: "6px 10px",
+        cursor: "pointer"
     });
-
-    content.innerHTML = `<h1 style="font-size: 24px; margin-bottom: 10px;">FRIENDS</h1>`;
-    container.appendChild(content);
-
-    const listContainer = document.createElement("div");
-    Object.assign(listContainer.style, {
-      width: "100%",
-      display: "flex",
-      flexDirection: "column",
-      gap: "12px",
-	  boxSizing: "border-box"
-    });
-    content.appendChild(listContainer);
-
-    let friends = await this.FETCH_FRIENDS();
-
-    const renderList = () => {
-      listContainer.innerHTML = "";
-      if (friends.length === 0) {
-        const empty = document.createElement("div");
-        empty.textContent = "No friends yet.";
-        empty.style.opacity = "0.8";
-        listContainer.appendChild(empty);
-        return;
-      }
-
-      friends.forEach(friend => {
-        const card = this.createFriendCard(friend, (username) => {
-          friends = friends.filter(f => f.username !== username);
-          renderList();
-        });
-        listContainer.appendChild(card);
-      });
+    acceptBtn.onclick = async (e) => {
+        e.stopPropagation();
+        acceptBtn.disabled = true;
+        const success = await this.ACCEPT_FRIEND_REQUEST(friend.username);
+        if (success) acceptCallback(friend.username);
+        else {
+            acceptBtn.disabled = false;
+            acceptBtn.textContent = "Accept";
+            alert("Failed to accept friend request");
+        }
     };
 
-    renderList();
-    return container;
-  }
+    const declineBtn = document.createElement("button");
+    declineBtn.textContent = `${i18n.t('decline_button')}`;
+    Object.assign(declineBtn.style, {
+        background: "#ff4444",
+        color: "white",
+        border: "none",
+        borderRadius: "6px",
+        padding: "6px 10px",
+        cursor: "pointer"
+    });
+    declineBtn.onclick = async (e) => {
+        e.stopPropagation();
+        declineBtn.disabled = true;
+        const success = await this.DECLINE_FRIEND_REQUEST(friend.username);
+        if (success) declineCallback(friend.username);
+        else {
+            declineBtn.disabled = false;
+            declineBtn.textContent = "Decline";
+            alert("Failed to decline friend request");
+        }
+    };
+
+    right.appendChild(acceptBtn);
+    right.appendChild(declineBtn);
+
+    card.appendChild(left);
+    card.appendChild(right);
+
+    card.addEventListener("mouseenter", () => {
+        card.style.transform = "translateY(-6px) scale(1.02)";
+        card.style.boxShadow = "0 0 10px rgba(255,255,255,0.12)";
+    });
+    card.addEventListener("mouseleave", () => {
+        card.style.transform = "translateY(0) scale(1)";
+        card.style.boxShadow = "0 0 8px rgba(0,255,0,0.06)";
+    });
+
+    return card;
 }
 
+	///// PAGE RENDERING /////
+
+async render(): Promise<HTMLElement> {
+
+	const container = document.createElement("div");
+	container.id = this.id;
+	Object.assign(container.style, {
+		display: "flex",
+		flexDirection: "column",
+		alignItems: "center",
+		padding: "40px",
+		backgroundColor: "#181818d1",
+		color: "white",
+		fontFamily: '"Press Start 2P", cursive',
+		minHeight: "70vh",
+		borderRadius: "18px"
+	});
+
+	const content = document.createElement("div");
+	Object.assign(content.style, {
+		width: "100%",
+		maxWidth: "850px",
+		display: "flex",
+		flexDirection: "column",
+		gap: "16px"
+	});
+
+	content.innerHTML = `<h1 style="font-size: 24px; margin-bottom: 10px;">${i18n.t('friends_page_title')}</h1>`;
+	container.appendChild(content);
+
+	const listContainer = document.createElement("div");
+	Object.assign(listContainer.style, {
+		width: "100%",
+		display: "flex",
+		flexDirection: "column",
+		gap: "12px",
+		boxSizing: "border-box"
+	});
+	content.appendChild(listContainer);
+
+	let friends = await this.FETCH_FRIENDS();
+	let requests = await this.FETCH_FRIEND_REQUESTS();
+
+	if (!Array.isArray(friends)) friends = [];
+	if (!Array.isArray(requests)) requests = [];
+
+	console.log("Friends:", friends);
+	console.log("Friend requests:", requests);
+
+	const renderList = () => {
+		listContainer.innerHTML = "";
+
+		if (friends.length === 0 && requests.length === 0) {
+			const empty = document.createElement("div");
+			empty.textContent = `${i18n.t('no_friends_title')}`;
+			empty.style.opacity = "0.8";
+			listContainer.appendChild(empty);
+			return ;
+		}
+
+		// Friends:
+		friends.forEach(friend => {
+			const card = this.createFriendCard(friend, (username) => {
+				friends = friends.filter(f => f.username !== username);
+				renderList();
+			});
+			listContainer.appendChild(card);
+		});
+
+		// Requests:
+		requests.forEach(req => {
+			if (!req || !req.username) return;
+
+			const card = this.createFriendRequestCard(req,
+				(username) => {
+					friends = friends.concat(req);
+					requests = requests.filter(r => r.username !== username);
+					renderList();
+				},
+				(username) => {
+					requests = requests.filter(r => r.username !== username);
+					renderList();
+				}
+			);
+
+			listContainer.appendChild(card);
+		});
+	};
+
+	renderList();
+	return container;
+  }
+}
 
 ////// CARD CONTAINER STRUCTURE ///////
 
