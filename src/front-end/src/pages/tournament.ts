@@ -115,7 +115,7 @@ export default class TournamentPage extends Page {
             flex-direction: column;
             height: 92%; /* ensure container takes full height for spacing to work */
             justify-content: space-around;
-            min-height: 110vh;
+            min-height: 10vh;
         }
         .match {
             display: flex;
