@@ -73,9 +73,9 @@ fastify.decorate('p_tournament', {
       [null, null], [null]
     ],
     bracket: [  // en gros, une array-bracket qui contient des array de matchups: [ [p1,p2], [p3,p4], [p2, p6]...]
-        [null, null, null, null], // quarterfinals 
-        [null, null], // semi-finals
-        [null] // final
+        [null, null, null, null,    null, null, null, null], // quarterfinals 
+        [null, null,   null, null], // semi-finals
+        [null, null] // final
     ],        
     current_bracket: 0,     // 0=QF, 1=SF, 2=Final
     currentMatch: 0,     
