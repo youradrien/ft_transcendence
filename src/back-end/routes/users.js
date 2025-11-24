@@ -659,7 +659,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 				FROM friend_requests fr
 				JOIN users u ON u.id = fr.receiver_id
 				WHERE (fr.sender_id = ? AND u.username = ? AND fr.status = 'pending')
-				OR (fr.receiver_id = ? AND u.username = ? AND fr.status = 'pending')`,
+					OR (fr.receiver_id = ? AND u.username = ? AND fr.status = 'pending')`,
 			[currentUserId, username, currentUserId, username]);
 
 			if (pendingRow) {

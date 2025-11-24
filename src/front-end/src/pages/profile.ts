@@ -57,14 +57,29 @@ export default class UserProfilePage extends Page {
     container.style.background = 'radial-gradient(circle at top,rgba(11, 11, 11, 0.48) 0%, rgba(11, 11, 11, 0.21) 100%)';
     let pfp = "https://avatars.githubusercontent.com/u/9919?s=200&v=4";
 
+
+	let currentUser: { username: string } | null = null;
+	try {
+			const meRes = await fetch('http://localhost:3010/api/me-info', {
+			credentials: 'include'
+		});
+		if (meRes.ok) {
+			const data = await meRes.json();
+			currentUser = data.user; // data.user.username, etc.
+		}
+	} catch (err) {
+    	console.error('Failed to fetch current user', err);
+	}
+
     const path = window.location.pathname; // e.g. /profile:john_doe
     const match = path.match(/^\/profile\/([^/]+)$/);
+	const viewedUsername = match ? match[1] : currentUser?.username;
+	const isMyProfile = currentUser?.username === viewedUsername;
     let user_api_call = match ? ("api/profile/" + match[1]) : null;
-    if(!user_api_call){
-      user_api_call = "api/me-info"
-    }
-    let USER_DATA: any;
-
+	if(!user_api_call){
+		user_api_call = "api/me-info"
+	}
+	let USER_DATA: any;
     try {
         const response = await fetch(`http://localhost:3010/${user_api_call}`, {
           credentials: 'include'
@@ -318,78 +333,85 @@ export default class UserProfilePage extends Page {
 		};
 	}
 
-	if (match) {
+	// Logic for activate the correct button regarding the user's relationship with the viewed profile :
+	if (!isMyProfile) {
 
-    const statusRes = await fetch(`http://localhost:3010/api/friends/status/${USER_DATA.username}`, {
-        credentials: 'include'
-    });
-    const statusData = await statusRes.json();
-    const status = statusData.status;
+		const statusRes = await fetch(`http://localhost:3010/api/friends/status/${USER_DATA.username}`, {
+			credentials: 'include'
+		});
+		const statusData = await statusRes.json();
+		const status = statusData.status;
 
-    const unfriendBtn = container.querySelector('#unfriend-btn') as HTMLButtonElement;
-    const pendingBtn = container.querySelector('#pending-btn') as HTMLButtonElement;
+		const unfriendBtn = container.querySelector('#unfriend-btn') as HTMLButtonElement;
+		const pendingBtn = container.querySelector('#pending-btn') as HTMLButtonElement;
 
-    if (status === 'friends') {
-        addFriendBtn.style.display = 'none';
-        pendingBtn.style.display = 'none';
-        unfriendBtn.style.display = 'inline-block';
-    } else if (status === 'pending') {
-        addFriendBtn.style.display = 'none';
-        unfriendBtn.style.display = 'none';
-        pendingBtn.style.display = 'inline-block';
-    } else {
-        addFriendBtn.style.display = 'inline-block';
-        unfriendBtn.style.display = 'none';
-        pendingBtn.style.display = 'none';
-    }
+		if (status === 'friends') {
+			addFriendBtn.style.display = 'none';
+			pendingBtn.style.display = 'none';
+			unfriendBtn.style.display = 'inline-block';
+		} else if (status === 'pending') {
+			addFriendBtn.style.display = 'none';
+			unfriendBtn.style.display = 'none';
+			pendingBtn.style.display = 'inline-block';
+		} else {
+			addFriendBtn.style.display = 'inline-block';
+			unfriendBtn.style.display = 'none';
+			pendingBtn.style.display = 'none';
+		}
 
-    if (unfriendBtn) {
-        unfriendBtn.onclick = async () => {
-            unfriendBtn.disabled = true;
-            unfriendBtn.textContent = i18n.t('processing');
+		// Unfriend button activation (if the current user and the viewed profile are already friends) :
+		if (unfriendBtn) {
 
-            const res = await fetch(`http://localhost:3010/api/friends/${USER_DATA.username}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            });
+			unfriendBtn.onclick = async () => {
 
-            const data = await res.json();
-            if (data.success) {
-                unfriendBtn.style.display = 'none';
-                addFriendBtn.style.display = 'inline-block';
-                addFriendBtn.textContent = i18n.t('add_friend');
-                addFriendBtn.disabled = false;
-            } else {
-                alert("Error: " + data.error);
-                unfriendBtn.disabled = false;
-                unfriendBtn.textContent = i18n.t('unfriend');
-            }
-        };
-    }
+				unfriendBtn.disabled = true;
+				unfriendBtn.textContent = i18n.t('processing');
 
-    if (pendingBtn) {
-        pendingBtn.onclick = async () => {
-            pendingBtn.disabled = true;
-            pendingBtn.textContent = i18n.t('processing');
+				const res = await fetch(`http://localhost:3010/api/friends/${USER_DATA.username}`, {
+					method: 'DELETE',
+					credentials: 'include'
+				});
 
-            const res = await fetch(`http://localhost:3010/api/friends/requests/${USER_DATA.username}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            });
+				const data = await res.json();
+				if (data.success) {
+					unfriendBtn.style.display = 'none';
+					addFriendBtn.style.display = 'inline-block';
+					addFriendBtn.textContent = i18n.t('add_friend');
+					addFriendBtn.disabled = false;
+				} else {
+					alert("Error: " + data.error);
+					unfriendBtn.disabled = false;
+					unfriendBtn.textContent = i18n.t('unfriend');
+				}
+			};
+		}
 
-            const data = await res.json();
-            if (data.success) {
-                pendingBtn.style.display = 'none';
-                addFriendBtn.style.display = 'inline-block';
-                addFriendBtn.textContent = i18n.t('add_friend');
-                addFriendBtn.disabled = false;
-            } else {
-                alert("Error: " + data.error);
-                pendingBtn.disabled = false;
-                pendingBtn.textContent = i18n.t('request_pending');
-            }
-        };
-    }
+		// Pending button activation (If the current user had sent a request to the viewed profile) :
+		if (pendingBtn) {
+
+			pendingBtn.onclick = async () => {
+
+				pendingBtn.disabled = true;
+				pendingBtn.textContent = i18n.t('processing');
+
+				const res = await fetch(`http://localhost:3010/api/friends/requests/${USER_DATA.username}`, {
+					method: 'DELETE',
+					credentials: 'include'
+				});
+
+				const data = await res.json();
+				if (data.success) {
+					pendingBtn.style.display = 'none';
+					addFriendBtn.style.display = 'inline-block';
+					addFriendBtn.textContent = i18n.t('add_friend');
+					addFriendBtn.disabled = false;
+				} else {
+					alert("Error: " + data.error);
+					pendingBtn.disabled = false;
+					pendingBtn.textContent = i18n.t('request_pending');
+				}
+			};
+		}
 
 	}
 
