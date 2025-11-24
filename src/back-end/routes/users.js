@@ -290,7 +290,48 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     });
 
 
+    fastify.post('/api/user', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+    const { username } = request.body;
+    const userId = request.user.id;
 
+    if (!username || typeof username !== 'string') {
+        return reply.status(400).send({ success: false, error: 'invalid_username' });
+    }
+    if (username.length < 3 || username.length > 20) {
+        return reply.status(400).send({ success: false, error: 'username_length_invalid' });
+    }
+
+    try {
+            // Check if username is already taken
+            const existingUser = await db.get("SELECT id FROM users WHERE username = ? AND id != ?", [username, userId]);
+            if (existingUser) {
+                return reply.status(409).send({ success: false, error: 'username_already_exist' });
+            }
+
+            await db.run("UPDATE users SET username = ? WHERE id = ?", [username, userId]);
+
+            // Generate new JWT with updated username
+            const jwt_content = await getJWTContent(userId);
+            const token_jwt = fastify.jwt.sign(jwt_content);
+            fastify.setAuthCookie(reply, token_jwt);
+
+            request.log.info({
+                event_type: 'username_updated',
+                user_id: userId,
+                new_username: username
+            });
+
+            return reply.send({ success: true, username });
+        } 
+        catch (err) {
+            request.log.error({
+                event_type: 'username_update_error',
+                error: err.message,
+                user_id: userId
+            });
+            return reply.status(500).send({ success: false, error: 'db_error' });
+        }
+});
 
     // Permet d'activer le 2FA sur le compte et renvoie le qr code (ainsi que la clé secrete). Nécessite d'être connecté
     fastify.get('/api/2fa/setup', {preValidation: [fastify.authenticate]}, async (request, reply) => {
