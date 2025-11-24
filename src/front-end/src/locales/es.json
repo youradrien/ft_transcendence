@@ -99,5 +99,8 @@
   "chart_score_difference": "Diferencia de puntuación",
   "chart_description": "Este gráfico mostrará la diferencia de puntuación entre los jugadores en partidos recientes",
   "game_label": "Partida {{n}}",
-  "vs": "vs"
+  "vs": "vs",
+  "TOURNAMENT_MODE": "TOURNAMENT MODE",
+  "mode_tournament": "messi!",
+  "play_tournament": "➡️ JOIN TOURNAMENT "
 }

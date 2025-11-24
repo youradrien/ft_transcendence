@@ -4,6 +4,230 @@ const { db } = require('../db.js');
 // --------------------------------      PONG                 --------------------------------------------
 // -------------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------------
+/*
+
+
+// [TOURNAMENT - NEXT MATCH]
+const t_run_next_match = async (fastify) => {
+    const t = fastify.p_tournament;
+
+    const match = t.bracket[ t.currentRound ][ t.currentMatch ];
+    if (!match) {
+        return;
+    }
+
+    const [p1, p2] = match;
+
+    
+        const game_id = `${Date.now()}_${p1Id}_${p2Id}`;
+        const c = Math.floor(Math.random() * (8 - 2 + 1)) + 2; // rand int between 8 and 2
+        // p1-p2 usernames from DB -> one query
+        const game = {
+            id: game_id,
+            players: [p1Id, p2Id],
+            sockets: [p1Socket, p2Socket],
+            paddles: { p1: 50, p2: 50 },
+            ball: { x: 100, y: 100, vx: 3.5, vy: 3.5 },
+            scores: { p1: 0, p2: 0 },
+            countdown: (c), // init at 10
+            width: 1200,
+            height: 600,
+            paddleWidth: 10,
+            paddleHeight: 80,
+            max_score: Math.floor(Math.random() * (75 - 10 + 1)) + 10, // score [10- 75]
+            player_names: ["player_1", "player_2"],
+            player_pfps: [
+                "https://avatars.githubusercontent.com/u/9919?s=200&v=4", 
+                "https://avatars.githubusercontent.com/u/9919?s=200&v=4"],
+            player_elos: [
+                500, 500
+            ],
+            ended: false
+        };
+        p_rooms.set(game_id, game);
+        // [creating....]
+        p1Socket.send(JSON.stringify({ type: 'creating', role: 'p1', 
+            queueLength: p_waitingPlayers.size, roomsLength: p_rooms.size,
+            is_a_comeback: false,
+            countdown_v: game?.countdown
+        }));
+        p2Socket.send(JSON.stringify({ type: 'creating', role: 'p2',
+            queueLength: p_waitingPlayers.size, roomsLength: p_rooms.size,
+            is_a_comeback: false,
+            countdown_v: game?.countdown
+        }));
+        // thats why i put coolddown/coutdown btw
+        // (could gather more infos on both playrs)
+        const p_names = await fastify.db.all(
+            'SELECT id, elo, avatar_url, username FROM users WHERE id IN (?, ?)',
+            [p1Id, p2Id]
+        );
+        const name_map = Object.fromEntries((p_names).map(r => [r.id, r.username]));
+        game.player_names = [
+            name_map[p1Id] || `/${p1Id}/`,
+            name_map[p2Id] || `/${p2Id}/`
+        ];
+        // randomly delay the START [8-15s] after "creaing...""
+        for (let i = 0; i <= c; i++) {
+            setTimeout(() => {
+                const timeLeft = c - i;
+                if (timeLeft > 0) {
+                    game.countdown -= 1;
+                } else {
+                    const safe_game = {
+                        scores: game.scores, countdown: game.countdown, width: game.width, height: game.height, 
+                        paddleWidth: game.paddleWidth, paddleHeight: game.paddleHeight, max_score: game.max_score, 
+                        player_names: (game.player_names),
+                        player_pfps: [game.player_pfps],
+                        player_elos: [game.player_elos]
+                    };
+                    // send start messages
+                    game.sockets[0].send(JSON.stringify({ 
+                        type: 'start', 
+                        role: 'p1', 
+                        ehh: safe_game}));
+                    game.sockets[1].send(JSON.stringify({ 
+                        type: 'start',
+                        role: 'p2', 
+                        ehh: safe_game }));
+
+                    if (game) {
+                        start_game_loop(game, fastify);
+                    }
+                }
+            }, (i) * 1000); // 1 sec step
+        }
+
+        // players inputs
+        attach_socket_handler(connection.socket, USER_ID, fastify);
+}
+// [TOURNAMENT - START]
+function handle_tournament_start(fastify) {
+    const t = fastify.p_tournament;
+
+    // shuffle player orders
+    const shuffled = [...t.players].sort(() => Math.random() - 0.5);
+
+    // Fill quarterfinal bracket
+    t.bracket[0] = [
+        [shuffled[0], shuffled[1]],
+        [shuffled[2], shuffled[3]],
+        [shuffled[4], shuffled[5]],
+        [shuffled[6], shuffled[7]]
+    ];
+
+    broadcastTournament(fastify, {
+        type: 'tournament-start',
+        bracket: t.bracket,
+        prize: t.prize
+    });
+
+    // Start first match
+    t_run_next_match(fastify);
+}
+*/
+const broadcast_tournament = async (fastify, payload = {} /*peut etre <USER_ID> pour self-send letat du tournament et opti mais flemme */) => {
+    const t = fastify.p_tournament;
+
+    // pre-built (non-user specific) state
+    const base = {
+        type: 'tournament-update',
+        tournament: {
+            active: t.active,
+            players: t.players,
+            bracket: t.bracket,
+            results: t.results,
+            current_bracket: t.current_bracket,
+            currentMatch: t.currentMatch,
+            tournament_prize: t.prize,
+            tournament_status: t.status,
+            players_status: t.players_status
+        },
+        ...payload, // event-specific extra data
+    };
+    for (const [_id, s] of t.player_sockets.entries()) {
+        if (s.readyState === 1) {
+
+            const _registered = t.players.some(p => p.userId === _id);
+
+            const personalized = {
+                ...base,
+                self_registered: _registered
+            };
+            console.log("sending: " + personalized);
+            s.send(JSON.stringify(personalized));
+        }
+    }
+
+}
+
+
+// [TOURNAMENT - REGISTRATION]
+const handle_tournament_registration = async (USER_ID, fastify)  => {
+    const t = fastify.p_tournament;
+
+    // start new tournament if noneactive
+    // reset bracket & results
+    if (!t.active) {
+        t.active = true;
+        t.players = [];
+        t.players_status = [];
+
+        t.current_bracket = 0;
+        t.currentMatch = 0;
+
+        t.bracket = [
+            [null, null, null, null],
+            [null, null],
+            [null]
+        ];
+        t.results = {
+            quarter:  [null, null, null, null],
+            semi:     [null, null],
+            final:    null
+        };
+        t.prize =  Math.floor(Math.random() * (2500 - 800 + 100)) + 800; // rand int between 8 and 2
+        t.status = "preparing";
+    }
+
+    // alr registered?
+    if (t.players.find(p => p.userId === USER_ID))
+    {
+        // return sendToUSER(USER_ID, fastify, {
+        //     type: 'already-registered',
+        //     playerCount: t.players.length
+        // });
+        return ;
+    }
+
+    // quick db fetch
+    const row = await fastify.db.get(
+        `SELECT username, avatar_url, elo FROM users WHERE id = ?`, 
+        [USER_ID]
+    );
+    const player_info = {
+        userId: USER_ID,
+        username: row.username,
+        pfp: row.avatar_url,
+        elo: row.elo,
+        tournament_pseudo: "ezrz"
+    };
+    t.players_status[t.players?.length] = "waiting";
+    t.players.push(player_info);
+
+    broadcast_tournament(fastify, {
+        event: 'player-joined',
+        player: player_info
+    });
+
+    // start tournament when 8/8 reached
+    if (t.players.length === 8) {
+       // handle_tournament_start(fastify);
+    }
+}
+
+
+
 
 const attach_socket_handler = async (socket, USER_ID, fastify, ai_game = false) =>{
     if( !socket ){
@@ -280,8 +504,7 @@ async function pong_routes(fastify, options)
                 player_elos: [
                     500, 500
                 ],
-                ended: false,
-                interval: null
+                ended: false
             };
             p_rooms.set(game_id, game);
             // [creating....]
@@ -514,7 +737,6 @@ async function pong_routes(fastify, options)
             aiSpeed: 3,
             player_names: [username, 'AI Bot'],
             ended:false,
-            interval: null,
             ai_state: {
                 viewRefreshMs: 1000,
                 nextRefreshTs: Date.now(),
@@ -640,9 +862,7 @@ async function pong_routes(fastify, options)
             paddleHeight: 80,
             isLocal: true,
             max_score: 10,
-            player_names: [`${username} (P1)`, `${username} (P2)`],
-            interval: null,
-            ended:false
+            player_names: [`${username} (P1)`, `${username} (P2)`]
         };
         
         p_rooms.set(game_id, game);
@@ -676,6 +896,56 @@ async function pong_routes(fastify, options)
             if (game.interval)
                 clearInterval(game.interval);
             p_rooms.delete(game_id);
+        });
+    });
+
+
+
+    // PONG TOURNAMENT
+    fastify.get('/api/pong/tournament/ws', { websocket: true }, async (connection, req) => {
+        const t = fastify.p_tournament;
+        let USER_ID;
+        // auth
+        try {
+            await fastify.authenticate(req);
+            USER_ID = req.user.id;
+        } catch {
+            connection.socket.send(JSON.stringify({ type: 'error', msg: 'Unauthorized' }));
+            return connection.socket.close();
+        }
+
+
+        // [store/update] socket reference
+        t.player_sockets.set(USER_ID, connection.socket);
+
+
+        const alr_set = t.player_sockets.has(USER_ID);
+        if (!alr_set || 1 === 1) // flemme dopti enfzite
+        {
+            broadcast_tournament(fastify, {
+                event: 'player-socket',
+                id: USER_ID
+            });
+        }else{
+        
+            connection.socket.send(
+                JSON.stringify(t)
+            );
+        }
+
+
+        // incoming messages
+        connection.socket.on('message', async (m) => {
+            const data = JSON.parse(m);
+
+            if (data.type === 'register') { // register
+                await handle_tournament_registration(USER_ID, fastify);
+            }
+        });
+
+        // bind-disconnection
+        connection.socket.on('close', () => {
+            t.player_sockets.delete(USER_ID);
         });
     });
 }
@@ -715,34 +985,113 @@ function attach_local_socket_handler(socket, game, fastify, USER_ID) {
     });
 }
 
+const handle_local_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
+    console.log('🔵 [LOCAL_GAME_END] Function called with:', {
+        game_id: game?.id,
+        reason,
+        user_id
+    });
 
-const start_game_loop = (game, fastify = null) => {
-    if (game.interval) {
-        clearInterval(game.interval);
-        game.interval = null;
+    if (!game)
+        return;
+
+    clearInterval(game.interval);
+
+    const { scores, players, sockets, player_names } = game;
+
+    let winner = null;
+    if (reason === 'victory') {
+        if (scores.p1 > scores.p2) 
+            winner = 'p1';
+        else if (scores.p2 > scores.p1) 
+            winner = 'p2';
+    } else if (reason === "give-up") {
+        winner = null; // No winner on give-up for local
     }
 
-    const interval = setInterval(() => {
-        if (game.ended) {
-            clearInterval(interval);
-            return;
-        }
+    if (!sockets || !Array.isArray(sockets))
+        return;
 
+    const player_id = players[0];
+    
+    // Send game end message
+    const socket = game.sockets[0];
+    if (socket && socket.readyState === 1) {
+        const d = {
+            type: 'game_end',
+            reason,
+            scores,
+            winner: winner === 'p1' ? player_names[0] : winner === 'p2' ? player_names[1] : 'None',
+            looser: winner === 'p1' ? player_names[1] : winner === 'p2' ? player_names[0] : 'None',
+            player_names: player_names,
+            you_are_winner: null, // ot applicable for local games
+            is_local: true
+        };
+        socket.send(JSON.stringify(d));
+    }
+    
+    // Save to db (optional for local games)
+    try {
+        const LOCAL_PLAYER_ID = -2; // special ID for local player 2
+        
+        await fastify.db.run(
+            `INSERT INTO games (
+                player1_id, player2_id, winner_id,
+                player1_score, player2_score,
+                p1_name, p2_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+                player_id, LOCAL_PLAYER_ID, 
+                winner === 'p1' ? 1 : winner === 'p2' ? 2 : null,
+                scores.p1, scores.p2,
+                player_names[0], player_names[1]
+            ]
+        );
+        console.log(`✅ [LOCAL_GAME_END] Local game ${game.id} saved to DB`);
+
+        // Update wins for the human player (only if there's a clear winner)
+        if (winner && reason === 'victory') {
+            await fastify.db.run(
+                `UPDATE users SET wins = wins + 1 WHERE id = ?`, 
+                [player_id]
+            );
+        }
+    } catch (err) {
+        console.error("❌ [LOCAL_GAME_END] Error saving local game:", err);
+    }
+    
+    if (fastify) {
+        fastify?.p_rooms.delete(game.id);
+        console.log('🗑️ [LOCAL_GAME_END] Room deleted from p_rooms');
+    }
+    console.log(`✅ [LOCAL_GAME_END] Local Game ${game.id} ended (${reason}) — Winner: ${winner}`);
+};
+
+
+const start_game_loop = (game, fastify = null) =>
+{
+  const interval = setInterval(() => {
+        // ball physics
         game.ball.x += game.ball.vx;
         game.ball.y += game.ball.vy;
 
+        // bounce top/bottom
         if (game.ball.y <= 0 || game.ball.y >= game.height) {
             game.ball.vy *= -1;
         }
 
+        // scores
         if (game.ball.x <= 0) {
             game.scores.p2++;
         } else if (game.ball.x >= game.width) {
             game.scores.p1++;
         }
-
-        if(game.ball.x <= 0 || game.ball.x >= game.width) {
-            if(game.scores.p1 >= game.max_score || game.scores.p2 >= game.max_score) {
+        // detect game-ending
+        if(game.ball.x <= 0 || game.ball.x >= game.width)
+        {
+            if(game.scores.p1 >= game.max_score 
+                || game.scores.p2 >= game.max_score
+            ){
                 if (game.isLocal) {
                     handle_local_game_end(game, "victory", fastify);
                 } else {
@@ -752,6 +1101,7 @@ const start_game_loop = (game, fastify = null) => {
             }
         }
 
+        // bounce left/right
         if (game.ball.x <= 0 || game.ball.x >= game.width) {
             if(Math.abs(game.ball.vx) < 3.5){
                 game.ball.vx *= -1.15;
@@ -759,35 +1109,45 @@ const start_game_loop = (game, fastify = null) => {
                 game.ball.vx *= -1;
             }
         }
-
+        // paddle collisions
+        // left paddle
         if (game.ball.x <= 20 + game.paddleWidth &&
-            game.ball.x >= 20 - game.paddleWidth &&
+            game.ball.x >= 20 - game.paddleWidth 
+            &&
             game.ball.y >= game.paddles.p1 &&
-            game.ball.y <= game.paddles.p1 + game.paddleHeight) {
-            game.ball.vx = Math.abs(game.ball.vx);
+            game.ball.y <= game.paddles.p1 + game.paddleHeight
+        ){
+            console.log("LEFT PADDLE HIT");
+            game.ball.vx = Math.abs(game.ball.vx); // bounce right
         }
-
+        // right paddle
         if (game.ball.x >= (game.width - 30) - game.paddleWidth &&
-            game.ball.x <= (game.width - 30) + game.paddleWidth &&
+            game.ball.x <= (game.width - 30) + game.paddleWidth 
+            &&
             game.ball.y >= game.paddles.p2 &&
-            game.ball.y <= game.paddles.p2 + game.paddleHeight) {
-            game.ball.vx = -Math.abs(game.ball.vx);
+            game.ball.y <= game.paddles.p2 + game.paddleHeight
+            )
+            {
+                console.log("right PADDLE HIT:  " + game.ball.x + " vs " + (game.width - 30));
+            game.ball.vx = -Math.abs(game.ball.vx); // bounce left
         }
 
+        // broadcast game state -> both players (FIXED: handle null sockets)
         game.sockets.forEach((socket) => {
-            if (socket && socket.readyState === 1) {
+            // ✅ Check if socket exists AND is open
+            if (socket && socket.readyState === 1) { // WebSocket.OPEN
                 socket.send(JSON.stringify({
-                    type: 'game_state',
-                    ball: game.ball,
-                    paddles: game.paddles,
-                    scores: game.scores
-                }));
+                        type: 'game_state',
+                        ball: game.ball,
+                        paddles: game.paddles,
+                        scores: game.scores
+                    })
+                );
             }
         });
-    }, 1000 / 60);
-    
-    game.interval = interval;
-};
+  }, 1000 / 60); // 60 FPS
+  game.interval = interval;
+}
 
 
 
@@ -828,27 +1188,22 @@ function simulateAIKey(game, direction) {
 // Remplacement de start_ai_game_loop 
 
 const start_ai_game_loop = (game, fastify = null) => {
-    if (game.interval) {
-        clearInterval(game.interval);
-        game.interval = null;
-    }
-
     const interval = setInterval(() => {
-        if (game.ended) {
-            clearInterval(interval);
-            return;
-        }
-
+        // Physique balle classique A CHANGER UN PEU PTET
         game.ball.x += game.ball.vx;
         game.ball.y += game.ball.vy;
 
+        // rebonds
         if (game.ball.y <= 0 || game.ball.y >= game.height) {
             game.ball.vy *= -1;
         }
 
+        // Score ai
         if (game.ball.x <= 0){
             game.scores.p2 += 1;
-        } else if (game.ball.x >= game.width){
+        } 
+        //score joueur
+        else if (game.ball.x >= game.width){
             game.scores.p1 += 1;
         }
 
@@ -863,6 +1218,8 @@ const start_ai_game_loop = (game, fastify = null) => {
                 game.ball.vx *= -1;
         }
 
+        // Collisions paddles
+        // Gauche
         if (
             game.ball.x <= 20 + game.paddleWidth &&
             game.ball.x >= 20 - game.paddleWidth &&
@@ -871,7 +1228,7 @@ const start_ai_game_loop = (game, fastify = null) => {
         ) {
             game.ball.vx = Math.abs(game.ball.vx);
         }
-
+        // Droite
         if (
             game.ball.x >= (game.width - 30) - game.paddleWidth &&
             game.ball.x <= (game.width - 30) + game.paddleWidth &&
@@ -881,6 +1238,7 @@ const start_ai_game_loop = (game, fastify = null) => {
             game.ball.vx = -Math.abs(game.ball.vx);
         }
 
+        // 1hz
         const now = Date.now();
         if (now >= game.ai_state.nextRefreshTs) {
             const predictedY = predictBallYAtX(game, game.width - 30);
@@ -903,11 +1261,13 @@ const start_ai_game_loop = (game, fastify = null) => {
                 (game.ai_state.currentDirection === 'down' && center >= game.ai_state.targetY - 6)
             ) {
                 game.ai_state.currentDirection = null;
-            } else {
+            } 
+            else{
                 simulateAIKey(game, game.ai_state.currentDirection);
             }
         }
 
+        // Broadcast
         const socket = game.sockets[0];
         if (socket?.readyState === 1) {
             socket.send(JSON.stringify({
@@ -918,73 +1278,49 @@ const start_ai_game_loop = (game, fastify = null) => {
             }));
         }
     }, 1000 / 60);
-    
     game.interval = interval;
 };
 
 
-const safeCloseSocket = (socket) => {
-    if (socket && socket.readyState === 1) { // WebSocket.OPEN
-        try {
-            socket.close();
-        } catch (err) {
-            console.error('Error closing socket:', err);
-        }
-    }
-};
+
 
 
 // game ending: 'give_up', 'victory' or 'disconnection'
 const handle_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
-    if (!game || game?.ended) {
+    if (!game || game?.ended)
+    {
         return;
     }
-    
-    game.ended = true;
-    
-    if (game.interval) {
-        clearInterval(game.interval);
-        game.interval = null;
-    }
-
+    clearInterval(game.interval);
     const { scores, max_score, players, sockets, player_names } = game;
     let winner = null;
-    
-    if(reason == 'victory') {
+    if(reason == 'victory')
+    {
         if (scores.p1 > scores.p2) 
             winner = 'p1';
         else if (scores.p2 > scores.p1) 
             winner = 'p2';
-    } else if (reason == "give-up") {
-        if(user_id) {
+    }else if (reason == "give-up")
+    {
+        if(user_id)
+        {
+            // which player gave up
             if (players[0] === user_id) winner = 'p2';
             else if (players[1] === user_id) winner = 'p1';
-        } else {
+        }else
             winner = "null";
-        }
     }
 
+    // safety ahhhh
     if (!sockets || !Array.isArray(sockets)) {
-        console.error("error: sockets missing or invalid for game", game?.id);
+        console.error("errd: sockets missing or invalid for game", game?.id);
         return;
     }
-
-    sockets.forEach((socket, i) => {
-        if (socket && socket.readyState === 1) {
-            const d = {
-                type: 'game_end',
-                reason,
-                scores,
-                winner: winner === 'p1' ? player_names[0] : player_names[1],
-                looser: (winner === 'p1' || winner == 'null') ? player_names[1] : player_names[0],
-                player_names: player_names,
-                you_are_winner: (i === 0 && winner === 'p1') || (i === 1 && winner === 'p2')
-            };
-            socket.send(JSON.stringify(d));
-        }
-    });
-
-    const W_id = (winner === 'p1') ? players[0] : (winner === 'p2') ? players[1] : null;
+    //write to DB ---
+    const W_id = (winner === 'p1') ?  
+        players[0] 
+        :
+        (winner === 'p2') ?  players[1] : null;
     try {
         await fastify.db.run(
             `INSERT INTO games (
@@ -992,12 +1328,16 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
                 player1_score, player2_score,
                 p1_name, p2_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [players[0], players[1], (winner === 'p1') ? players[0] : players[1],  
-             scores.p1, scores.p2,
-             player_names[0], player_names[1]]
+            [   players[0],  players[1], (winner === 'p1') ? players[0] : players[1],  
+                scores.p1,  scores.p2,
+                player_names[0], player_names[1]
+            ]
         );
-        
-        if (W_id) {
+        console.log(`OUPI GOUPI LE WINNER EST ${((winner === 'p1') ? players[0] : players[1])}`)
+        console.log(`game ${game.id} saved to DB`);
+
+        // --- update users (wins/losses) ---
+        if (W_id){
             await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [W_id]);
             const L_id = (W_id === players[0]) ? players[1] : players[0];
             await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [L_id]);
@@ -1005,219 +1345,131 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     } catch (err) {
         console.error("❌ Error saving game:", err);
     }
-
-    sockets.forEach(socket => safeCloseSocket(socket));
-
-    if(fastify) {
+    game.ended = (true);
+    sockets.forEach((socket, i) => {
+        if (socket.readyState === 1) {
+            const d = {
+                type: 'game_end',
+                reason,
+                scores,
+                winner: winner === 'p1' ? (player_names[0]) : player_names[1],
+                looser: (winner === 'p1' || winner == 'null') ? (player_names[1]) : player_names[0],
+                player_names: (player_names),
+                you_are_winner: (i === 0 && winner === 'p1') || (i === 1 && winner === 'p2')
+            };
+            socket.send(JSON.stringify(d));
+        }
+    });
+    if(fastify){
         fastify?.p_rooms.delete(game.id);
     }
-    
-    console.log(`✅ Game ${game.id} ended (${reason}) — Winner: ${winner} — Sockets closed`);
-};
+    console.log(`Game ${game.id} ended (${reason}) — Winner: ${winner}`);
+}
+
+
+
+
+
+
+
+
 
 const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
     console.log('🔵 [AI_GAME_END] Function called with:', {
         game_id: game?.id,
         reason,
-        user_id
+        user_id,
+        has_fastify: !!fastify
     });
 
     if (!game || game?.ended)
         return;
-    
-    game.ended = true;
-    
-    if (game.interval) {
-        clearInterval(game.interval);
-        game.interval = null;
-    }
+    clearInterval(game.interval);
 
-    const { scores, players, sockets, player_names } = game;
+    const { scores, max_score, players, sockets, player_names } = game
 
     let winner = null;
-    if(reason == 'victory') {
+    if(reason == 'victory')
+    {
         if (scores.p1 > scores.p2) 
             winner = 'p1';
         else if (scores.p2 > scores.p1) 
             winner = 'p2';
-    } else if (reason == "give-up") {
-        winner = 'p2';
     }
-    
+    else if (reason == "give-up")
+        winner = 'p2';
     if (!sockets || !Array.isArray(sockets))
         return;
 
     const player_id = players[0];
     
+    // --- WEBSOCKET NOTIFICATION (AVANT LA DB) ---
+    console.log("SOCKETWZZZZ:  " + game.sockets[0] + "      2:  " + game.sockets[1]);
     const socket = game.sockets[0];
-    if (socket && socket.readyState === 1) {
+    // Envoyer le message AVANT que le socket se ferme
+    if (socket && socket.readyState === 1)
+    {
         const d = {
             type: 'game_end',
             reason,
             scores,
-            winner: winner === 'p1' ? player_names[0] : player_names[1],
-            looser: winner === 'p1' ? player_names[1] : player_names[0],
-            player_names: player_names,
+            winner: winner === 'p1' ? (player_names[0]) : player_names[1],
+            looser: winner === 'p1' ? (player_names[1]) : player_names[0],
+            player_names: (player_names),
             you_are_winner: (winner === 'p1')
         };
         socket.send(JSON.stringify(d));
+        console.log("successfully sent: ");
+    } else {
+        console.error('❌ [AI_GAME_END] Cannot send message - socket not ready (state:', socket?.readyState, ')');
     }
     
+    // --- DATABASE OPERATIONS ---
     try {
-        let AI_USER_ID = -1;
+        console.log('💾 [AI_GAME_END] Starting DB operations...');
         
-        // ✅ Chercher AI_BOT existant
+        let AI_USER_ID = -1; // ID spécial pour l'AI
         try {
             const aiUser = await fastify.db.get('SELECT id FROM users WHERE username = ?', ['AI_BOT']);
             if (aiUser) {
                 AI_USER_ID = aiUser.id;
-                console.log(`✅ Found AI_BOT with id: ${AI_USER_ID}`);
             } else {
-                // ✅ Créer AI_BOT si il n'existe pas
-                console.log('⚠️ AI_BOT not found, creating...');
                 const result = await fastify.db.run(
                     'INSERT INTO users (username, password) VALUES (?, ?)',
                     ['AI_BOT', 'no_password']
                 );
-                
-                // ✅ Récupérer l'ID après création
-                const newAiUser = await fastify.db.get('SELECT id FROM users WHERE username = ?', ['AI_BOT']);
-                if (newAiUser) {
-                    AI_USER_ID = newAiUser.id;
-                    console.log(`✅ Created AI_BOT with id: ${AI_USER_ID}`);
-                } else {
-                    console.error('❌ Failed to create AI_BOT');
-                }
+                AI_USER_ID = result?.lastID;
+                console.log('✅ [AI_GAME_END] AI user created with ID:', AI_USER_ID);
             }
         } catch (err) {
-            console.error('❌ Error with AI_BOT:', err);
+            console.error('❌ [AI_GAME_END] Error creating/finding AI user:', err);
+            // If AI user creation fails, use -1 as fallback
+            AI_USER_ID = -1;
         }
 
-        // ✅ Sauvegarder la game même si AI_USER_ID = -1 (pour debug)
-        const winner_id = (winner === 'p1') ? players[0] : AI_USER_ID;
-        
-        console.log(`📝 Saving game: player1=${players[0]}, player2=${AI_USER_ID}, winner=${winner_id}`);
-        
-        await fastify.db.run(
+        const insertResult = await fastify.db.run(
             `INSERT INTO games (
                 player1_id, player2_id, winner_id,
                 player1_score, player2_score,
                 p1_name, p2_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-                players[0], 
-                AI_USER_ID, 
-                winner_id,
-                scores.p1, 
-                scores.p2,
-                player_names[0], 
-                player_names[1]
+            [   players[0],  AI_USER_ID, (winner === 'p1') ? 1 : 2,
+                scores.p1,  scores.p2,
+                player_names[0], player_names[1]
             ]
         );
-        
-        console.log(`✅ Game saved successfully`);
-        
-        // ✅ Mise à jour des stats du joueur
-        if (winner === 'p1') {
+        if (winner === 'p1')
             await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [player_id]);
-        } else {
+        else
             await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [player_id]);
-        }
-        
+
+        game.ended = (true);
     } catch (err) {
-        console.error("❌ [AI_GAME_END] Database error:", err);
-        console.error("❌ Stack:", err.stack);
     }
     
-    safeCloseSocket(socket);
-    
-    if(fastify) {
-        fastify.p_rooms.delete(game.id);
-    }
-    
-    console.log(`✅ [AI_GAME_END] AI Game ${game.id} ended (${reason}) — Winner: ${winner}`);
-};
-
-
-const handle_local_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
-    console.log('🔵 [LOCAL_GAME_END] Function called with:', {
-        game_id: game?.id,
-        reason,
-        user_id
-    });
-
-    if (!game || game?.ended)
-        return;
-
-    game.ended = true;
-    
-    if (game.interval) {
-        clearInterval(game.interval);
-        game.interval = null;
-    }
-
-    const { scores, players, sockets, player_names } = game;
-
-    let winner = null;
-    if (reason === 'victory') {
-        if (scores.p1 > scores.p2) 
-            winner = 'p1';
-        else if (scores.p2 > scores.p1) 
-            winner = 'p2';
-    } else if (reason === "give-up") {
-        winner = null;
-    }
-
-    if (!sockets || !Array.isArray(sockets))
-        return;
-
-    const player_id = players[0];
-    
-    const socket = game.sockets[0];
-    if (socket && socket.readyState === 1) {
-        const d = {
-            type: 'game_end',
-            reason,
-            scores,
-            winner: winner === 'p1' ? player_names[0] : winner === 'p2' ? player_names[1] : 'None',
-            looser: winner === 'p1' ? player_names[1] : winner === 'p2' ? player_names[0] : 'None',
-            player_names: player_names,
-            you_are_winner: null,
-            is_local: true
-        };
-        socket.send(JSON.stringify(d));
-    }
-    
-    try {
-        const LOCAL_PLAYER_ID = -2;
-        
-        await fastify.db.run(
-            `INSERT INTO games (
-                player1_id, player2_id, winner_id,
-                player1_score, player2_score,
-                p1_name, p2_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [player_id, LOCAL_PLAYER_ID, 
-             winner === 'p1' ? player_id : winner === 'p2' ? LOCAL_PLAYER_ID : null,
-             scores.p1, scores.p2,
-             player_names[0], player_names[1]]
-        );
-
-        if (winner && reason === 'victory') {
-            await fastify.db.run(
-                `UPDATE users SET wins = wins + 1 WHERE id = ?`, 
-                [player_id]
-            );
-        }
-    } catch (err) {
-        console.error("❌ [LOCAL_GAME_END] Error saving local game:", err);
-    }
-    
-    safeCloseSocket(socket);
-    
-    if (fastify) {
+    // --- CLEANUP ---
+    if(fastify){
         fastify?.p_rooms.delete(game.id);
     }
-    
-    console.log(`✅ [LOCAL_GAME_END] Local Game ${game.id} ended (${reason}) — Winner: ${winner} — Socket closed`);
-};
+    console.log(`✅ [AI_GAME_END] AI Game ${game.id} ended (${reason}) — Winner: ${winner}`);
+}

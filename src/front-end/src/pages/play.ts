@@ -100,6 +100,12 @@ export default class PlayPage extends Page {
               <button id="aiBtn" class="arcade-btn arcade-orange">${i18n.t('play_vs_ai')}</button>
           </div>
 
+          <div class="title-banner" id ="title-banner-t"  style="animation: fadeInUp 0.8s ease-out;">
+              <div class="neon-divider ee"></div>
+              <h1 style="margin-bottom: 2px; font-size: 36px; ">${i18n.t('TOURNAMENT_MODE')}</h1>
+              <p style="margin-top: 3px;">${i18n.t('mode_tournament')}</p>
+              <button id="tBtn" class="arcade-btn arcade-orange">${i18n.t('play_tournament')}</button>
+          </div>
         <style>
               /* Retro Arcade Button */
               .arcade-btn {
@@ -201,7 +207,10 @@ export default class PlayPage extends Page {
                 margin: 1.5rem auto;
                 box-shadow: 0 0 12px #b4ddffff, 0 0 12px #0099ffff;
               }
-        
+              .ee {  
+                background: linear-gradient(90deg, #fff946ff, #ff9d00ff);
+         
+              }
 
               @keyframes fadeInUp {
                 from { opacity: 0; transform: translateY(30px); }
@@ -221,6 +230,7 @@ export default class PlayPage extends Page {
     const q_btn = container.querySelector('#multiBtn') as HTMLButtonElement;
     // const hst_btn = container.querySelector('#hostGameBtn') as HTMLButtonElement;
     const aiBtn = container.querySelector('#aiBtn') as HTMLButtonElement;
+    const tBtn = container.querySelector('#tBtn') as HTMLButtonElement;
     const gCounter = container.querySelector('#game-counter') as HTMLButtonElement;
     const gJntitle = container.querySelector('#game-join-h1') as HTMLButtonElement;
     let socket: WebSocket; // <-- wsocket var 
@@ -237,6 +247,7 @@ export default class PlayPage extends Page {
         const e = container.querySelector('#active-games') as HTMLElement;
         const m = container.querySelector('#menu-box') as HTMLElement;
         const L = container.querySelector('#title-banner') as HTMLElement;
+        const LT = container.querySelector('#title-banner-t') as HTMLElement;
         const game_area = document.querySelector('#game-area');
         const l_box = container.querySelector('#arcade-panel') as HTMLElement;
 
@@ -244,7 +255,7 @@ export default class PlayPage extends Page {
         l_box.style.left = '0rem';
 
         // Hide menu UI
-        [e, p_st, r_st, m, L, gCounter, gJntitle].forEach(el => {
+        [e, p_st, r_st, m, L, LT, gCounter, gJntitle].forEach(el => {
             if (el) el.style.display = 'none';
         });
         e.innerHTML = '';
@@ -471,7 +482,13 @@ export default class PlayPage extends Page {
     };
 
 
+    // tournament link-btn
+    tBtn.onclick = async () => {
+        if(queued_up) return ;
+        this.router.navigate('/tournament');
+    }
 
+    
     // (queue) btn handler
     q_btn.onclick = async () => {
       if(queued_up) return;
