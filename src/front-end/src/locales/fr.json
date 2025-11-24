@@ -104,5 +104,8 @@
   "processing" : "en cours",
   "request_pending" : "DEMANDE EN COURS",
   "pending_decline" : "ANNULER DEMANDE",
-  "request_received" : "DEMANDE RECUE"
+  "request_received" : "DEMANDE RECUE",
+  "TOURNAMENT_MODE": "MODE TOURNOI",
+  "mode_tournament": "JOUER AU MODE TOURNAMENT DÈS MAINTENANT !",
+   "play_tournament": "➡️ REJOINDRE LE TOURNOI"
 }

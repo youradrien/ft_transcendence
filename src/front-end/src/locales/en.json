@@ -104,5 +104,8 @@
   "processing" : "in process",
   "request_pending" : "REQUEST SENT",
   "pending_decline" : "CANCEL REQUEST",
-  "request_received" : "REQUEST RECEIVED"
+  "request_received" : "REQUEST RECEIVED",
+  "TOURNAMENT_MODE": "TOURNAMENT MODE",
+  "mode_tournament": "START PLAY TOURNAMENT MODE NOW !",
+  "play_tournament": "➡️ JOIN TOURNAMENT "
 }

@@ -104,5 +104,8 @@
   "processing" : "tratamiento",
   "request_pending" : "DEMANDA ENVIADA",
   "pending_decline" : "CANCELAR SOLICITUD",
-  "request_received" : "SOLICITUD RECIDIBA"
+  "request_received" : "SOLICITUD RECIDIBA",
+  "TOURNAMENT_MODE": "TOURNAMENT MODE",
+  "mode_tournament": "messi!",
+  "play_tournament": "➡️ JOIN TOURNAMENT "
 }
