@@ -358,63 +358,6 @@ const handle_tournament_start = (fastify) => {
     t_run_next_match(fastify);
 }
 // [TOURNAMENT - REGISTRATION]
-const handle_tournament_registration = async (USER_ID, fastify)  => {
-    const t = fastify.p_tournament;
-
-    // start new tournament if noneactive
-    // reset bracket & results
-    if (!t.active) {
-        t.active = true;
-        t.players = [];
-        t.currentRound = 0;
-        t.currentMatch = 0;
-
-        t.bracket = [
-            [null, null, null, null],
-            [null, null],
-            [null]
-        ];
-        t.results = {
-            quarter:  [null, null, null, null],
-            semi:     [null, null],
-            final:    null
-        };
-    }
-
-    // alr registered?
-    if (t.players.find(p => p.userId === USER_ID))
-    {
-        // return sendToUSER(USER_ID, fastify, {
-        //     type: 'already-registered',
-        //     playerCount: t.players.length
-        // });
-        return ;
-    }
-
-    // quick db fetch
-    const row = await fastify.db.get(
-        `SELECT username, avatar_url, elo FROM users WHERE id = ?`, 
-        [USER_ID]
-    );
-    const player_info = {
-        userId: USER_ID,
-        username: row.username,
-        pfp: row.avatar_url,
-        elo: row.elo
-    };
-    t.players.push(player_info);
-
-    broadcastTournament(fastify, {
-        type: 'player-joined',
-        player: player_info,
-        count: t.players.length
-    });
-
-    // start tournament when 8/8 reached
-    if (t.players.length === 8) {
-        handle_tournament_start(fastify);
-    }
-}
 
 
 
