@@ -120,9 +120,13 @@ async function _get_messages(limit = 50) {
 // 	await db.run("UPDATE users SET last_online = datetime('now') WHERE id = ?", [userId]);
 // }
 
+async function _delete_friend_request(requestId) {
+	await db.run("DELETE FROM friend_requests WHERE id = ?", [requestId]);
+}
+
 async function _add_friend(userId, friendId) {
 	await db.run("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'accepted')", [userId, friendId]);
-	await db.run("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'pending')", [friendId, userId]);
+	await db.run("INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, 'accepted')", [friendId, userId]);
 }
 
 async function _remove_friend(userId, friendId) {
@@ -143,7 +147,8 @@ module.exports = {
   _add_message, 
   _get_messages, 
   _add_friend, 
-  _remove_friend, 
+  _remove_friend,
+  _delete_friend_request,
   blockUser, 
   unblockUser 
 };

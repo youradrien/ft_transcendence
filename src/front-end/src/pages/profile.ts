@@ -2,6 +2,8 @@ import Page from '../template/page.ts';
 import { i18n } from '../i18n';
           declare const Chart: any;
 
+type FriendshipStatus = 'friends' | 'pending' | 'none';
+
 /* 
 en gros
 component page PROFILE (pour voir le profil des autres)
@@ -11,6 +13,35 @@ component page PROFILE (pour voir le profil des autres)
 */
 export default class UserProfilePage extends Page {
 
+  async getFriendshipStatus(username: string): Promise<FriendshipStatus> {
+    try {
+        const res = await fetch(`http://localhost:3010/api/friends/status/${username}`, {
+            credentials: 'include',
+        });
+
+        if (!res.ok) {
+            console.error('Failed to fetch friendship status:', res.statusText);
+            return 'none';
+        }
+
+        const data = await res.json();
+
+        if (!data.success) {
+            console.error('API returned error:', data.error);
+            return 'none';
+        }
+
+        if (['friends', 'pending', 'none'].includes(data.status)) {
+            return data.status as FriendshipStatus;
+        } else {
+            console.warn('Unexpected friendship status:', data.status);
+            return 'none';
+        }
+    } catch (err) {
+        console.error('Error fetching friendship status:', err);
+        return 'none';
+    }
+}
 
   async render(): Promise<HTMLElement> {
     const container = document.createElement('div');
@@ -26,14 +57,29 @@ export default class UserProfilePage extends Page {
     container.style.background = 'radial-gradient(circle at top,rgba(11, 11, 11, 0.48) 0%, rgba(11, 11, 11, 0.21) 100%)';
     let pfp = "https://avatars.githubusercontent.com/u/9919?s=200&v=4";
 
+
+	let currentUser: { username: string } | null = null;
+	try {
+			const meRes = await fetch('http://localhost:3010/api/me-info', {
+			credentials: 'include'
+		});
+		if (meRes.ok) {
+			const data = await meRes.json();
+			currentUser = data.user; // data.user.username, etc.
+		}
+	} catch (err) {
+    	console.error('Failed to fetch current user', err);
+	}
+
     const path = window.location.pathname; // e.g. /profile:john_doe
     const match = path.match(/^\/profile\/([^/]+)$/);
+	const viewedUsername = match ? match[1] : currentUser?.username;
+	const isMyProfile = currentUser?.username === viewedUsername;
     let user_api_call = match ? ("api/profile/" + match[1]) : null;
-    if(!user_api_call){
-      user_api_call = "api/me-info"
-    }
-    let USER_DATA: any;
-
+	if(!user_api_call){
+		user_api_call = "api/me-info"
+	}
+	let USER_DATA: any;
     try {
         const response = await fetch(`http://localhost:3010/${user_api_call}`, {
           credentials: 'include'
@@ -65,6 +111,8 @@ export default class UserProfilePage extends Page {
     const social_btns_HTML = !(user_api_call == "api/me-info") ? `
       <div style="display: flex; gap: 12px;">
         <button id="add-friend-btn" style="${greenButtonStyle}">${i18n.t('add_friend')}</button>
+        <button id="unfriend-btn" style="${greenButtonStyle}; display:none; background-color:#ff4444;">${i18n.t('unfriend')}</button>
+        <button id="pending-btn" style="${greenButtonStyle}; display:none; background-color:#ffcc33;">${i18n.t('pending_decline')}</button>
         <button id="send-dm-btn" style="${greenButtonStyle}">${i18n.t('send_dm')}</button>
       </div>
     ` : '';
@@ -257,7 +305,7 @@ export default class UserProfilePage extends Page {
 			addFriendBtn.textContent = i18n.t('sending');
 
 			try {
-				const route = 'api/friends/add';
+				const route = 'api/friends/requests';
 				const response = await fetch(`http://localhost:3010/${route}`, {
 					method: 'POST',
 					credentials: 'include',
@@ -283,6 +331,98 @@ export default class UserProfilePage extends Page {
 				console.error('Error adding friend:', error);
 			}
 		};
+	}
+
+	// Logic for activate the correct button regarding the user's relationship with the viewed profile :
+	if (!isMyProfile) {
+
+		const statusRes = await fetch(`http://localhost:3010/api/friends/status/${USER_DATA.username}`, {
+			credentials: 'include'
+		});
+		const statusData = await statusRes.json();
+		const status = statusData.status;
+		const pendingType = statusData.pendingType || null;
+
+		const unfriendBtn = container.querySelector('#unfriend-btn') as HTMLButtonElement;
+		const pendingBtn = container.querySelector('#pending-btn') as HTMLButtonElement;
+
+		if (status === 'friends') {
+
+			addFriendBtn.style.display = 'none';
+			pendingBtn.style.display = 'none';
+			unfriendBtn.style.display = 'inline-block';
+		} else if (status === 'pending') {
+
+			addFriendBtn.style.display = 'none';
+			unfriendBtn.style.display = 'none';
+			pendingBtn.style.display = 'inline-block';
+
+			if (pendingType === 'received') {
+				pendingBtn.disabled = true;
+				pendingBtn.textContent = i18n.t('request_received');
+			} else {
+				 pendingBtn.disabled = false;
+			}
+		} else {
+			addFriendBtn.style.display = 'inline-block';
+			unfriendBtn.style.display = 'none';
+			pendingBtn.style.display = 'none';
+		}
+
+		// Unfriend button activation (if the current user and the viewed profile are already friends) :
+		if (unfriendBtn) {
+
+			unfriendBtn.onclick = async () => {
+
+				unfriendBtn.disabled = true;
+				unfriendBtn.textContent = i18n.t('processing');
+
+				const res = await fetch(`http://localhost:3010/api/friends/${USER_DATA.username}`, {
+					method: 'DELETE',
+					credentials: 'include'
+				});
+
+				const data = await res.json();
+				if (data.success) {
+					unfriendBtn.style.display = 'none';
+					addFriendBtn.style.display = 'inline-block';
+					addFriendBtn.textContent = i18n.t('add_friend');
+					addFriendBtn.disabled = false;
+				} else {
+					alert("Error: " + data.error);
+					unfriendBtn.disabled = false;
+					unfriendBtn.textContent = i18n.t('unfriend');
+				}
+			};
+		}
+
+		// Pending button activation (If the current user had sent a request to the viewed profile) :
+		if (pendingBtn) {
+
+			pendingBtn.onclick = async () => {
+
+				pendingBtn.disabled = true;
+				pendingBtn.textContent = i18n.t('processing');
+
+				const res = await fetch(`http://localhost:3010/api/friends/requests/${USER_DATA.username}`, {
+					method: 'DELETE',
+					credentials: 'include'
+				});
+
+				const data = await res.json();
+				if (data.success) {
+					pendingBtn.style.display = 'none';
+					addFriendBtn.style.display = 'inline-block';
+					addFriendBtn.textContent = i18n.t('add_friend');
+					addFriendBtn.disabled = false;
+				} else {
+					alert("Error: " + data.error);
+					pendingBtn.disabled = false;
+					pendingBtn.textContent = i18n.t('request_pending');
+				}
+			};
+		}
+
 	}
 
     // fill ts with game infos
