@@ -27,11 +27,13 @@ jobs:
           mkdir -p monitoring/certs
           openssl req -x509 -newkey rsa:4096 -keyout monitoring/certs/kibana.key -out monitoring/certs/kibana.crt -days 365 -nodes -subj "/CN=localhost"
           chmod 644 monitoring/certs/kibana.crt
-          chmod 600 monitoring/certs/kibana.key
+          chmod 644 monitoring/certs/kibana.key
 
       - name: Create env file
         run: |
-          echo "ELASTIC_PASSWORD=elastic_password" > monitoring/.env
+          echo "ELASTIC_USER=elastic" > monitoring/.env
+          echo "ELASTIC_PASSWORD=elastic_password" >> monitoring/.env
+          echo "KIBANA_USER=kibana_system" >> monitoring/.env
           echo "KIBANA_PASSWORD=kibana_password" >> monitoring/.env
           cat monitoring/.env
 
