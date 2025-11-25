@@ -32,6 +32,7 @@ export default class LeaderboardPage extends Page {
     const container = document.createElement('div');
     container.id = this.id;
     Object.assign(container.style, {
+      position: "relative",
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -99,6 +100,63 @@ export default class LeaderboardPage extends Page {
       list.appendChild(C);
     });
 
-    return container;
+	// Crée un conteneur pour les trophées
+const trophyContainer = document.createElement('div');
+Object.assign(trophyContainer.style, {
+  position: 'fixed',
+  top: '0',
+  left: '0',
+  width: '100%',
+  height: '100%',
+  pointerEvents: 'none',
+  zIndex: '-1',
+});
+
+// Définition des côtés et nombre de trophées par côté
+const NUM_TROPHIES_SIDE = 42;
+const sides = ['left', 'right'];
+
+sides.forEach(side => {
+  for (let i = 0; i < NUM_TROPHIES_SIDE; i++) {
+    const trophy = document.createElement('div');
+    Object.assign(trophy.style, {
+      width: '16px',
+      height: '16px',
+      backgroundColor: 'yellow',
+      border: '1px solid orange',
+      position: 'absolute',
+      top: `${Math.random() * 95 + 2.5}%`, // position verticale aléatoire
+      animation: `blink ${Math.random() * 2 + 1}s infinite alternate`
+    });
+
+    // Position horizontale selon le côté
+    if (side === 'left') {
+      trophy.style.left = `${Math.random() * 18}%`; // 0 → 25% largeur page
+      trophy.style.right = 'auto';
+    } else {
+      trophy.style.right = `${Math.random() * 18}%`; // 0 → 25% largeur page côté droit
+      trophy.style.left = 'auto';
+    }
+
+    trophyContainer.appendChild(trophy);
+  }
+});
+
+// CSS pour l’animation si pas déjà présent
+const style = document.createElement('style');
+style.textContent = `
+@keyframes blink {
+  0% { opacity: 0.2; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+  100% { opacity: 0.2; transform: translateY(0); }
+}
+`;
+document.head.appendChild(style);
+
+// Ajoute le conteneur au container principal
+container.appendChild(trophyContainer);
+
+
+	return container;
   }
 }
