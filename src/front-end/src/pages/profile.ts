@@ -225,7 +225,7 @@ export default class UserProfilePage extends Page {
 
 
         <h1 style="font-size: 18px; margin: 10px; color: white; text-align: left;">${i18n.t('winrate')} ${win_rate}</h1>
-        <div style"display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 30px;">
+        <div style="display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 30px;">
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">${i18n.t('last_seen')} ${USER_DATA?.last_online}</h1>
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">${i18n.t('member_since')} ${USER_DATA?.created_at}</h1>
         </div>
@@ -237,7 +237,7 @@ export default class UserProfilePage extends Page {
                 border: 2px solid #333; padding: 16px;
                 overflow-y: scroll;
                 animation: fadeInUp 0.6s ease-out;
-          >
+          ">
             <h2 style="margin: 0 0 16px 0;">${i18n.t('game_history')}</h2>
             <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
               <span style="color: lime;">${i18n.t('winner_caps')}</span>
@@ -247,11 +247,9 @@ export default class UserProfilePage extends Page {
           </div>
 
           <!-- STATISTICS -->
-          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column, gap: 20px;">
+          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px;">
             
             ${social_btns_HTML}
-    
-
             <div style="border: 2px solid #333; padding: 16px; 
                 animation: fadeInUp 1.1s ease-out;
             ">
@@ -262,21 +260,6 @@ export default class UserProfilePage extends Page {
               </div>
             </div>
 
-            <!-- Achievements -->
-            <div style="border: 2px solid #333; padding: 16px;
-                    animation: fadeInUp 1.3s ease-out;
-            ">
-              <h3 style="margin: 0 0 12px 0;">${i18n.t('achievements')}</h3>
-              <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 12px;">
-                <div style="width: 40px; height: 40px; background: #fff;"></div>
-                <div style="width: 40px; height: 40px; background: #666;"></div>
-                <div style="width: 40px; height: 40px; background: #666;"></div>
-                <div style="width: 40px; height: 40px; background: #333;"></div>
-                <div style="width: 40px; height: 40px; background: #333;"></div>
-                <div style="width: 40px; height: 40px; background: #333;"></div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- DASHBOARD SECTION -->
