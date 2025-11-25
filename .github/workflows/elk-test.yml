@@ -29,13 +29,15 @@ jobs:
           chmod 644 monitoring/certs/kibana.crt
           chmod 600 monitoring/certs/kibana.key
 
+      - name: Create env file
+        run: |
+          echo "ELASTIC_PASSWORD=elastic_password" > monitoring/.env
+          echo "KIBANA_PASSWORD=kibana_password" >> monitoring/.env
+
       - name: Start ELK Stack
         run: |
           docker compose -f monitoring/docker-compose.yml up -d
           docker compose -f monitoring/docker-compose.yml ps
-        env:
-          ELASTIC_PASSWORD: elastic_password
-          KIBANA_PASSWORD: kibana_password
 
       - name: Wait for Elasticsearch
         run: |
@@ -43,11 +45,13 @@ jobs:
           for i in {1..60}; do
             if curl -s -u elastic:elastic_password http://localhost:9200/_cluster/health > /dev/null 2>&1; then
               echo "Elasticsearch is ready"
-              break
+              exit 0
             fi
             echo "Attempt $i/60..."
             sleep 2
           done
+          echo "❌ Elasticsearch failed to start"
+          exit 1
 
       - name: Check Elasticsearch health
         run: |
@@ -66,7 +70,7 @@ jobs:
         run: |
           echo "⏳ Waiting for Kibana to be ready..."
           for i in {1..60}; do
-            if curl -k -s https://localhost:5601/api/status > /dev/null 2>&1; then
+            if curl -s http://localhost:5601/api/status > /dev/null 2>&1; then
               echo "Kibana is ready"
               break
             fi
