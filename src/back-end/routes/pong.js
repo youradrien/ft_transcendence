@@ -101,36 +101,12 @@ const t_run_next_match = async (fastify) => {
         // players inputs
         attach_socket_handler(connection.socket, USER_ID, fastify);
 }
-// [TOURNAMENT - START]
-function handle_tournament_start(fastify) {
-    const t = fastify.p_tournament;
-
-    // shuffle player orders
-    const shuffled = [...t.players].sort(() => Math.random() - 0.5);
-
-    // Fill quarterfinal bracket
-    t.bracket[0] = [
-        [shuffled[0], shuffled[1]],
-        [shuffled[2], shuffled[3]],
-        [shuffled[4], shuffled[5]],
-        [shuffled[6], shuffled[7]]
-    ];
-
-    broadcastTournament(fastify, {
-        type: 'tournament-start',
-        bracket: t.bracket,
-        prize: t.prize
-    });
-
-    // Start first match
-    t_run_next_match(fastify);
-}
 */
 
 
 
 
-
+// [TOURNAMENT - SOCKETS BROADCAST]
 const broadcast_tournament = async (fastify, payload = {} /*peut etre <USER_ID> pour self-send letat du tournament et opti mais flemme */) => {
     const t = fastify.p_tournament;
 
@@ -166,11 +142,48 @@ const broadcast_tournament = async (fastify, payload = {} /*peut etre <USER_ID> 
 
 }
 
-
-// [TOURNAMENT - REGISTRATION]
-const handle_tournament_registration = async (USER_ID, fastify, bot_registration = false)  => {
+// [TOURNAMENT - START]
+const handle_tournament_start = async (fastify) => {
     const t = fastify.p_tournament;
 
+    if(!t || t.status == "in-progress" || t.players.length != 8)
+    {
+        console.log("COULDNT START !!!");
+        return ;
+    }
+    // shuffle player orders
+    const shuffled = [...t.players].sort(() => Math.random() - 0.5);
+
+    // // fill qf-bracket
+    // t.players = (shuffled); 
+    t.bracket[0] = [
+        shuffled[0], shuffled[1],    shuffled[2], shuffled[3],
+        shuffled[4], shuffled[5],    shuffled[6], shuffled[7]
+    ];
+    t.status = "in-progress";
+    broadcast_tournament(fastify, {
+        event: 'tournament-start'
+    });
+
+    // 1st match
+    // t_run_next_match(fastify);
+}
+
+
+
+// [TOURNAMENT - REGISTRATION]
+const handle_tournament_registration = async (USER_ID, fastify, bot_registration = false, p_username = null)  => {
+    const t = fastify.p_tournament;
+
+    if ( !t || !(t.status == "preparing" || t.status == "inactive") 
+        || t.players.length == 8
+    )
+    {
+        // socket.send(JSON.stringify({
+        //     type: "cant_join"
+        // }));
+        return ; 
+    }
     // start new tournament if noneactive
     // reset bracket & results
     if (!t.active) {
@@ -197,7 +210,7 @@ const handle_tournament_registration = async (USER_ID, fastify, bot_registration
 
     if(bot_registration)
     {
-        let p = ["GUNDILL", "KENNY", "CARTMAN", "ABOUDA", "THOMAS", "ENZO", "JULES", "GAUTHIER", "HUGO"];
+        let p = ["GUNDILL", "KENNY", "CARTMAN", "ABOUDA", "THOMAS", "ENZO", "JULES", "GAUTHIER", "HUGO", "kingVon", "lil_kirk"];
         let pfps = [
             'https://api.dicebear.com/9.x/bottts/svg?seed=Sara',
             'https://api.dicebear.com/9.x/bottts/svg?seed=Nolan',
@@ -208,15 +221,18 @@ const handle_tournament_registration = async (USER_ID, fastify, bot_registration
         const bot_info = {
             userId: '',
             username: 'BOT_' + t.players?.length,
-            pfp: pfps[ Math.floor(Math.random() * (pfps.length - 0 + 1)) + 0],
-            elo:  Math.floor(Math.random() * (5000 - 600 + 100)) + 600,
-            tournament_pseudo: p[Math.floor(Math.random() * (p.length - 0 + 1)) + 0]
+            pfp: pfps[Math.floor(Math.random() * pfps.length)],
+            elo: Math.floor(Math.random() * (5000 - 600 + 1)) + 600, // this one is fine
+            tournament_pseudo: p[Math.floor(Math.random() * p.length)]
         };
         t.players_status[t.players?.length] = "waiting";
         t.bracket[0][t.players?.length] =  (bot_info);
         t.players.push(bot_info);
+        broadcast_tournament(fastify, {
+             event: 'player-joined'
+        });
         if (t.players.length === 8) {
-            // handle_tournament_start(fastify);
+            handle_tournament_start(fastify);
         }
         return ;
     }
@@ -237,17 +253,21 @@ const handle_tournament_registration = async (USER_ID, fastify, bot_registration
         `SELECT username, avatar_url, elo FROM users WHERE id = ?`, 
         [USER_ID]
     );
+    let n = p_username;
+    if(n == null){
+        n = `PLAYER_${t.players?.length}`;
+    }
     const player_info = {
         userId: USER_ID,
         username: row.username,
         pfp: row.avatar_url,
         elo: row.elo,
-        tournament_pseudo: "ezrz"
+        tournament_pseudo: (n)
     };
     t.players_status[t.players?.length] = "waiting";
     t.bracket[0][t.players?.length] =  (player_info);
     t.players.push(player_info);
-
+    
     broadcast_tournament(fastify, {
         event: 'player-joined',
         player: player_info
@@ -255,7 +275,7 @@ const handle_tournament_registration = async (USER_ID, fastify, bot_registration
 
     // start tournament when 8/8 reached
     if (t.players.length === 8) {
-       // handle_tournament_start(fastify);
+       handle_tournament_start(fastify);
     }
 }
 
@@ -263,12 +283,14 @@ const handle_tournament_registration = async (USER_ID, fastify, bot_registration
 const tournament_force_start = async (USER_ID, fastify, socket) => {
     const t = fastify.p_tournament;
 
+    console.log("FORCESTART :" +   USER_ID);
     // make sure user is apart from the tournament
     const b = t.players.find(p => p.userId === USER_ID);
     if ( !b || !t.active || t.status != "preparing"
         || t.players.length == 8 || t.players.length == 0
     )
     {
+        console.log("FORCE-START: failed ! ! ! ! ");
         socket.send(JSON.stringify({ type: "failed"  }));
         return ;
     }
@@ -279,6 +301,7 @@ const tournament_force_start = async (USER_ID, fastify, socket) => {
     );
     if(!t.prize || row.elo < (t.prize / 4))
     {
+        console.log("TOO POOR:   " + (t.prize / 4 )+"  vs  " + row.elo );
         // lol
         socket.send(JSON.stringify({
             type: "too_poor"
@@ -286,10 +309,13 @@ const tournament_force_start = async (USER_ID, fastify, socket) => {
         return ;
     }
     let i = t.players.length;
+    const delay = ms => new Promise(r => setTimeout(r, ms));
     while(i < 8){
         // register bots
         handle_tournament_registration(USER_ID, fastify, true);
+        console.log("ADD BOT: " + i);
         i++;
+        await delay(300);
     }
 
 };
@@ -487,6 +513,7 @@ async function pong_routes(fastify, options)
         }
         // + ! make sure mf isnt suscribed in a tournament!
         // tournament is preparing OR running
+        const t = fastify.p_tournament;
         const b = t.status === "open" || t.status === "preparing" || t.status === "in-progress";
         const user_in_tournament = t.players.some(p => p && p.id === USER_ID);
         if (b && user_in_tournament) {
@@ -726,6 +753,8 @@ async function pong_routes(fastify, options)
 
 
 
+
+
     // 🤖 PONG AI WEBSOCKET
     fastify.get('/api/pong/ai/ws', { websocket: true }, async (connection, req) => {
         const { p_rooms } = fastify;
@@ -745,6 +774,19 @@ async function pong_routes(fastify, options)
                  connection.close();
             }
             return;
+        }
+
+        // + ! make sure mf isnt suscribed in a tournament!
+        // tournament is preparing OR running
+        const t = fastify.p_tournament;
+        const b = t.status === "open" || t.status === "preparing" || t.status === "in-progress";
+        const user_in_tournament = t.players.some(p => p && p.id === USER_ID);
+        if (b && user_in_tournament) {
+            connection.socket.send(JSON.stringify({ 
+                type: "error", 
+                message: "cant queue while participating in a tournament." 
+            }));
+            return connection.socket.close();
         }
 
         let existingGame = null;
@@ -857,6 +899,10 @@ async function pong_routes(fastify, options)
             p_rooms.delete(game_id);
         });
     });
+
+
+
+
 
 
     fastify.get('/api/pong/local/ws', { websocket: true }, async (connection, req) => {
@@ -979,6 +1025,11 @@ async function pong_routes(fastify, options)
 
 
 
+
+
+
+
+
     // PONG TOURNAMENT
     fastify.get('/api/pong/tournament/ws', { websocket: true }, async (connection, req) => {
         const t = fastify.p_tournament;
@@ -1017,7 +1068,7 @@ async function pong_routes(fastify, options)
             const data = JSON.parse(m);
 
             if (data.type === 'register') { // register
-                await handle_tournament_registration(USER_ID, fastify);
+                await handle_tournament_registration(USER_ID, fastify, false, data?.username || null);
             }
             if (data.type === 'force_start') { // force_start
                 await tournament_force_start(USER_ID, fastify, connection.socket);
