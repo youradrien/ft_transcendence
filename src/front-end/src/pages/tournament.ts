@@ -547,7 +547,7 @@ export default class TournamentPage extends Page {
   
     // (tournament) ws-endpoint handler
     try {
-        ws_tournament = new WebSocket('ws://localhost:3010/api/pong/tournament/ws'); 
+        ws_tournament = new WebSocket('wss://localhost:3010/api/pong/tournament/ws'); 
         
         ws_tournament.onmessage = async (msg) => {
             const data = JSON.parse(msg.data);

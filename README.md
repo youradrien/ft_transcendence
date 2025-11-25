@@ -35,5 +35,5 @@ make (or npm install, npm run dev)
 <p> docker-compose logs ft_transcendence-frontend </p>
 <p> docker-compose logs ft_transcendence-backend </p>
 <h3> ports:</h3>
-<p> back: http://127.0.0.1:3000</p>
-<p> front: http://127.0.0.1:5173</p>
+<p> back: https://127.0.0.1:3000</p>
+<p> front: https://127.0.0.1:5173</p>

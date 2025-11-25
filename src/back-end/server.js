@@ -6,6 +6,7 @@ const multipart = require ('@fastify/multipart');
 const websocket = require('@fastify/websocket');
 const path = require('path');
 const i18n = require('fastify-i18n');
+const fs = require('fs');
 
 // Configure Pino logger for better structured logging
 const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -45,7 +46,11 @@ const fastify = require('fastify')({
   // Request ID generation for tracing
   requestIdHeader: 'x-request-id',
   requestIdLogLabel: 'request_id',
-  disableRequestLogging: false
+  disableRequestLogging: false,
+  https: {
+    key: fs.readFileSync('./vault_handler/secrets/ssl_certs/transssl.key'),
+    cert: fs.readFileSync('./vault_handler/secrets/ssl_certs/transssl.crt')
+  }
 });
 const { db, _INIT_DB } = require('./db.js'); // chemin relatif selon ton projet
 const bcrypt = require('bcrypt');
@@ -91,7 +96,7 @@ fastify.decorate('p_tournament', {
 
 // CORS (our frontend)
 fastify.register(cors, {
-  origin: 'http://localhost:5173', // ✅ must match EXACTLY
+  origin: 'https://localhost:5173', // ✅ must match EXACTLY
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -220,7 +225,7 @@ const start = async () => {
       gen_fake_games(Math.floor(Math.random() * 2)); // 
       // gen_fake_users(db);
       await fastify.listen({ port: 3010, host: '0.0.0.0' });
-      console.log('🚀 server is running at http://localhost:3010');
+      console.log('🚀 server is running at https://localhost:3010');
     } catch (err) {
       fastify.log.error(err);
       process.exit(1);

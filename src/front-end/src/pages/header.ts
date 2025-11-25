@@ -85,7 +85,7 @@ export default class Header extends Page {
     });
     container.querySelector('#logoutBtn')?.addEventListener('click', async () => {
       try {
-        const res = await fetch('http://localhost:3010/api/logout', {
+        const res = await fetch('https://localhost:3010/api/logout', {
           method: 'POST',
           credentials: 'include',
         });
@@ -125,7 +125,7 @@ export default class Header extends Page {
     const _count = container.querySelector('#online-count') as HTMLElement;
     const updateOnlineCount = async () => {
       try {
-        const res = await fetch('http://localhost:3010/api/users/online', {
+        const res = await fetch('https://localhost:3010/api/users/online', {
           credentials: 'include',
         });
         const json = await res.json();

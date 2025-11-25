@@ -6,17 +6,17 @@
 //
 // IMPORTANT: Ce fichier NE MODIFIE PAS la logique existante — seules des
 // annotations et des commentaires JSDoc ont été ajoutés pour la lisibilité.
+const fs = require('fs');
+const path = require('path');
+const certPath = path.resolve('/app/certs/vault.crt');
+const customCa = fs.readFileSync(certPath);
 const vault = require('node-vault')({
   apiVersion: 'v1',
   endpoint: process.env.VAULT_ADDR || 'https://vault:8200',
-  // tlsOptions: {
-  //   ca: fs.readFileSync('/app/certs/vault.crt'),
-  // },
-  // Le token sera défini dynamiquement
+  requestOptions: {
+    ca: customCa,
+  },
 });
-const fs = require('fs');
-
-const path = require('path');
 
 let rootToken = 'initResult.root_token';
 let keys = 'initResult.keys';

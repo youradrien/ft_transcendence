@@ -15,7 +15,7 @@ export default class UserProfilePage extends Page {
 
   async getFriendshipStatus(username: string): Promise<FriendshipStatus> {
     try {
-        const res = await fetch(`http://localhost:3010/api/friends/status/${username}`, {
+        const res = await fetch(`https://localhost:3010/api/friends/status/${username}`, {
             credentials: 'include',
         });
 
@@ -60,7 +60,7 @@ export default class UserProfilePage extends Page {
 
 	let currentUser: { username: string } | null = null;
 	try {
-			const meRes = await fetch('http://localhost:3010/api/me-info', {
+			const meRes = await fetch('https://localhost:3010/api/me-info', {
 			credentials: 'include'
 		});
 		if (meRes.ok) {
@@ -81,7 +81,7 @@ export default class UserProfilePage extends Page {
 	}
 	let USER_DATA: any;
     try {
-        const response = await fetch(`http://localhost:3010/${user_api_call}`, {
+        const response = await fetch(`https://localhost:3010/${user_api_call}`, {
           credentials: 'include'
         });
         if (!response.ok) {
@@ -316,7 +316,7 @@ export default class UserProfilePage extends Page {
         const newName = prompt("New username:", USER_DATA?.username);
         if (newName && newName !== USER_DATA?.username) {
           try {
-            const res = await fetch('http://localhost:3010/api/user', {
+            const res = await fetch('https://localhost:3010/api/user', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
@@ -345,7 +345,7 @@ export default class UserProfilePage extends Page {
 
 			try {
 				const route = 'api/friends/requests';
-				const response = await fetch(`http://localhost:3010/${route}`, {
+				const response = await fetch(`https://localhost:3010/${route}`, {
 					method: 'POST',
 					credentials: 'include',
 					headers: {
@@ -375,7 +375,7 @@ export default class UserProfilePage extends Page {
 	// Logic for activate the correct button regarding the user's relationship with the viewed profile :
 	if (!isMyProfile) {
 
-		const statusRes = await fetch(`http://localhost:3010/api/friends/status/${USER_DATA.username}`, {
+		const statusRes = await fetch(`https://localhost:3010/api/friends/status/${USER_DATA.username}`, {
 			credentials: 'include'
 		});
 		const statusData = await statusRes.json();
@@ -416,7 +416,7 @@ export default class UserProfilePage extends Page {
 				unfriendBtn.disabled = true;
 				unfriendBtn.textContent = i18n.t('processing');
 
-				const res = await fetch(`http://localhost:3010/api/friends/${USER_DATA.username}`, {
+				const res = await fetch(`https://localhost:3010/api/friends/${USER_DATA.username}`, {
 					method: 'DELETE',
 					credentials: 'include'
 				});
@@ -443,7 +443,7 @@ export default class UserProfilePage extends Page {
 				pendingBtn.disabled = true;
 				pendingBtn.textContent = i18n.t('processing');
 
-				const res = await fetch(`http://localhost:3010/api/friends/requests/${USER_DATA.username}`, {
+				const res = await fetch(`https://localhost:3010/api/friends/requests/${USER_DATA.username}`, {
 					method: 'DELETE',
 					credentials: 'include'
 				});
@@ -466,7 +466,7 @@ export default class UserProfilePage extends Page {
 
     // fill ts with game infos
     try {
-        const g = await fetch(`http://localhost:3010/api/${USER_DATA?.username}/games`, {
+        const g = await fetch(`https://localhost:3010/api/${USER_DATA?.username}/games`, {
           credentials: 'include'
         });
         let u = await(g.json());

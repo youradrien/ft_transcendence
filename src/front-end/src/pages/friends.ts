@@ -47,7 +47,7 @@ export default class Friends extends Page {
   async FETCH_FRIENDS(): Promise<Friend[]> {
 
 	try {
-		const res = await fetch('http://localhost:3010/api/friends', {
+		const res = await fetch('https://localhost:3010/api/friends', {
 			method: 'GET',
 			credentials: 'include',
 		});
@@ -75,7 +75,7 @@ export default class Friends extends Page {
 	async FETCH_FRIEND_REQUESTS(): Promise<Friend[]> {
 
 		try {
-				const res = await fetch('http://localhost:3010/api/friends/requests', {
+				const res = await fetch('https://localhost:3010/api/friends/requests', {
 				method: 'GET',
 				credentials: 'include',
 			});
@@ -96,7 +96,7 @@ export default class Friends extends Page {
 	async ACCEPT_FRIEND_REQUEST(username: string): Promise<boolean> {
 
 		try {
-			const res = await fetch(`http://localhost:3010/api/friends/requests/accept/${username}`, {
+			const res = await fetch(`https://localhost:3010/api/friends/requests/accept/${username}`, {
 				method: 'POST',
 				credentials: 'include',
 		});
@@ -112,7 +112,7 @@ export default class Friends extends Page {
 	async DECLINE_FRIEND_REQUEST(username: string): Promise<boolean> {
 
 		try {
-			const res = await fetch(`http://localhost:3010/api/friends/requests/decline/${username}`, {
+			const res = await fetch(`https://localhost:3010/api/friends/requests/decline/${username}`, {
 				method: 'POST',
 				credentials: 'include',
 		});
@@ -128,7 +128,7 @@ export default class Friends extends Page {
 	async REMOVE_FRIEND(username: string): Promise<boolean> {
 
 		try {
-			const res = await fetch(`http://localhost:3010/api/friends/${username}`, {
+			const res = await fetch(`https://localhost:3010/api/friends/${username}`, {
 				method: 'DELETE',
 				credentials: 'include',
 			});

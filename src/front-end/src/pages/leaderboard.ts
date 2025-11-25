@@ -14,7 +14,7 @@ export default class LeaderboardPage extends Page {
 
   async FETCH_PLAYERS(): Promise<Player[]> {
     try {
-      const R = await fetch('http://localhost:3010/api/leaderboard', {
+      const R = await fetch('https://localhost:3010/api/leaderboard', {
         credentials: 'include'
       });
       if (!R.ok)

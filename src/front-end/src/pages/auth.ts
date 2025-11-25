@@ -93,13 +93,13 @@ export default class AuthPage extends Page {
     const githubLoginBtn = container.querySelector('#githubLogin') as HTMLButtonElement;
     githubLoginBtn.addEventListener('click', () => {
       // Redirige vers le backend
-      window.location.href = 'http://localhost:3010/api/auth/github/login';
+      window.location.href = 'https://localhost:3010/api/auth/github/login';
     });
 
     const googleLoginBtn = container.querySelector("#googleLogin") as HTMLButtonElement;
     googleLoginBtn.addEventListener('click', () => {
       // Redirige vers le backend
-      window.location.href = 'http://localhost:3010/api/auth/google/login';
+      window.location.href = 'https://localhost:3010/api/auth/google/login';
     });
 
 
@@ -128,7 +128,7 @@ export default class AuthPage extends Page {
       }
 
       try {
-        const endpoint = isLogin ? 'http://localhost:3010/api/login' : 'http://localhost:3010/api/register';
+        const endpoint = isLogin ? 'https://localhost:3010/api/login' : 'https://localhost:3010/api/register';
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
