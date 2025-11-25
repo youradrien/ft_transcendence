@@ -31,12 +31,17 @@ jobs:
 
       - name: Create env file
         run: |
-          echo "ELASTIC_PASSWORD=elastic_password" > .env
-          echo "KIBANA_PASSWORD=kibana_password" >> .env
+          echo "ELASTIC_PASSWORD=elastic_password" > monitoring/.env
+          echo "KIBANA_PASSWORD=kibana_password" >> monitoring/.env
+          cat monitoring/.env
+
+      - name: Check Docker Config
+        run: |
+          docker compose --env-file monitoring/.env -f monitoring/docker-compose.yml config
 
       - name: Start ELK Stack
         run: |
-          docker compose -f monitoring/docker-compose.yml up -d
+          docker compose --env-file monitoring/.env -f monitoring/docker-compose.yml up -d
           docker compose -f monitoring/docker-compose.yml ps
 
       - name: Wait for Elasticsearch
