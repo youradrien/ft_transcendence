@@ -413,7 +413,7 @@ async render(): Promise<HTMLElement> {
     container.appendChild(bgCanvas);
 
     const ctx = bgCanvas.getContext('2d')!;
-    const NUM_PARTICLES = 55;
+    const NUM_PARTICLES = 70;
 
     type Particle = { x:number, y:number, vx:number, vy:number, r:number, color:string, halo:string };
     const particles: Particle[] = [];
@@ -449,9 +449,9 @@ async render(): Promise<HTMLElement> {
             if (p.y < p.r || p.y > bgCanvas.height - p.r) p.vy *= -1;
 
             const gradient = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2);
-            gradient.addColorStop(0, p.color); // centre
-            gradient.addColorStop(0.7, p.halo); // halo
-            gradient.addColorStop(1, 'rgba(0,0,0,0)'); // transparent
+            gradient.addColorStop(0, p.color);
+            gradient.addColorStop(0.7, p.halo);
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
 
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);

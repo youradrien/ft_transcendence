@@ -40,72 +40,73 @@ export default class MainPage extends Page {
 	bgCanvas.style.pointerEvents = 'none';
 	container.appendChild(bgCanvas);
 
-const ctx = bgCanvas.getContext('2d')!;
-let balls: {x:number, y:number, vx:number, vy:number, r:number}[] = [];
-const NUM_BALLS = 70;
+	const ctx = bgCanvas.getContext('2d')!;
+	let balls: {x:number, y:number, vx:number, vy:number, r:number}[] = [];
+	const NUM_BALLS = 70;
 
-function resizeCanvas() {
-    bgCanvas.width = window.innerWidth || 800;
-    bgCanvas.height = window.innerHeight || 600;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+	function resizeCanvas() {
 
-function initBalls() {
-    const w = bgCanvas.width;
-    const h = bgCanvas.height;
-    balls = [];
-    for (let i=0; i<NUM_BALLS; i++) {
-        balls.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            vx: (Math.random()-0.5)*3,
-            vy: (Math.random()-0.5)*3,
-            r: Math.random()*3 + 2
-        });
-    }
-}
-initBalls();
+		bgCanvas.width = window.innerWidth || 800;
+		bgCanvas.height = window.innerHeight || 600;
+	}
+	window.addEventListener('resize', resizeCanvas);
+	resizeCanvas();
 
-function animate() {
-    ctx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+	function initBalls() {
 
-    for (let b of balls) {
-        // Sécurité: si un champ est invalide, skip
-        if (![b.x,b.y,b.r].every(v => typeof v === 'number' && !isNaN(v))) continue;
+		const w = bgCanvas.width;
+		const h = bgCanvas.height;
+		balls = [];
+		for (let i=0; i<NUM_BALLS; i++) {
 
-        b.x += b.vx;
-        b.y += b.vy;
+			balls.push({
+				x: Math.random() * w,
+				y: Math.random() * h,
+				vx: (Math.random()-0.5)*3,
+				vy: (Math.random()-0.5)*3,
+				r: Math.random()*3 + 2
+			});
+		}
+	}
+	initBalls();
 
-        if (b.x < b.r || b.x > bgCanvas.width - b.r) b.vx *= -1;
-        if (b.y < b.r || b.y > bgCanvas.height - b.r) b.vy *= -1;
+	function animate() {
 
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
-        ctx.fillStyle = 'white'; // couleur simple, sûre
-        ctx.fill();
-    }
+		ctx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
 
-    requestAnimationFrame(animate);
-}
-animate();
+		for (let b of balls) {
+
+			if (![b.x,b.y,b.r].every(v => typeof v === 'number' && !isNaN(v))) continue;
+			b.x += b.vx;
+			b.y += b.vy;
+
+			if (b.x < b.r || b.x > bgCanvas.width - b.r) b.vx *= -1;
+			if (b.y < b.r || b.y > bgCanvas.height - b.r) b.vy *= -1;
+
+			ctx.beginPath();
+			ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+			ctx.fillStyle = 'white'; // couleur simple, sûre
+			ctx.fill();
+		}
+		requestAnimationFrame(animate);
+	}
+	animate();
 
 
-    const content = document.createElement('div');
-    content.style.width = '100%';
+	const content = document.createElement('div');
+	content.style.width = '100%';
 
-    // fetch before trying to render profile
-    const user = await this.own_user();
-    if (user)
-    {
-      const pfp = new Profile('profile-page', this.router);
-      const pfp_element = await pfp.render();
-      content.appendChild(pfp_element);
-    } else {
-      content.innerHTML = `<p style="color: red;">${i18n.t('profile_load_error')}</p>`;
-    }
+	const user = await this.own_user();
+	if (user) {
 
-    container.appendChild(content);
-    return container;
+		const pfp = new Profile('profile-page', this.router);
+		const pfp_element = await pfp.render();
+		content.appendChild(pfp_element);
+	} else {
+		content.innerHTML = `<p style="color: red;">${i18n.t('profile_load_error')}</p>`;
+	}
+
+	container.appendChild(content);
+	return container;
   }
 }
