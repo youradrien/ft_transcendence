@@ -624,6 +624,63 @@ export default class PlayPage extends Page {
       }
     };
 
+		// YELLOW SQUARES !!
+
+	const trophyContainer = document.createElement('div');
+	Object.assign(trophyContainer.style, {
+		position: 'fixed',
+		top: '0',
+		left: '0',
+		width: '100%',
+		height: '100%',
+		pointerEvents: 'none',
+		zIndex: '-1',
+	});
+
+	const NUM_TROPHIES_SIDE = 42;
+	const sides = ['left', 'right'];
+
+	sides.forEach(side => {
+
+		for (let i = 0; i < NUM_TROPHIES_SIDE; i++) {
+
+		const symbols = ['♥', '♦', '♣', '♠'];
+
+		const trophy = document.createElement('div');
+		trophy.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+		Object.assign(trophy.style, {
+			fontSize: '20px',
+			color: 'yellow',
+			position: 'absolute',
+			top: '100%',
+   			animation: `rise ${Math.random() * 10 + 5}s linear infinite`,
+		});
+
+		if (side === 'left') {
+			trophy.style.left = `${Math.random() * 15}%`; // 0 → 25% largeur page
+			trophy.style.right = 'auto';
+		} else {
+			trophy.style.right = `${Math.random() * 15}%`; // 0 → 25% largeur page côté droit
+			trophy.style.left = 'auto';
+		}
+
+		trophyContainer.appendChild(trophy);
+	}
+  });
+
+	const style = document.createElement('style');
+	style.textContent = `
+		@keyframes rise { 
+			0% { 
+				transform: translateY(0);
+				opacity: 1; }
+			100% { transform: translateY(-110vh);
+				opacity: 1; }
+		}
+	`;
+	document.head.appendChild(style);
+	container.appendChild(trophyContainer);
+
 
     return container;
   }

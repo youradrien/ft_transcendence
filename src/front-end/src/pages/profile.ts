@@ -298,52 +298,53 @@ export default class UserProfilePage extends Page {
 	}
 
 	//// BLUE ORBS IF OPTION SHOWCANVAS ////
-	if (showCanvas) {
+		if (showCanvas) {
 
-		const orbContainer = document.createElement('div');
-		Object.assign(orbContainer.style, {
-		position: 'fixed',
-		top: '0',
-		left: '0',
-		width: '100%',
-		height: '100%',
-		pointerEvents: 'none',
-		zIndex: '-1'
-	});
+			const orbContainer = document.createElement('div');
+			Object.assign(orbContainer.style, {
+			position: 'fixed',
+			top: '0',
+			left: '0',
+			width: '100%',
+			height: '100%',
+			pointerEvents: 'none',
+			zIndex: '-1'
+		});
 
-	const NUM_ORBS = 80;
-    for (let i = 0; i < NUM_ORBS; i++) {
-        const orb = document.createElement('div');
-        const size = Math.random() * 6 + 4;
-        Object.assign(orb.style, {
-            width: `${size}px`,
-            height: `${size}px`,
-            background: '#00ffff',
-            position: 'absolute',
-            borderRadius: '50%',
-            opacity: (Math.random() * 0.3 + 0.1).toString(),
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animation: `orbBlink ${1.5 + Math.random() * 3}s infinite ease-in-out`
-        });
-        orbContainer.appendChild(orb);
-    }
+		const NUM_ORBS = 80;
+		for (let i = 0; i < NUM_ORBS; i++) {
+			const orb = document.createElement('div');
+			const size = Math.random() * 6 + 4;
+			Object.assign(orb.style, {
+				width: `${size}px`,
+				height: `${size}px`,
+				background: '#00ffff',
+				position: 'absolute',
+				borderRadius: '50%',
+				opacity: (Math.random() * 0.3 + 0.1).toString(),
+				left: `${Math.random() * 100}%`,
+				top: `${Math.random() * 100}%`,
+				animation: `orbBlink ${1.5 + Math.random() * 3}s infinite ease-in-out`
+			});
+			orbContainer.appendChild(orb);
+		}
 
-    // Animation des orbes
-    if (!document.querySelector('#orbBlink-style')) {
-        const style = document.createElement('style');
-        style.id = 'orbBlink-style';
-        style.textContent = `
-        @keyframes orbBlink {
-            0% { transform: scale(0.8); opacity: 0.1; }
-            50% { transform: scale(1); opacity: 0.5; }
-            100% { transform: scale(0.8); opacity: 0.1; }
-        }`;
-        document.head.appendChild(style);
-    }
+		// Orbs animation
+		if (!document.querySelector('#orbBlink-style')) {
 
-    container.appendChild(orbContainer);
-}
+			const style = document.createElement('style');
+			style.id = 'orbBlink-style';
+			style.textContent = `
+			@keyframes orbBlink {
+				0% { transform: scale(0.8); opacity: 0.1; }
+				50% { transform: scale(1); opacity: 0.5; }
+				100% { transform: scale(0.8); opacity: 0.1; }
+			}`;
+			document.head.appendChild(style);
+		}
+
+		container.appendChild(orbContainer);
+	}
 
 	// Button for adding the current user as a friend :
 	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;
