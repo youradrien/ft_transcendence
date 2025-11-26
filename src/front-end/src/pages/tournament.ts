@@ -19,11 +19,11 @@ export default class TournamentPage extends Page {
         background-attachment: fixed;
         animation: fadeInUp 0.5s ease-out;
       }
-      h1, h2 {
+      #tournament-wrapper h1, #tournament-wrapper h2 {
         text-align: center;
         margin-bottom: 1.2rem;
       }
-      #registration-box {
+      #tournament-wrapper #registration-box {
         background: rgba(40,40,40,0.6);
         padding: 1.5rem;
         border-radius: 12px;
@@ -32,38 +32,38 @@ export default class TournamentPage extends Page {
         text-align: center;
         border: 2px solid #00000029;
       }
-      input, button {
+      #tournament-wrapper input, #tournament-wrapper button {
         padding: 10px;
         margin: 8px;
         border-radius: 6px;
         border: none;
         font-family: inherit;
       }
-      button {
+      #tournament-wrapper button {
         cursor: pointer;
         color: white;
       }
       button:hover {
         filter: brightness(1.15);
       }
-      #players-list {
+      #tournament-wrapper #players-list {
         margin-top: 1rem;
         font-size: 14px;
       }
 
 
       /* === History === */
-      #history-box {
+      #tournament-wrapper #history-box {
         margin-top: 4rem;
         background: rgba(20,20,20,0.6);
         padding: 1.5rem;
         border-radius: 12px;
       }
-      .history-entry {
+      #tournament-wrapper .history-entry {
         border-bottom: 1px solid #444;
         padding: 1rem 0;
       }
-      .history-entry:last-child {
+      #tournament-wrapper .history-entry:last-child {
         border-bottom: none;
       }
       .history-title {
@@ -72,7 +72,7 @@ export default class TournamentPage extends Page {
       }
 
       /* ==== BRACKET === */
-      #big-bracket {
+      #tournament-wrapper #big-bracket {
             display: flex;
             justify-content: center;
             gap: 3rem;
@@ -80,7 +80,7 @@ export default class TournamentPage extends Page {
             font-family: 'Press Start 2P', cursive;
             color: #f1f1f1;
        }
-        #bracket {
+        #tournament-wrapper #bracket {
             display: flex;
             justify-content: center;
             gap: 3rem;
@@ -88,7 +88,7 @@ export default class TournamentPage extends Page {
             flex-wrap: wrap;
         }
 
-        .round-box {
+       #tournament-wrapper .round-box {
             background: rgba(20,20,20,0.6);
             padding: 1.5rem;
             border-radius: 12px;
@@ -97,27 +97,27 @@ export default class TournamentPage extends Page {
             box-shadow: 0 0 12px rgba(0,0,0,0.3);
         }
 
-        .round-box h3 {
+        #tournament-wrapper .round-box h3 {
             text-align: center;
             margin-bottom: 1.2rem;
             font-size: 16px;
             color: #f1f1f1;
         }
 
-        .round {
+        #tournament-wrapper .round {
             display: flex;
             flex-direction: column;
             gap: 2.6rem;
             position: relative;
         }
-        .round.sf {
+        #tournament-wrapper .round.sf {
             display: flex;
             flex-direction: column;
             height: 92%; /* ensure container takes full height for spacing to work */
             justify-content: space-around;
             min-height: 10vh;
         }
-        .match {
+        #tournament-wrapper .match {
             display: flex;
             flex-direction: column;
             gap: 1rem;
@@ -125,12 +125,12 @@ export default class TournamentPage extends Page {
             padding-left: 1.5rem;
         }
 
-        .match > span{
+        #tournament-wrapper .match > span{
           max-width: 150px;
           overflow-x: scroll;
         }
 
-        .player {
+        #tournament-wrapper .player {
             display: flex;
             align-items: center;
             overflow-x: scroll;
@@ -142,7 +142,7 @@ export default class TournamentPage extends Page {
             width: 200px;
         }
 
-        .pfp {
+        #tournament-wrapper .pfp {
             width: 40px;
             height: 40px;
             min-width: 40px;
@@ -155,19 +155,19 @@ export default class TournamentPage extends Page {
             font-size: 14px;
         }
 
-        .winner {
+        #tournament-wrapper .winner {
             background: #004d2a;
             border-color: #00ff90;
             color: #00ff90;
         }
 
-        .champion {
+        #tournament-wrapper .champion {
             background: #5b4200;
             border-color: gold;
             color: gold;
         }
 
-        .final-match {
+        #tournament-wrapper.final-match {
             gap: 2rem;
         }
 
@@ -177,7 +177,7 @@ export default class TournamentPage extends Page {
         ───────────────────────────────────────── */
 
         /* QF → SF */
-        .qf .match::after {
+        #tournament-wrapper .qf .match::after {
             content: "";
             position: absolute;
             right: -1.5rem;
@@ -188,7 +188,7 @@ export default class TournamentPage extends Page {
             border-top: 3px solid #666;
         }
 
-        .qf .match:nth-child(even)::after {
+        #tournament-wrapper .qf .match:nth-child(even)::after {
             top: auto;
             bottom: 25%;
             border-top: none;
@@ -196,7 +196,7 @@ export default class TournamentPage extends Page {
         }
 
         /* SF horizontal lines */
-        .sf .match.mid::before {
+        #tournament-wrapper .sf .match.mid::before {
             content: "";
             position: absolute;
             left: -2rem;
@@ -205,7 +205,7 @@ export default class TournamentPage extends Page {
             border-top: 3px solid #888;
         }
 
-        .sf .match.mid::after {
+        #tournament-wrapper .sf .match.mid::after {
             content: "";
             position: absolute;
             right: -2rem;
@@ -215,7 +215,7 @@ export default class TournamentPage extends Page {
         }
 
         /* Final line */
-        .final .final-match::before {
+        #tournament-wrapper .final .final-match::before {
             content: "";
             position: absolute;
             left: -2rem;
@@ -224,7 +224,7 @@ export default class TournamentPage extends Page {
             border-top: 4px solid gold;
         }
             /* Player List Container */
-            #players-display {
+            #tournament-wrapper #players-display {
               max-width: 1100px;
               margin: 1.5rem auto 2rem auto;
               display: flex;
@@ -234,7 +234,7 @@ export default class TournamentPage extends Page {
             }
 
             /* Player Card */
-            .player-card {
+            #tournament-wrapper .player-card {
               display: flex;
               align-items: center;
               gap: 1rem;
@@ -248,13 +248,13 @@ export default class TournamentPage extends Page {
               font-family: 'Press Start 2P', cursive;
               transition: transform 0.15s ease, box-shadow 0.15s ease;
             }
-            .player-card:hover {
+            #tournament-wrapper .player-card:hover {
               transform: translateY(-3px);
               box-shadow: 0 0 12px #3b88ff55;
             }
 
             /* PFP Circle */
-            .player-card .pfp {
+            #tournament-wrapper .player-card .pfp {
               width: 48px;
               height: 48px;
               border-radius: 10px;
@@ -267,22 +267,22 @@ export default class TournamentPage extends Page {
             }
 
             /* Username + ELO stacked */
-            .player-info {
+            #tournament-wrapper .player-info {
               display: flex;
               flex-direction: column;
               gap: 2px;
             }
 
-            .player-username {
+            #tournament-wrapper .player-username {
               font-size: 12px;
             }
 
-            .player-elo {
+            #tournament-wrapper .player-elo {
               font-size: 10px;
               color: #aaa;
             }
 
-        @keyframes fadeInUp {
+        #tournament-wrapper @keyframes fadeInUp {
                 from { opacity: 0; transform: translateY(30px); }
                 to { opacity: 1; transform: translateY(0); }
               }
