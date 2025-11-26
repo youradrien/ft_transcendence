@@ -413,7 +413,7 @@ async render(): Promise<HTMLElement> {
     container.appendChild(bgCanvas);
 
     const ctx = bgCanvas.getContext('2d')!;
-    const NUM_PARTICLES = 70;
+    const NUM_PARTICLES = 85;
 
     type Particle = { x:number, y:number, vx:number, vy:number, r:number, color:string, halo:string };
     const particles: Particle[] = [];

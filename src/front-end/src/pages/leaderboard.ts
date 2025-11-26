@@ -1,6 +1,7 @@
 import Page from '../template/page.ts';
 import { i18n } from '../i18n';
 
+
 type Player = {
   username: string;
   avatar_url: string;
@@ -93,6 +94,15 @@ export default class LeaderboardPage extends Page {
         C.style.transform = 'translateY(0) scale(1)';
         C.style.boxShadow = '0 0 8px rgba(0, 255, 0, 0.1)';
       });
+	//   C.addEventListener('click', async () => {
+    //   const profile = new UserProfilePage('profile-page', this.router);
+    //   const profileEl = await profile.render({ showCanvas: true }); // orbes activées
+    //   const outlet = document.getElementById('app'); // ton outlet principal
+    //   outlet!.innerHTML = '';
+    //   outlet!.appendChild(profileEl);
+    //   history.pushState(null, '', `/profile/${player.username}`); // met à jour l'URL
+    //   });
+
 
       C.addEventListener('click', () => {
         this.router.navigate(`/profile/${player.username}`);
@@ -133,10 +143,10 @@ export default class LeaderboardPage extends Page {
 		});
 
 		if (side === 'left') {
-			trophy.style.left = `${Math.random() * 18}%`; // 0 → 25% largeur page
+			trophy.style.left = `${Math.random() * 50}%`; // 0 → 25% largeur page
 			trophy.style.right = 'auto';
 		} else {
-			trophy.style.right = `${Math.random() * 18}%`; // 0 → 25% largeur page côté droit
+			trophy.style.right = `${Math.random() * 50}%`; // 0 → 25% largeur page côté droit
 			trophy.style.left = 'auto';
 		}
 

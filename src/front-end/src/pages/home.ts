@@ -42,7 +42,7 @@ export default class MainPage extends Page {
 
 	const ctx = bgCanvas.getContext('2d')!;
 	let balls: {x:number, y:number, vx:number, vy:number, r:number}[] = [];
-	const NUM_BALLS = 70;
+	const NUM_BALLS = 80;
 
 	function resizeCanvas() {
 
@@ -100,7 +100,7 @@ export default class MainPage extends Page {
 	if (user) {
 
 		const pfp = new Profile('profile-page', this.router);
-		const pfp_element = await pfp.render();
+		const pfp_element = await pfp.render({ showCanvas: false });
 		content.appendChild(pfp_element);
 	} else {
 		content.innerHTML = `<p style="color: red;">${i18n.t('profile_load_error')}</p>`;
