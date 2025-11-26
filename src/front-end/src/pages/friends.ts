@@ -380,6 +380,9 @@ export default class Friends extends Page {
         card.style.transform = "translateY(0) scale(1)";
         card.style.boxShadow = "0 0 8px rgba(0,255,0,0.06)";
     });
+	card.onclick = () => {
+		this.router.navigate(`/profile/${friend.username}`);
+	};
 
     return card;
 }
