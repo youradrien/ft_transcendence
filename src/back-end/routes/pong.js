@@ -515,7 +515,7 @@ async function pong_routes(fastify, options)
         // tournament is preparing OR running
         const t = fastify.p_tournament;
         const b = t.status === "open" || t.status === "preparing" || t.status === "in-progress";
-        const user_in_tournament = t.players.some(p => p && p.id === USER_ID);
+        const user_in_tournament = t.players.some(p => p && p.userId === USER_ID);
         if (b && user_in_tournament) {
             connection.socket.send(JSON.stringify({ 
                 type: "error", 
@@ -780,7 +780,7 @@ async function pong_routes(fastify, options)
         // tournament is preparing OR running
         const t = fastify.p_tournament;
         const b = t.status === "open" || t.status === "preparing" || t.status === "in-progress";
-        const user_in_tournament = t.players.some(p => p && p.id === USER_ID);
+        const user_in_tournament = t.players.some(p => p && p.userId === USER_ID);
         if (b && user_in_tournament) {
             connection.socket.send(JSON.stringify({ 
                 type: "error", 
