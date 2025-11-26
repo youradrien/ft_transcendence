@@ -648,6 +648,61 @@ export default class TournamentPage extends Page {
         nameInput.value = "";
     };
 
+	// YELLOW ORBS !!
+
+	const trophyContainer = document.createElement('div');
+	Object.assign(trophyContainer.style, {
+		position: 'fixed',
+		top: '0',
+		left: '0',
+		width: '100%',
+		height: '100%',
+		pointerEvents: 'none',
+		zIndex: '-1',
+	});
+
+	const NUM_TROPHIES_SIDE = 42;
+	const sides = ['left', 'right'];
+
+	sides.forEach(side => {
+
+		for (let i = 0; i < NUM_TROPHIES_SIDE; i++) {
+
+			const trophy = document.createElement('div');
+			Object.assign(trophy.style, {
+			width: '8px',
+			height: '8px',
+			backgroundColor: '#3489ebff',
+			border: '1px solid #55a2faff',
+			borderRadius: '50%',
+			position: 'absolute',
+			top: `${Math.random() * 95 + 2.5}%`,
+			animation: `blink ${Math.random() * 2 + 1}s infinite alternate`
+		});
+
+		if (side === 'left') {
+			trophy.style.left = `${Math.random() * 18}%`; // 0 → 25% largeur page
+			trophy.style.right = 'auto';
+		} else {
+			trophy.style.right = `${Math.random() * 18}%`; // 0 → 25% largeur page côté droit
+			trophy.style.left = 'auto';
+		}
+
+		trophyContainer.appendChild(trophy);
+	}
+  });
+
+	const style = document.createElement('style');
+	style.textContent = `
+		@keyframes blink {
+		0% { opacity: 0.2; transform: translateY(0); }
+		50% { opacity: 1; transform: translateY(-2px); }
+		100% { opacity: 0.2; transform: translateY(0); }
+	}
+	`;
+	document.head.appendChild(style);
+	container.appendChild(trophyContainer);
+
 
     return container;
   }
