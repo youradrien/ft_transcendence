@@ -125,6 +125,25 @@ export default class UserProfilePage extends Page {
       </button>
     ` : '';
 
+    const avatarEditOverlay = isMyProfile ? `
+      <div id="avatar-edit-overlay" style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      ">
+        <span style="font-size: 24px;">📷</span>
+      </div>
+    ` : '';
+
     container.innerHTML = `
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
       
@@ -182,6 +201,10 @@ export default class UserProfilePage extends Page {
           transform: scale(1.03);
           box-shadow: 0 0 25px #00ffff55;
         }
+
+        #avatar-container:hover #avatar-edit-overlay {
+          display: flex !important;
+        }
       
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(30px); }
@@ -205,7 +228,10 @@ export default class UserProfilePage extends Page {
           border-radius: 15px;
           animation: fadeInUp 0.35s ease-out;
         ">
-          <img src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
+          <div id="avatar-container" style="position: relative; width: 80px; height: 80px;">
+            <img id="profile-avatar" src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
+            ${avatarEditOverlay}
+          </div>
           <div style="display: flex; align-items: center; gap: 1px; margin-right: 20px;  flex-direction: column;">
             <div style="display: flex; align-items: center;">
               <h1 style="font-size: 28px; margin: 0; color: white;">${USER_DATA?.username}</h1>
@@ -259,7 +285,7 @@ export default class UserProfilePage extends Page {
           </div>
 
           <!-- STATISTICS -->
-          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px;">
+          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column, gap: 20px;">
             
             ${social_btns_HTML}
             <div style="border: 2px solid #333; padding: 16px; 
@@ -346,11 +372,8 @@ export default class UserProfilePage extends Page {
 		container.appendChild(orbContainer);
 	}
 
-	// Button for adding the current user as a friend :
-	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;
-
-    // Logic for edit username button
-    const editUsernameBtn = container.querySelector('#edit-username-btn') as HTMLButtonElement;
+// Logic for edit username button
+  const editUsernameBtn = container.querySelector('#edit-username-btn') as HTMLButtonElement;
     if (editUsernameBtn) {
       editUsernameBtn.onclick = async () => {
         const newName = prompt("New username:", USER_DATA?.username);
@@ -377,6 +400,83 @@ export default class UserProfilePage extends Page {
       };
     }
 
+  // Logic for edit profile picture
+  if (isMyProfile) {
+    const avatarContainer = container.querySelector('#avatar-container') as HTMLElement;
+    const avatarEditOverlay = container.querySelector('#avatar-edit-overlay') as HTMLElement;
+    
+    if (avatarContainer && avatarEditOverlay) {
+      avatarEditOverlay.onclick = async () => {
+        // Create a file input element
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        
+        fileInput.onchange = async (e: Event) => {
+          const target = e.target as HTMLInputElement;
+          const file = target.files?.[0];
+          
+          if (!file) return;
+          
+          // Check file size (max 5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            alert('File too large. Maximum size is 5MB.');
+            return;
+          }
+          
+          // Check file type
+          if (!file.type.startsWith('image/')) {
+            alert('Please select an image file.');
+            return;
+          }
+          
+          try {
+            // Convert to base64
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+              const base64String = event.target?.result as string;
+              
+              const res = await fetch('http://localhost:3010/api/user/avatar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ avatar_url: base64String })
+              });
+              
+              const data = await res.json();
+              if (res.ok && data.success) {
+                // Update avatar immediately without reload
+                const avatarImg = container.querySelector('#profile-avatar') as HTMLImageElement;
+                if (avatarImg) {
+                  avatarImg.src = base64String;
+                }
+              } else {
+                alert("Failed to update avatar: " + (data.error || data.message || "Unknown error"));
+              }
+            };
+            
+            reader.onerror = () => {
+              alert('Error reading file');
+            };
+            
+            reader.readAsDataURL(file);
+          } catch (e) {
+            console.error(e);
+            alert("Error updating avatar");
+          }
+        };
+        
+        // Trigger file selection
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
+      };
+    }
+  }
+
+	// Button for adding the current user as a friend :
+	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;  
 	if (addFriendBtn) {
 
 		addFriendBtn.onclick = async () => {
