@@ -10,6 +10,13 @@ const fs = require('fs');
 
 // Configure Pino logger for better structured logging
 const isDevelopment = process.env.NODE_ENV !== 'production';
+// const sslDir = path.resolve('./');
+
+// // Lister les fichiers présents
+// console.log('Contenu du dossier app:', fs.readdirSync(sslDir));
+
+// Lister les fichiers présents
+// console.log('Contenu du dossier ssl_certs :', fs.readdirSync(sslDir));
 
 const fastify = require('fastify')({
   logger: isDevelopment ? {
@@ -48,8 +55,10 @@ const fastify = require('fastify')({
   requestIdLogLabel: 'request_id',
   disableRequestLogging: false,
   https: {
-    key: fs.readFileSync('./vault_handler/secrets/ssl_certs/transssl.key'),
-    cert: fs.readFileSync('./vault_handler/secrets/ssl_certs/transssl.crt')
+    
+    key: fs.readFileSync('./ssl_certs/transssl.key'),
+    cert: fs.readFileSync('./ssl_certs/transssl.crt'),
+    
   }
 });
 const { db, _INIT_DB } = require('./db.js'); // chemin relatif selon ton projet

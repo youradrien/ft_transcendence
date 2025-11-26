@@ -8,6 +8,8 @@ services:
     volumes:
       - ./src/front-end:/app
       - /app/node_modules
+      - ./src/back-end/vault_handler/secrets/ssl_certs/transssl.crt:/etc/nginx/ssl/transssl.crt:ro
+      - ./src/back-end/vault_handler/secrets/ssl_certs/transssl.key:/etc/nginx/ssl/transssl.key:ro
     environment:
       - CHOKIDAR_USEPOLLING=true
       - NODE_ENV=production
@@ -23,6 +25,8 @@ services:
       service.name: "frontend"
       service.type: "web"
       app.component: "ui"
+
+
 
   backend:
     build:
@@ -47,8 +51,9 @@ services:
       service.type: "api"
       app.component: "server"
     volumes:
-      - ./vault/vault-config/certs/vault.crt:/app/certs/vault.crt:ro
-      - ./src/back-end/vault_handler:/app/vault_handler  # <-- watch for changes
+      - ./src/back-end/vault_handler/secrets/vault_certs/vault.crt:/app/vault_certs/vault.crt:ro
+      - ./src/back-end/vault_handler/secrets/ssl_certs:/app/ssl_certs:ro
+      - ./src/back-end/vault_handler/secrets:/app/vault_handler/secrets:rw
     entrypoint: ["node", "server.js"]
     depends_on:
       - vault
@@ -66,8 +71,8 @@ services:
       - LOGLEVEL=debug
     volumes:
       - ./src/modsecurity/nginx-custom.conf:/etc/nginx/conf.d/reverse-proxy.conf:ro
-      - ./ssl_certs/transssl.crt:/etc/nginx/ssl/transssl.crt:ro
-      - ./ssl_certs/transssl.key:/etc/nginx/ssl/transssl.key:ro
+      - ./src/back-end/vault_handler/secrets/ssl_certs/transssl.crt:/etc/nginx/ssl/transssl.crt:ro
+      - ./src/back-end/vault_handler/secrets/ssl_certs/transssl.key:/etc/nginx/ssl/transssl.key:ro
     depends_on:
       - frontend
     networks:
@@ -81,11 +86,11 @@ services:
     cap_add:
       - IPC_LOCK                             # prevent memory swap for secrets
     environment:
-      - VAULT_ADDR=https://localhost:8200
+      - VAULT_ADDR=https://0.0.0.0:8200
     volumes:
       - ./vault/vault-data:/vault/file             # persistent data
       - ./vault/vault-config:/vault/config         # mount config and certs
-      - ./vault/vault-config/certs:/vault/config/certs:ro
+      - ./src/back-end/vault_handler/secrets/vault_certs:/vault/config/certs:ro
     entrypoint: ["vault", "server", "-config=/vault/config/vault.hcl"]
     networks:
       - ft_transcendence_net
