@@ -265,15 +265,12 @@ export default class UserProfilePage extends Page {
         ${USER_DATA?.is_online ? i18n.t('online') : i18n.t('offline')}
        </span>
 
-  <!-- Social Buttons -->
-  <div style="display:flex; gap:12px;">
-    ${social_btns_HTML}
+       <!-- Social Buttons -->
+       <div style="display:flex; gap:12px;">
+         ${social_btns_HTML}
+     </div>
+    </div>
   </div>
-</div>
-
-        </div>
-
-
 
         <h1 style="font-size: 18px; margin: 10px; color: white; text-align: left;">${i18n.t('winrate')} ${win_rate}</h1>
         <div style="display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 30px;">
@@ -284,7 +281,7 @@ export default class UserProfilePage extends Page {
         <div style="display: flex; margin-top: 30px; gap: 30px; flex-wrap: wrap; justify-content: center;">
 
           <!-- GAMESSSSS -->
-          <div id="game-history" style="flex: 1; min-width: 600px;
+          <div id="game-history" style="flex: 1; min-width: 500px;
                 border: 2px solid #333; padding: 16px;
                 overflow-y: scroll;
                 animation: fadeInUp 0.6s ease-out;
@@ -297,10 +294,10 @@ export default class UserProfilePage extends Page {
             <div style="background: #222; padding: 8px; margin-bottom: 6px;">${i18n.t('player_1')} &nbsp;&nbsp;&nbsp; ${i18n.t('player_2')}</div>
           </div>
 
-		  <!-- STATISTICS -->
+	 <!-- STATISTICS -->
         <div style="
               flex: 1;
-              min-width: 300px;
+              min-width: 500px;
               display: flex;
               flex-direction: column;
               gap: 20px;
@@ -310,9 +307,10 @@ export default class UserProfilePage extends Page {
    <!-- WINS / LOSSES -->
      <div style="
             border: 2px solid #333;
+            min-width: 500px;
             padding: 16px;
             animation: fadeInUp 1.1s ease-out;
-            margin-top: 40px; /* pour éviter que les boutons ne chevauchent */
+            margin-top: 40px;
       ">
       <h3 style="margin: 0 0 12px 0;">${i18n.t('wins')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${i18n.t('losses')}</h3>
       <div style="font-size: 32px;">
