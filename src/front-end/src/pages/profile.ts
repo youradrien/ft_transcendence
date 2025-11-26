@@ -417,15 +417,14 @@ export default class UserProfilePage extends Page {
           const target = e.target as HTMLInputElement;
           const file = target.files?.[0];
           
-          if (!file) return;
+          if (!file)
+            return;
           
-          // Check file size (max 5MB)
-          if (file.size > 5 * 1024 * 1024) {
-            alert('File too large. Maximum size is 5MB.');
+          if (file.size > 3 * 1024 * 1024) {
+            alert('File too large. Maximum size is 3MB.');
             return;
           }
           
-          // Check file type
           if (!file.type.startsWith('image/')) {
             alert('Please select an image file.');
             return;
@@ -437,33 +436,47 @@ export default class UserProfilePage extends Page {
             reader.onload = async (event) => {
               const base64String = event.target?.result as string;
               
-              const res = await fetch('http://localhost:3010/api/user/avatar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ avatar_url: base64String })
-              });
+              // Check base64 size (max ~4MB base64 = ~3MB file)
+              if (base64String.length > 4 * 1024 * 1024) {
+                alert('Image too large after conversion. Please select a smaller image (max 3MB).');
+                return;
+              }
               
-              const data = await res.json();
-              if (res.ok && data.success) {
-                // Update avatar immediately without reload
-                const avatarImg = container.querySelector('#profile-avatar') as HTMLImageElement;
-                if (avatarImg) {
-                  avatarImg.src = base64String;
+              try {
+                const res = await fetch('http://localhost:3010/api/user/avatar', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ avatar_url: base64String })
+                });
+                
+                const data = await res.json();
+                if (res.ok && data.success) {
+                  // Update avatar immediately without reload
+                  const avatarImg = container.querySelector('#profile-avatar') as HTMLImageElement;
+                  if (avatarImg) {
+                    avatarImg.src = base64String;
+                  }
+                  alert('Avatar updated successfully!');
+                } else {
+                  console.error('Avatar update failed:', data);
+                  alert("Failed to update avatar: " + (data.error || data.message || "Unknown error"));
                 }
-              } else {
-                alert("Failed to update avatar: " + (data.error || data.message || "Unknown error"));
+              } catch (fetchError) {
+                console.error('Network error:', fetchError);
+                alert('Failed to upload image. The file may be too large or there was a network error. Please try a smaller image (max 2MB recommended).');
               }
             };
             
             reader.onerror = () => {
-              alert('Error reading file');
+              alert('Error reading file. Please try again.');
+              console.error('FileReader error');
             };
             
             reader.readAsDataURL(file);
           } catch (e) {
-            console.error(e);
-            alert("Error updating avatar");
+            console.error('Unexpected error:', e);
+            alert("Error processing image. Please try a smaller file.");
           }
         };
         
