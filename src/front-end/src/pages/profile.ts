@@ -115,7 +115,6 @@ export default class UserProfilePage extends Page {
         <button id="add-friend-btn" style="${greenButtonStyle}">${i18n.t('add_friend')}</button>
         <button id="unfriend-btn" style="${greenButtonStyle}; display:none; background-color:#ff4444;">${i18n.t('unfriend')}</button>
         <button id="pending-btn" style="${greenButtonStyle}; display:none; background-color:#ffcc33;">${i18n.t('pending_decline')}</button>
-        <button id="send-dm-btn" style="${greenButtonStyle}">${i18n.t('send_dm')}</button>
       </div>
     ` : '';
 
@@ -222,12 +221,19 @@ export default class UserProfilePage extends Page {
         border-radius: 13px;
         transition: all 0.3s ease;
       ">
-        <div style="display: flex; align-items: center; gap: 16px; flex-direction: row; margin-bottom: 20px; 
-          background-color: #00000054;
-          padding: 10px 35px;
-          border-radius: 15px;
-          animation: fadeInUp 0.35s ease-out;
+        <div style="
+           display: flex;
+           align-items: center;
+           gap: 16px;
+           flex-direction: row;
+           margin-bottom: 20px;
+           background-color: #00000054;
+           padding: 10px 35px;
+           border-radius: 15px;
+           animation: fadeInUp 0.35s ease-out;
+           position: relative;
         ">
+
           <div id="avatar-container" style="position: relative; width: 80px; height: 80px;">
             <img id="profile-avatar" src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
             ${avatarEditOverlay}
@@ -240,8 +246,9 @@ export default class UserProfilePage extends Page {
             <h2 style="font-size: 18px; margin: 0; color: white; margin-top: 5px; ">${USER_DATA?.elo} ELO 🏆</h2>
           </div>
           
-          <div style="display: flex; align-items: center; gap: 8px; margin-left:auto;">
-            <span style="
+         <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+           <!-- Status -->
+           <span style="
               display: inline-block;
               width: 12px;
               height: 12px;
@@ -249,15 +256,21 @@ export default class UserProfilePage extends Page {
               background-color: ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
               box-shadow: 0 0 8px ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
               transition: background-color 0.3s, box-shadow 0.3s;
-            "></span>
-            <span style="
-              font-size: 14px;
-              color: ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
-              text-shadow: 0 0 4px ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
-            ">
-              ${USER_DATA?.is_online ? i18n.t('online') : i18n.t('offline')}
-            </span>
-          </div>
+        "></span>
+        <span style="
+             font-size: 14px;
+             color: ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
+             text-shadow: 0 0 4px ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
+        ">
+        ${USER_DATA?.is_online ? i18n.t('online') : i18n.t('offline')}
+       </span>
+
+  <!-- Social Buttons -->
+  <div style="display:flex; gap:12px;">
+    ${social_btns_HTML}
+  </div>
+</div>
+
         </div>
 
 
@@ -284,19 +297,31 @@ export default class UserProfilePage extends Page {
             <div style="background: #222; padding: 8px; margin-bottom: 6px;">${i18n.t('player_1')} &nbsp;&nbsp;&nbsp; ${i18n.t('player_2')}</div>
           </div>
 
-          <!-- STATISTICS -->
-          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column, gap: 20px;">
-            
-            ${social_btns_HTML}
-            <div style="border: 2px solid #333; padding: 16px; 
-                animation: fadeInUp 1.1s ease-out;
-            ">
-              <h3 style="margin: 0 0 12px 0;">${i18n.t('wins')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${i18n.t('losses')}</h3>
-              <div style="font-size: 32px;">
-                <span style="color: lime;">${USER_DATA?.wins}</span> &nbsp;&nbsp;&nbsp;&nbsp;
-                <span style="color: red;">${USER_DATA?.losses}</span>
-              </div>
-            </div>
+		  <!-- STATISTICS -->
+        <div style="
+              flex: 1;
+              min-width: 300px;
+              display: flex;
+              flex-direction: column;
+              gap: 20px;
+              position: relative;
+        ">
+
+   <!-- WINS / LOSSES -->
+     <div style="
+            border: 2px solid #333;
+            padding: 16px;
+            animation: fadeInUp 1.1s ease-out;
+            margin-top: 40px; /* pour éviter que les boutons ne chevauchent */
+      ">
+      <h3 style="margin: 0 0 12px 0;">${i18n.t('wins')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${i18n.t('losses')}</h3>
+      <div style="font-size: 32px;">
+        <span style="color: lime;">${USER_DATA?.wins}</span> &nbsp;&nbsp;&nbsp;&nbsp;
+        <span style="color: red;">${USER_DATA?.losses}</span>
+      </div>
+    </div>
+
+  </div>
 
         </div>
 
