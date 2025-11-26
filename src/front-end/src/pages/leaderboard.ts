@@ -111,7 +111,7 @@ export default class LeaderboardPage extends Page {
     });
 
 
-	// YELLOW SQUARES !!
+	// YELLOW ORBS !!
 
 	const trophyContainer = document.createElement('div');
 	Object.assign(trophyContainer.style, {
