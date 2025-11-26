@@ -84,8 +84,8 @@ fastify.decorate('p_tournament', {
       semi_finals: [null, null],
       final: null
     },      
-    prize: 1200, // prix en elo? 
-    status: "inactive" // statut descriptif [inactive, open/preparing, in-progress, pe]
+    prize: null, // prix en elo? 
+    status: "inactive" // statut descriptif [inactive, preparing, in-progress, completed]
 });
 
 

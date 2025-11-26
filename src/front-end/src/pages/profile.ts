@@ -118,6 +118,13 @@ export default class UserProfilePage extends Page {
         <button id="send-dm-btn" style="${greenButtonStyle}">${i18n.t('send_dm')}</button>
       </div>
     ` : '';
+
+    const editBtnHTML = isMyProfile ? `
+      <button id="edit-username-btn" style="background: none; border: none; cursor: pointer; font-size: 14px; margin-left: 8px;" title="Edit">
+        ✏️
+      </button>
+    ` : '';
+
     container.innerHTML = `
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
       
@@ -200,7 +207,10 @@ export default class UserProfilePage extends Page {
         ">
           <img src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
           <div style="display: flex; align-items: center; gap: 1px; margin-right: 20px;  flex-direction: column;">
-            <h1 style="font-size: 28px; margin: 0; color: white;">${USER_DATA?.username}</h1>
+            <div style="display: flex; align-items: center;">
+              <h1 style="font-size: 28px; margin: 0; color: white;">${USER_DATA?.username}</h1>
+              ${editBtnHTML}
+            </div>
             <h2 style="font-size: 18px; margin: 0; color: white; margin-top: 5px; ">${USER_DATA?.elo} ELO 🏆</h2>
           </div>
           
@@ -337,6 +347,35 @@ export default class UserProfilePage extends Page {
 
 	// Button for adding the current user as a friend :
 	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;
+
+    // Logic for edit username button
+    const editUsernameBtn = container.querySelector('#edit-username-btn') as HTMLButtonElement;
+    if (editUsernameBtn) {
+      editUsernameBtn.onclick = async () => {
+        const newName = prompt("New username:", USER_DATA?.username);
+        if (newName && newName !== USER_DATA?.username) {
+          try {
+            const res = await fetch('http://localhost:3010/api/user', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ username: newName })
+            });
+            
+            const data = await res.json();
+            if (res.ok && data.success) {
+                window.location.reload();
+            } else {
+                alert("Failed to update username: " + (data.error || data.message || "Unknown error"));
+            }
+          } catch (e) {
+            console.error(e);
+            alert("Error updating username");
+          }
+        }
+      };
+    }
+
 	if (addFriendBtn) {
 
 		addFriendBtn.onclick = async () => {

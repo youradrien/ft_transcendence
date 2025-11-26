@@ -115,7 +115,7 @@ export default class TournamentPage extends Page {
             flex-direction: column;
             height: 92%; /* ensure container takes full height for spacing to work */
             justify-content: space-around;
-            min-height: 110vh;
+            min-height: 10vh;
         }
         .match {
             display: flex;
@@ -125,9 +125,15 @@ export default class TournamentPage extends Page {
             padding-left: 1.5rem;
         }
 
+        .match > span{
+          max-width: 150px;
+          overflow-x: scroll;
+        }
+
         .player {
             display: flex;
             align-items: center;
+            overflow-x: scroll;
             gap: 0.8rem;
             padding: 0.4rem 0.6rem;
             background: #1f1f1f;
@@ -139,6 +145,7 @@ export default class TournamentPage extends Page {
         .pfp {
             width: 40px;
             height: 40px;
+            min-width: 40px;
             background: #333;
             border-radius: 6px;
             border: 1px solid #555;
@@ -218,7 +225,7 @@ export default class TournamentPage extends Page {
         }
             /* Player List Container */
             #players-display {
-              max-width: 700px;
+              max-width: 1100px;
               margin: 1.5rem auto 2rem auto;
               display: flex;
               flex-wrap: wrap;
@@ -307,6 +314,18 @@ export default class TournamentPage extends Page {
             ${tournament_online ? i18n.t('online') : i18n.t('offline')}
           </span>
       </div>
+      <div  style="display: flex; align-items: center; gap: 8px; margin-left:auto; justify-content: center;" >
+          <span 
+          id="t-prize" 
+          style="
+            font-size: 18px;
+            margin-top: 12px;
+            color: #fffb00;
+            text-shadow: 0 0 4px #ffd000ff;
+          ">
+           -
+          </span>
+      </div>
 
       <div id="registration-box">
         <h2>Player Registration</h2>
@@ -334,7 +353,14 @@ export default class TournamentPage extends Page {
               Inactive: empty Tournament
             </span>
         </div>
-        <button id="start-btn" disabled>Pay to Start Tournament</button>
+        <button
+        style= "border: 2px solid #ffffff2e;"
+        id="force-start-btn">FORCE-START Tournament </button>
+        <span style="
+              font-size: 12px;
+              color: #ffffffff;
+              text-shadow: 0 0 4px #ffffffff;
+            " id="t-cost"> </span>
       </div>
 
     <h2>Players</h2>
@@ -348,23 +374,39 @@ export default class TournamentPage extends Page {
             <h3>Quarterfinals</h3>
             <div class="round qf">
             <div class="match">
-                <div id="qf-1" class="player"><div class="pfp">A</div><span>Alice</span></div>
-                <div id="qf-2" class="player"><div class="pfp">B</div><span>Bob</span></div>
+                <div id="qf-1" class="player"><div class="pfp">A</div>
+                    <div style="display: flex; flex-direction: column;"> <span>Alice</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_1</p> </div>
+                  </div>
+                <div id="qf-2" class="player"><div class="pfp">B</div>
+                    <div style="display: flex; flex-direction: column;"> <span>Bob</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_2</p> </div>
+                </div>
             </div>
 
             <div class="match">
-                <div id="qf-3" class="player"><div class="pfp">C</div><span>Charlie</span></div>
-                <div id="qf-4" class="player"><div class="pfp">D</div><span>David</span></div>
+                <div id="qf-3" class="player"><div class="pfp">C</div>
+                    <div style="display: flex; flex-direction: column;"> <span>Charlie</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_3</p> </div>
+                </div>
+                <div id="qf-4" class="player"><div class="pfp">D</div>
+                    <div style="display: flex; flex-direction: column;"> <span>David</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_4</p>  </div>
+                </div>
             </div>
 
             <div class="match">
-                <div id="qf-5" class="player"><div class="pfp">E</div><span>Eva</span></div>
-                <div id="qf-6" class="player"><div class="pfp">F</div><span>Ferdy</span></div>
+                <div id="qf-5" class="player"><div class="pfp">E</div>
+                    <div style="display: flex; flex-direction: column;">  <span>Eva</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_5</p> </div>
+                </div>
+                <div id="qf-6" class="player"><div class="pfp">F</div>
+                    <div style="display: flex; flex-direction: column;">  <span>Ferdy</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_6</p> </div>
+                </div>
             </div>
 
             <div class="match">
-                <div id="qf-7" class="player"><div class="pfp">G</div><span>Gino</span></div>
-                <div id="qf-8" class="player"><div class="pfp">H</div><span>Helena</span></div>
+                <div id="qf-7" class="player"><div class="pfp">G</div>
+                    <div style="display: flex; flex-direction: column;">  <span>Gino</span> <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_7</p></div> 
+                </div>
+                <div id="qf-8" class="player"><div class="pfp">H</div>
+                    <div style="display: flex; flex-direction: column;">  <span>Helena</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_8</p> </div>
+                </div> 
             </div>
             </div>
         </div>
@@ -375,12 +417,16 @@ export default class TournamentPage extends Page {
             <h3>Semifinals</h3>
             <div class="round sf">
                 <div class="match mid">
-                    <div id="sf-1" class="player winner">Winner 1</div>
-                    <div id="sf-2"class="player winner">Winner 2</div>
+                    <div id="sf-1" class="player winner"> <div class="pfp">W1</div>
+                      Winner 1 </div>
+                    <div id="sf-2"class="player winner"> <div class="pfp">W2</div>
+                      Winner 2 </div>
                 </div>
                 <div class="match mid">
-                    <div id="sf-3" class="player winner">Winner 3</div>
-                    <div id="sf-4" class="player winner">Winner 4</div>
+                    <div id="sf-3" class="player winner"> <div class="pfp">W3</div>
+                        Winner 3  </div>
+                    <div id="sf-4" class="player winner"> <div class="pfp">W4</div>
+                        Winner 4  </div>
                 </div>
             </div>
         </div>
@@ -405,7 +451,7 @@ export default class TournamentPage extends Page {
     // === DOM elm ===
     const nameInput = container.querySelector("#player-name") as HTMLInputElement;
     const addBtn = container.querySelector("#add-player-btn") as HTMLButtonElement;
-    const startBtn = container.querySelector("#start-btn") as HTMLButtonElement;
+    const f_startBtn = container.querySelector("#force-start-btn") as HTMLButtonElement;
     let ws_tournament: WebSocket;
 
 
@@ -430,6 +476,14 @@ export default class TournamentPage extends Page {
         // plyr count
         const c = document.getElementById("player-count") as HTMLElement;
         c.innerHTML = `${tournament_data.players.length} / 8 players joined.`;
+        // prize
+        const tp = document.getElementById("t-prize") as HTMLElement;
+        if(tournament_data?.tournament_prize){
+          tp.innerHTML = `TOURNAMENT PRIZE:  +${tournament_data?.tournament_prize}elo 🥇`;
+        }
+        // cost 
+        const tc = document.getElementById("t-cost") as HTMLElement;
+        tc.innerHTML = `${tournament_data?.tournament_prize / 4} ELO`;
 
         // plyr list
         const plyr_display = document.getElementById("players-display") as HTMLElement;
@@ -459,7 +513,7 @@ export default class TournamentPage extends Page {
             
             </div>
             <div class="player-info" style="text-align: left;">
-              <span class="player-username">${player.username} as <i>${player.tournament_pseudo}</i></span>
+              <span class="player-username">${player.username} as <i style="text-shadow: 0 0 4px white;">${player.tournament_pseudo}</i></span>
               <span class="player-elo">ELO: ${player.elo ?? 1000}</span>
               <span  style="color: ${C}; text-shadow: 0 0 4px ${C}" class="player-elo"> ${t} </span>
             </div>
@@ -478,12 +532,15 @@ export default class TournamentPage extends Page {
             color  = "#888888ff";
         }
         if(tournament_data?.tournament_status == "preparing"){
-            lb2.innerHTML = `Tournament Open: (waiting for players...)`;
+            lb2.innerHTML = `Registration Open: (waiting for players...)`;
             color  = "#09b9ffff";
         }
         if(tournament_data?.tournament_status == "in-progress"){
-            lb2.innerHTML = `Running: Tournament in progress`;
+            lb2.innerHTML = `Registration closed: Tournament in-progress`;
             color  = "#7bff00ff";
+
+            f_startBtn.innerHTML = "STARTED !";
+            f_startBtn.style.backgroundColor = "#7bff00ff";
         }
         lb1.style.backgroundColor = (color);
         lb2.style.color = (color);
@@ -493,6 +550,7 @@ export default class TournamentPage extends Page {
         if(self_registered) {
           addBtn.innerHTML = 'JOINED';
           addBtn.style.backgroundColor = '#00b7ffff';
+          _registered = (true);
         }
         // brackets
         for(let i = 0; i < 3; i++)
@@ -508,8 +566,10 @@ export default class TournamentPage extends Page {
               if(match) {
                   const d = match.querySelector("div") as HTMLElement;  // returns first span OR div
                   const e = match.querySelector("span") as HTMLElement;  // returns first span OR div
+                  const f = match.querySelector("p") as HTMLElement;  // returns first span OR div
                   d.innerHTML = `<img src=${player?.pfp} />`;
-                  e.innerHTML = `${player?.username};`
+                  e.innerHTML = `${player?.tournament_pseudo}`;
+                  f.innerHTML = `${player?.username}`;
               }
             }
           }
@@ -528,7 +588,13 @@ export default class TournamentPage extends Page {
             // console.log(data);
             if (data?.type === 'tournament-update'){
                 update_tournament_state(data?.tournament, data?.self_registered);
-            }                
+            }
+            if(data?.type === 'too_poor'){
+                alert("COULDNT AFFORD THE START..(poor af)");
+            }
+            if(data?.type === 'cant_join'){
+                alert("Can't register to tournament now.");
+            }
         };
         ws_tournament.onerror = (err) => {
             console.error('ws_tournament error:', err);
@@ -550,13 +616,14 @@ export default class TournamentPage extends Page {
         return;
       }
 
-      console.log(name);
+      // console.log(name);
       // if (this.registeredPlayers.length >= this.maxPlayers) {
       //   alert("Tournament is full!");
       //   return;
       // }
       ws_tournament.send(JSON.stringify({
-          type: "register"
+          type: "register",
+          username: (name)
       }));
       _registered = (true);
       // this.registeredPlayers.push(name);
@@ -568,8 +635,17 @@ export default class TournamentPage extends Page {
     // ------------------------------------
     //     START TOURNAMENT
     // ------------------------------------
-    startBtn.onclick = () => {
+    f_startBtn.onclick = async () => {
+      console.log("_registered: " + _registered);
+        if (! _registered || ws_tournament == null) {
+          return;
+        }
 
+        console.log("FORCE START");
+        ws_tournament.send(JSON.stringify({
+            type: "force_start"
+        }));
+        nameInput.value = "";
     };
 
 
