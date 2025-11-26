@@ -366,12 +366,14 @@ export default class TournamentPage extends Page {
     <h2>Players</h2>
     <div id="players-display">  </div>
       
-    <h2>Bracket</h2>
+    <h2 style="font-size: 36px; ">Bracket</h2>
+    <h3 style="font-size: 16px; text-shadow: 0 0 20px #d9d9d9; animation: fadeInUp 0.85s ease-out" id="curr_bracket"> </h3>
     <div id="bracket">
 
         <!-- Quarterfinals -->
         <div class="round-box">
             <h3>Quarterfinals</h3>
+            <h4 id="qf-count">0/4</h4>
             <div class="round qf">
             <div class="match">
                 <div id="qf-1" class="player"><div class="pfp">A</div>
@@ -415,6 +417,7 @@ export default class TournamentPage extends Page {
         <!-- Semifinals -->
         <div class="round-box">
             <h3>Semifinals</h3>
+            <h4 id="sf-count">0/2</h4>
             <div class="round sf">
                 <div class="match mid">
                     <div id="sf-1" class="player winner"> <div class="pfp">W1</div>
@@ -435,6 +438,7 @@ export default class TournamentPage extends Page {
         <!-- Final -->
         <div class="round-box">
             <h3>FINAL 🏁</h3>
+            <h4 id="f-count">0/1</h4>
             <div class="round final">
             <div class="match final-match">
                 <div class="player champion">Champion</div>
@@ -492,18 +496,18 @@ export default class TournamentPage extends Page {
         tournament_data.players.forEach((player: any) => {
           const card = document.createElement("div");
           card.className = "player-card";
-          card.style.animation = "fadeInUp 0.85s ease-out";
+          // card.style.animation = "fadeInUp 0.85s ease-out";
           let C = "#ffffffff";
           let t:string = "rr";
-          if(tournament_data?.players_status[i] == "waiting"){
+          if(player?.status == "waiting"){
             C = "#fff200ff";
             t = "Waiting..."
           }
-          if(tournament_data?.players_status[i] == "in_match"){
+          if(player?.status == "in_match"){
             C = "#00e5ffff";
-            t = "Currently IN-MATCH!";
+            t = "Playing (IN-MATCH!)";
           }
-          if(tournament_data?.players_status[i] == "eliminated"){
+          if(player?.status == "eliminated"){
             C = "#ff3434ff";
             t = "Eliminated ❌";
           }
@@ -556,14 +560,26 @@ export default class TournamentPage extends Page {
         for(let i = 0; i < 3; i++)
         {  
           let s:string[] = ["qf", "sf", "f"];
+          let w:string[] = ["quarter", "semi_finals", "final"];
           for(let j = 0; j < tournament_data?.bracket[i].length; j++)
           {
             let player = tournament_data?.bracket[i][j];
+            const br_result = tournament_data?.bracket_results[w[i]][Math.floor(j / 2)];
+            console.log("br_result: " + br_result);
             if(player != null)
             {
               const match = document.getElementById(s[i] + "-" + (j + 1)) as HTMLElement;
 
               if(match) {
+                  // colouring for win/losses bracket
+                  // console.log(player);
+                  if(br_result){
+                    if(br_result?.winner == player.userId){
+                      match.style.border = "2px solid #00ff28";
+                    }else{
+                      match.style.border = "2px solid #a63c3c";
+                    }
+                  }
                   const d = match.querySelector("div") as HTMLElement;  // returns first span OR div
                   const e = match.querySelector("span") as HTMLElement;  // returns first span OR div
                   const f = match.querySelector("p") as HTMLElement;  // returns first span OR div
@@ -574,6 +590,20 @@ export default class TournamentPage extends Page {
             }
           }
         }
+        // matchescount
+        const a = container.querySelector("#qf-count") as HTMLInputElement;
+        const b = container.querySelector("#sf-count") as HTMLInputElement;
+        const cc = container.querySelector("#player-name") as HTMLInputElement;
+        if(tournament_data?.matches_done)
+        {
+          a.innerHTML = `${tournament_data?.matches_done[0]} / 4`;
+          b.innerHTML = `${tournament_data?.matches_done[1]} / 2`;
+          cc.innerHTML = `${tournament_data?.matches_done[2]} / 1`;
+        }
+        // current round
+        const d = container.querySelector("#curr_bracket") as HTMLInputElement;
+        let vs:string [] = ["QUARTER-FINAL", "SEMI-FINAL", "FINAL"];
+        d.innerHTML = `CURRENT ROUND: ${vs[tournament_data?.current_bracket] || '...'}`;        
     };
 
 
