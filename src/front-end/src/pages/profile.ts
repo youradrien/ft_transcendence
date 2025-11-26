@@ -43,9 +43,12 @@ export default class UserProfilePage extends Page {
     }
 }
 
-  async render(): Promise<HTMLElement> {
+  async render(options?: { showCanvas?: boolean}): Promise<HTMLElement> {
+
+	const { showCanvas = true } = options || {};
     const container = document.createElement('div');
     container.id = this.id;
+	container.style.position = "relative";
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.alignItems = 'center';
@@ -56,7 +59,6 @@ export default class UserProfilePage extends Page {
     container.style.minHeight = '100vh';
     container.style.background = 'radial-gradient(circle at top,rgba(11, 11, 11, 0.48) 0%, rgba(11, 11, 11, 0.21) 100%)';
     let pfp = "https://avatars.githubusercontent.com/u/9919?s=200&v=4";
-
 
 	let currentUser: { username: string } | null = null;
 	try {
@@ -235,7 +237,7 @@ export default class UserProfilePage extends Page {
 
 
         <h1 style="font-size: 18px; margin: 10px; color: white; text-align: left;">${i18n.t('winrate')} ${win_rate}</h1>
-        <div style"display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 30px;">
+        <div style="display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 30px;">
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">${i18n.t('last_seen')} ${USER_DATA?.last_online}</h1>
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">${i18n.t('member_since')} ${USER_DATA?.created_at}</h1>
         </div>
@@ -247,7 +249,7 @@ export default class UserProfilePage extends Page {
                 border: 2px solid #333; padding: 16px;
                 overflow-y: scroll;
                 animation: fadeInUp 0.6s ease-out;
-          >
+          ">
             <h2 style="margin: 0 0 16px 0;">${i18n.t('game_history')}</h2>
             <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
               <span style="color: lime;">${i18n.t('winner_caps')}</span>
@@ -257,11 +259,9 @@ export default class UserProfilePage extends Page {
           </div>
 
           <!-- STATISTICS -->
-          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column, gap: 20px;">
+          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px;">
             
             ${social_btns_HTML}
-    
-
             <div style="border: 2px solid #333; padding: 16px; 
                 animation: fadeInUp 1.1s ease-out;
             ">
@@ -272,21 +272,6 @@ export default class UserProfilePage extends Page {
               </div>
             </div>
 
-            <!-- Achievements -->
-            <div style="border: 2px solid #333; padding: 16px;
-                    animation: fadeInUp 1.3s ease-out;
-            ">
-              <h3 style="margin: 0 0 12px 0;">${i18n.t('achievements')}</h3>
-              <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 12px;">
-                <div style="width: 40px; height: 40px; background: #fff;"></div>
-                <div style="width: 40px; height: 40px; background: #666;"></div>
-                <div style="width: 40px; height: 40px; background: #666;"></div>
-                <div style="width: 40px; height: 40px; background: #333;"></div>
-                <div style="width: 40px; height: 40px; background: #333;"></div>
-                <div style="width: 40px; height: 40px; background: #333;"></div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- DASHBOARD SECTION -->
@@ -305,6 +290,60 @@ export default class UserProfilePage extends Page {
 
       </div>
     `;
+
+	const content = document.getElementById('content');
+	if (content) {
+		content.innerHTML = '';
+		content.appendChild(container);
+	}
+
+	//// BLUE ORBS IF OPTION SHOWCANVAS ////
+	if (showCanvas) {
+
+		const orbContainer = document.createElement('div');
+		Object.assign(orbContainer.style, {
+		position: 'fixed',
+		top: '0',
+		left: '0',
+		width: '100%',
+		height: '100%',
+		pointerEvents: 'none',
+		zIndex: '-1'
+	});
+
+	const NUM_ORBS = 80;
+    for (let i = 0; i < NUM_ORBS; i++) {
+        const orb = document.createElement('div');
+        const size = Math.random() * 6 + 4;
+        Object.assign(orb.style, {
+            width: `${size}px`,
+            height: `${size}px`,
+            background: '#00ffff',
+            position: 'absolute',
+            borderRadius: '50%',
+            opacity: (Math.random() * 0.3 + 0.1).toString(),
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animation: `orbBlink ${1.5 + Math.random() * 3}s infinite ease-in-out`
+        });
+        orbContainer.appendChild(orb);
+    }
+
+    // Animation des orbes
+    if (!document.querySelector('#orbBlink-style')) {
+        const style = document.createElement('style');
+        style.id = 'orbBlink-style';
+        style.textContent = `
+        @keyframes orbBlink {
+            0% { transform: scale(0.8); opacity: 0.1; }
+            50% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(0.8); opacity: 0.1; }
+        }`;
+        document.head.appendChild(style);
+    }
+
+    container.appendChild(orbContainer);
+}
 
 	// Button for adding the current user as a friend :
 	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;
