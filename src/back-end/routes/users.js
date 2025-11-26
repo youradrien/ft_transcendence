@@ -341,37 +341,22 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             return reply.status(400).send({ success: false, error: 'invalid_avatar_url' });
         }
 
-        // Check if it's a base64 image or a URL
-        const isBase64 = avatar_url.startsWith('data:image/');
-        const isURL = avatar_url.startsWith('http://') || avatar_url.startsWith('https://');
-
-        if (!isBase64 && !isURL) {
+        // Only accept base64 images
+        if (!avatar_url.startsWith('data:image/')) {
             return reply.status(400).send({ success: false, error: 'invalid_avatar_format' });
         }
 
-        // If it's base64, validate size (max ~7MB base64 = ~5MB file)
-        if (isBase64 && avatar_url.length > 7 * 1024 * 1024) {
+        // Validate size (max ~7MB base64 = ~5MB file)
+        if (avatar_url.length > 7 * 1024 * 1024) {
             return reply.status(400).send({ success: false, error: 'avatar_too_large' });
         }
-
-        // If it's a URL, validate format
-        if (isURL) {
-            try {
-                new URL(avatar_url);
-            } catch (e) {
-                return reply.status(400).send({ success: false, error: 'invalid_url_format' });
-            }
-        }
-
         try {
             await db.run("UPDATE users SET avatar_url = ? WHERE id = ?", [avatar_url, userId]);
 
             request.log.info({
                 event_type: 'avatar_updated',
-                user_id: userId,
-                avatar_type: isBase64 ? 'base64' : 'url'
+                user_id: userId
             });
-
             return reply.send({ success: true, avatar_url });
         } catch (err) {
             request.log.error({
