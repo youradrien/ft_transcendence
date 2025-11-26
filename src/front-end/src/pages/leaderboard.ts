@@ -124,7 +124,7 @@ export default class LeaderboardPage extends Page {
 		zIndex: '-1',
 	});
 
-	const NUM_TROPHIES_SIDE = 42;
+	const NUM_TROPHIES_SIDE = 72;
 	const sides = ['left', 'right'];
 
 	sides.forEach(side => {
@@ -133,10 +133,11 @@ export default class LeaderboardPage extends Page {
 
 			const trophy = document.createElement('div');
 			Object.assign(trophy.style, {
-			width: '16px',
-			height: '16px',
+			width: '8px',
+			height: '8px',
 			backgroundColor: 'yellow',
 			border: '1px solid orange',
+			borderRadius: '50%',
 			position: 'absolute',
 			top: `${Math.random() * 95 + 2.5}%`,
 			animation: `blink ${Math.random() * 2 + 1}s infinite alternate`

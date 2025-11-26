@@ -624,7 +624,7 @@ export default class PlayPage extends Page {
       }
     };
 
-		// YELLOW SQUARES !!
+		// SYMBOLES IN MOVEMENT !!
 
 	const trophyContainer = document.createElement('div');
 	Object.assign(trophyContainer.style, {
@@ -637,7 +637,7 @@ export default class PlayPage extends Page {
 		zIndex: '-1',
 	});
 
-	const NUM_TROPHIES_SIDE = 42;
+	const NUM_TROPHIES_SIDE = 30;
 	const sides = ['left', 'right'];
 
 	sides.forEach(side => {
