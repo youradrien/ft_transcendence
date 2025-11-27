@@ -19,11 +19,11 @@ export default class TournamentPage extends Page {
         background-attachment: fixed;
         animation: fadeInUp 0.5s ease-out;
       }
-      h1, h2 {
+      #tournament-wrapper h1, #tournament-wrapper h2 {
         text-align: center;
         margin-bottom: 1.2rem;
       }
-      #registration-box {
+      #tournament-wrapper #registration-box {
         background: rgba(40,40,40,0.6);
         padding: 1.5rem;
         border-radius: 12px;
@@ -32,38 +32,38 @@ export default class TournamentPage extends Page {
         text-align: center;
         border: 2px solid #00000029;
       }
-      input, button {
+      #tournament-wrapper input, #tournament-wrapper button {
         padding: 10px;
         margin: 8px;
         border-radius: 6px;
         border: none;
         font-family: inherit;
       }
-      button {
+      #tournament-wrapper button {
         cursor: pointer;
         color: white;
       }
       button:hover {
         filter: brightness(1.15);
       }
-      #players-list {
+      #tournament-wrapper #players-list {
         margin-top: 1rem;
         font-size: 14px;
       }
 
 
       /* === History === */
-      #history-box {
+      #tournament-wrapper #history-box {
         margin-top: 4rem;
         background: rgba(20,20,20,0.6);
         padding: 1.5rem;
         border-radius: 12px;
       }
-      .history-entry {
+      #tournament-wrapper .history-entry {
         border-bottom: 1px solid #444;
         padding: 1rem 0;
       }
-      .history-entry:last-child {
+      #tournament-wrapper .history-entry:last-child {
         border-bottom: none;
       }
       .history-title {
@@ -72,7 +72,7 @@ export default class TournamentPage extends Page {
       }
 
       /* ==== BRACKET === */
-      #big-bracket {
+      #tournament-wrapper #big-bracket {
             display: flex;
             justify-content: center;
             gap: 3rem;
@@ -80,7 +80,7 @@ export default class TournamentPage extends Page {
             font-family: 'Press Start 2P', cursive;
             color: #f1f1f1;
        }
-        #bracket {
+        #tournament-wrapper #bracket {
             display: flex;
             justify-content: center;
             gap: 3rem;
@@ -88,7 +88,7 @@ export default class TournamentPage extends Page {
             flex-wrap: wrap;
         }
 
-        .round-box {
+       #tournament-wrapper .round-box {
             background: rgba(20,20,20,0.6);
             padding: 1.5rem;
             border-radius: 12px;
@@ -97,27 +97,27 @@ export default class TournamentPage extends Page {
             box-shadow: 0 0 12px rgba(0,0,0,0.3);
         }
 
-        .round-box h3 {
+        #tournament-wrapper .round-box h3 {
             text-align: center;
             margin-bottom: 1.2rem;
             font-size: 16px;
             color: #f1f1f1;
         }
 
-        .round {
+        #tournament-wrapper .round {
             display: flex;
             flex-direction: column;
             gap: 2.6rem;
             position: relative;
         }
-        .round.sf {
+        #tournament-wrapper .round.sf {
             display: flex;
             flex-direction: column;
             height: 92%; /* ensure container takes full height for spacing to work */
             justify-content: space-around;
             min-height: 10vh;
         }
-        .match {
+        #tournament-wrapper .match {
             display: flex;
             flex-direction: column;
             gap: 1rem;
@@ -125,9 +125,15 @@ export default class TournamentPage extends Page {
             padding-left: 1.5rem;
         }
 
-        .player {
+        #tournament-wrapper .match > span{
+          max-width: 150px;
+          overflow-x: scroll;
+        }
+
+        #tournament-wrapper .player {
             display: flex;
             align-items: center;
+            overflow-x: scroll;
             gap: 0.8rem;
             padding: 0.4rem 0.6rem;
             background: #1f1f1f;
@@ -136,9 +142,10 @@ export default class TournamentPage extends Page {
             width: 200px;
         }
 
-        .pfp {
+        #tournament-wrapper .pfp {
             width: 40px;
             height: 40px;
+            min-width: 40px;
             background: #333;
             border-radius: 6px;
             border: 1px solid #555;
@@ -148,19 +155,19 @@ export default class TournamentPage extends Page {
             font-size: 14px;
         }
 
-        .winner {
+        #tournament-wrapper .winner {
             background: #004d2a;
             border-color: #00ff90;
             color: #00ff90;
         }
 
-        .champion {
+        #tournament-wrapper .champion {
             background: #5b4200;
             border-color: gold;
             color: gold;
         }
 
-        .final-match {
+        #tournament-wrapper.final-match {
             gap: 2rem;
         }
 
@@ -170,7 +177,7 @@ export default class TournamentPage extends Page {
         ───────────────────────────────────────── */
 
         /* QF → SF */
-        .qf .match::after {
+        #tournament-wrapper .qf .match::after {
             content: "";
             position: absolute;
             right: -1.5rem;
@@ -181,7 +188,7 @@ export default class TournamentPage extends Page {
             border-top: 3px solid #666;
         }
 
-        .qf .match:nth-child(even)::after {
+        #tournament-wrapper .qf .match:nth-child(even)::after {
             top: auto;
             bottom: 25%;
             border-top: none;
@@ -189,7 +196,7 @@ export default class TournamentPage extends Page {
         }
 
         /* SF horizontal lines */
-        .sf .match.mid::before {
+        #tournament-wrapper .sf .match.mid::before {
             content: "";
             position: absolute;
             left: -2rem;
@@ -198,7 +205,7 @@ export default class TournamentPage extends Page {
             border-top: 3px solid #888;
         }
 
-        .sf .match.mid::after {
+        #tournament-wrapper .sf .match.mid::after {
             content: "";
             position: absolute;
             right: -2rem;
@@ -208,7 +215,7 @@ export default class TournamentPage extends Page {
         }
 
         /* Final line */
-        .final .final-match::before {
+        #tournament-wrapper .final .final-match::before {
             content: "";
             position: absolute;
             left: -2rem;
@@ -217,8 +224,8 @@ export default class TournamentPage extends Page {
             border-top: 4px solid gold;
         }
             /* Player List Container */
-            #players-display {
-              max-width: 700px;
+            #tournament-wrapper #players-display {
+              max-width: 1100px;
               margin: 1.5rem auto 2rem auto;
               display: flex;
               flex-wrap: wrap;
@@ -227,7 +234,7 @@ export default class TournamentPage extends Page {
             }
 
             /* Player Card */
-            .player-card {
+            #tournament-wrapper .player-card {
               display: flex;
               align-items: center;
               gap: 1rem;
@@ -241,13 +248,13 @@ export default class TournamentPage extends Page {
               font-family: 'Press Start 2P', cursive;
               transition: transform 0.15s ease, box-shadow 0.15s ease;
             }
-            .player-card:hover {
+            #tournament-wrapper .player-card:hover {
               transform: translateY(-3px);
               box-shadow: 0 0 12px #3b88ff55;
             }
 
             /* PFP Circle */
-            .player-card .pfp {
+            #tournament-wrapper .player-card .pfp {
               width: 48px;
               height: 48px;
               border-radius: 10px;
@@ -260,22 +267,22 @@ export default class TournamentPage extends Page {
             }
 
             /* Username + ELO stacked */
-            .player-info {
+            #tournament-wrapper .player-info {
               display: flex;
               flex-direction: column;
               gap: 2px;
             }
 
-            .player-username {
+            #tournament-wrapper .player-username {
               font-size: 12px;
             }
 
-            .player-elo {
+            #tournament-wrapper .player-elo {
               font-size: 10px;
               color: #aaa;
             }
 
-        @keyframes fadeInUp {
+        #tournament-wrapper @keyframes fadeInUp {
                 from { opacity: 0; transform: translateY(30px); }
                 to { opacity: 1; transform: translateY(0); }
               }
@@ -346,7 +353,9 @@ export default class TournamentPage extends Page {
               Inactive: empty Tournament
             </span>
         </div>
-        <button id="force-start-btn" disabled>FORCE-START Tournament </button>
+        <button
+        style= "border: 2px solid #ffffff2e;"
+        id="force-start-btn">FORCE-START Tournament </button>
         <span style="
               font-size: 12px;
               color: #ffffffff;
@@ -357,31 +366,49 @@ export default class TournamentPage extends Page {
     <h2>Players</h2>
     <div id="players-display">  </div>
       
-    <h2>Bracket</h2>
+    <h2 style="font-size: 36px; ">Bracket</h2>
+    <h3 style="font-size: 16px; text-shadow: 0 0 20px #d9d9d9; animation: fadeInUp 0.85s ease-out" id="curr_bracket"> </h3>
     <div id="bracket">
 
         <!-- Quarterfinals -->
         <div class="round-box">
             <h3>Quarterfinals</h3>
+            <h4 id="qf-count">0/4</h4>
             <div class="round qf">
             <div class="match">
-                <div id="qf-1" class="player"><div class="pfp">A</div><span>Alice</span></div>
-                <div id="qf-2" class="player"><div class="pfp">B</div><span>Bob</span></div>
+                <div id="qf-1" class="player"><div class="pfp">A</div>
+                    <div style="display: flex; flex-direction: column;"> <span>Alice</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_1</p> </div>
+                  </div>
+                <div id="qf-2" class="player"><div class="pfp">B</div>
+                    <div style="display: flex; flex-direction: column;"> <span>Bob</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_2</p> </div>
+                </div>
             </div>
 
             <div class="match">
-                <div id="qf-3" class="player"><div class="pfp">C</div><span>Charlie</span></div>
-                <div id="qf-4" class="player"><div class="pfp">D</div><span>David</span></div>
+                <div id="qf-3" class="player"><div class="pfp">C</div>
+                    <div style="display: flex; flex-direction: column;"> <span>Charlie</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_3</p> </div>
+                </div>
+                <div id="qf-4" class="player"><div class="pfp">D</div>
+                    <div style="display: flex; flex-direction: column;"> <span>David</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_4</p>  </div>
+                </div>
             </div>
 
             <div class="match">
-                <div id="qf-5" class="player"><div class="pfp">E</div><span>Eva</span></div>
-                <div id="qf-6" class="player"><div class="pfp">F</div><span>Ferdy</span></div>
+                <div id="qf-5" class="player"><div class="pfp">E</div>
+                    <div style="display: flex; flex-direction: column;">  <span>Eva</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_5</p> </div>
+                </div>
+                <div id="qf-6" class="player"><div class="pfp">F</div>
+                    <div style="display: flex; flex-direction: column;">  <span>Ferdy</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_6</p> </div>
+                </div>
             </div>
 
             <div class="match">
-                <div id="qf-7" class="player"><div class="pfp">G</div><span>Gino</span></div>
-                <div id="qf-8" class="player"><div class="pfp">H</div><span>Helena</span></div>
+                <div id="qf-7" class="player"><div class="pfp">G</div>
+                    <div style="display: flex; flex-direction: column;">  <span>Gino</span> <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_7</p></div> 
+                </div>
+                <div id="qf-8" class="player"><div class="pfp">H</div>
+                    <div style="display: flex; flex-direction: column;">  <span>Helena</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_8</p> </div>
+                </div> 
             </div>
             </div>
         </div>
@@ -390,14 +417,19 @@ export default class TournamentPage extends Page {
         <!-- Semifinals -->
         <div class="round-box">
             <h3>Semifinals</h3>
+            <h4 id="sf-count">0/2</h4>
             <div class="round sf">
                 <div class="match mid">
-                    <div id="sf-1" class="player winner">Winner 1</div>
-                    <div id="sf-2"class="player winner">Winner 2</div>
+                    <div id="sf-1" class="player winner"> <div class="pfp">W1</div>
+                      Winner 1 </div>
+                    <div id="sf-2"class="player winner"> <div class="pfp">W2</div>
+                      Winner 2 </div>
                 </div>
                 <div class="match mid">
-                    <div id="sf-3" class="player winner">Winner 3</div>
-                    <div id="sf-4" class="player winner">Winner 4</div>
+                    <div id="sf-3" class="player winner"> <div class="pfp">W3</div>
+                        Winner 3  </div>
+                    <div id="sf-4" class="player winner"> <div class="pfp">W4</div>
+                        Winner 4  </div>
                 </div>
             </div>
         </div>
@@ -406,6 +438,7 @@ export default class TournamentPage extends Page {
         <!-- Final -->
         <div class="round-box">
             <h3>FINAL 🏁</h3>
+            <h4 id="f-count">0/1</h4>
             <div class="round final">
             <div class="match final-match">
                 <div class="player champion">Champion</div>
@@ -463,18 +496,18 @@ export default class TournamentPage extends Page {
         tournament_data.players.forEach((player: any) => {
           const card = document.createElement("div");
           card.className = "player-card";
-          card.style.animation = "fadeInUp 0.85s ease-out";
+          // card.style.animation = "fadeInUp 0.85s ease-out";
           let C = "#ffffffff";
           let t:string = "rr";
-          if(tournament_data?.players_status[i] == "waiting"){
+          if(player?.status == "waiting"){
             C = "#fff200ff";
             t = "Waiting..."
           }
-          if(tournament_data?.players_status[i] == "in_match"){
+          if(player?.status == "in_match"){
             C = "#00e5ffff";
-            t = "Currently IN-MATCH!";
+            t = "Playing (IN-MATCH!)";
           }
-          if(tournament_data?.players_status[i] == "eliminated"){
+          if(player?.status == "eliminated"){
             C = "#ff3434ff";
             t = "Eliminated ❌";
           }
@@ -484,7 +517,7 @@ export default class TournamentPage extends Page {
             
             </div>
             <div class="player-info" style="text-align: left;">
-              <span class="player-username">${player.username} as <i>${player.tournament_pseudo}</i></span>
+              <span class="player-username">${player.username} as <i style="text-shadow: 0 0 4px white;">${player.tournament_pseudo}</i></span>
               <span class="player-elo">ELO: ${player.elo ?? 1000}</span>
               <span  style="color: ${C}; text-shadow: 0 0 4px ${C}" class="player-elo"> ${t} </span>
             </div>
@@ -503,12 +536,15 @@ export default class TournamentPage extends Page {
             color  = "#888888ff";
         }
         if(tournament_data?.tournament_status == "preparing"){
-            lb2.innerHTML = `Tournament Open: (waiting for players...)`;
+            lb2.innerHTML = `Registration Open: (waiting for players...)`;
             color  = "#09b9ffff";
         }
         if(tournament_data?.tournament_status == "in-progress"){
-            lb2.innerHTML = `Running: Tournament in progress`;
+            lb2.innerHTML = `Registration closed: Tournament in-progress`;
             color  = "#7bff00ff";
+
+            f_startBtn.innerHTML = "STARTED !";
+            f_startBtn.style.backgroundColor = "#7bff00ff";
         }
         lb1.style.backgroundColor = (color);
         lb2.style.color = (color);
@@ -524,22 +560,50 @@ export default class TournamentPage extends Page {
         for(let i = 0; i < 3; i++)
         {  
           let s:string[] = ["qf", "sf", "f"];
+          let w:string[] = ["quarter", "semi_finals", "final"];
           for(let j = 0; j < tournament_data?.bracket[i].length; j++)
           {
             let player = tournament_data?.bracket[i][j];
+            const br_result = tournament_data?.bracket_results[w[i]][Math.floor(j / 2)];
+            console.log("br_result: " + br_result);
             if(player != null)
             {
               const match = document.getElementById(s[i] + "-" + (j + 1)) as HTMLElement;
 
               if(match) {
+                  // colouring for win/losses bracket
+                  // console.log(player);
+                  if(br_result){
+                    if(br_result?.winner == player.userId){
+                      match.style.border = "2px solid #00ff28";
+                    }else{
+                      match.style.border = "2px solid #a63c3c";
+                    }
+                  }
                   const d = match.querySelector("div") as HTMLElement;  // returns first span OR div
                   const e = match.querySelector("span") as HTMLElement;  // returns first span OR div
+                  const f = match.querySelector("p") as HTMLElement;  // returns first span OR div
                   d.innerHTML = `<img src=${player?.pfp} />`;
-                  e.innerHTML = `${player?.username}`
+                  e.innerHTML = `${player?.tournament_pseudo}`;
+                  f.innerHTML = `${player?.username}`;
               }
             }
           }
         }
+        // matchescount
+        const a = container.querySelector("#qf-count") as HTMLInputElement;
+        const b = container.querySelector("#sf-count") as HTMLInputElement;
+        const cc = container.querySelector("#player-name") as HTMLInputElement;
+        if(tournament_data?.matches_done)
+        {
+          a.innerHTML = `${tournament_data?.matches_done[0]} / 4`;
+          b.innerHTML = `${tournament_data?.matches_done[1]} / 2`;
+          cc.innerHTML = `${tournament_data?.matches_done[2]} / 1`;
+        }
+        // current round
+        const d = container.querySelector("#curr_bracket") as HTMLInputElement;
+        let vs:string [] = ["QUARTER-FINAL", "SEMI-FINAL", "FINAL"];
+        d.innerHTML = `CURRENT ROUND: ${vs[tournament_data?.current_bracket] || '...'}`;        
     };
 
 
@@ -554,7 +618,13 @@ export default class TournamentPage extends Page {
             // console.log(data);
             if (data?.type === 'tournament-update'){
                 update_tournament_state(data?.tournament, data?.self_registered);
-            }                
+            }
+            if(data?.type === 'too_poor'){
+                alert("COULDNT AFFORD THE START..(poor af)");
+            }
+            if(data?.type === 'cant_join'){
+                alert("Can't register to tournament now.");
+            }
         };
         ws_tournament.onerror = (err) => {
             console.error('ws_tournament error:', err);
@@ -576,13 +646,14 @@ export default class TournamentPage extends Page {
         return;
       }
 
-      console.log(name);
+      // console.log(name);
       // if (this.registeredPlayers.length >= this.maxPlayers) {
       //   alert("Tournament is full!");
       //   return;
       // }
       ws_tournament.send(JSON.stringify({
-          type: "register"
+          type: "register",
+          username: (name)
       }));
       _registered = (true);
       // this.registeredPlayers.push(name);
@@ -595,16 +666,72 @@ export default class TournamentPage extends Page {
     //     START TOURNAMENT
     // ------------------------------------
     f_startBtn.onclick = async () => {
+      console.log("_registered: " + _registered);
         if (! _registered || ws_tournament == null) {
           return;
         }
 
-
+        console.log("FORCE START");
         ws_tournament.send(JSON.stringify({
-            type: "register"
+            type: "force_start"
         }));
         nameInput.value = "";
     };
+
+	// YELLOW ORBS !!
+
+	const trophyContainer = document.createElement('div');
+	Object.assign(trophyContainer.style, {
+		position: 'fixed',
+		top: '0',
+		left: '0',
+		width: '100%',
+		height: '100%',
+		pointerEvents: 'none',
+		zIndex: '-1',
+	});
+
+	const NUM_TROPHIES_SIDE = 42;
+	const sides = ['left', 'right'];
+
+	sides.forEach(side => {
+
+		for (let i = 0; i < NUM_TROPHIES_SIDE; i++) {
+
+			const trophy = document.createElement('div');
+			Object.assign(trophy.style, {
+			width: '8px',
+			height: '8px',
+			backgroundColor: '#3489ebff',
+			border: '1px solid #55a2faff',
+			borderRadius: '50%',
+			position: 'absolute',
+			top: `${Math.random() * 95 + 2.5}%`,
+			animation: `blink ${Math.random() * 2 + 1}s infinite alternate`
+		});
+
+		if (side === 'left') {
+			trophy.style.left = `${Math.random() * 18}%`; // 0 → 25% largeur page
+			trophy.style.right = 'auto';
+		} else {
+			trophy.style.right = `${Math.random() * 18}%`; // 0 → 25% largeur page côté droit
+			trophy.style.left = 'auto';
+		}
+
+		trophyContainer.appendChild(trophy);
+	}
+  });
+
+	const style = document.createElement('style');
+	style.textContent = `
+		@keyframes blink {
+		0% { opacity: 0.2; transform: translateY(0); }
+		50% { opacity: 1; transform: translateY(-2px); }
+		100% { opacity: 0.2; transform: translateY(0); }
+	}
+	`;
+	document.head.appendChild(style);
+	container.appendChild(trophyContainer);
 
 
     return container;

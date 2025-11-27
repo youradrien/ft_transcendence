@@ -43,9 +43,12 @@ export default class UserProfilePage extends Page {
     }
 }
 
-  async render(): Promise<HTMLElement> {
+  async render(options?: { showCanvas?: boolean}): Promise<HTMLElement> {
+
+	const { showCanvas = true } = options || {};
     const container = document.createElement('div');
     container.id = this.id;
+	container.style.position = "relative";
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.alignItems = 'center';
@@ -56,7 +59,6 @@ export default class UserProfilePage extends Page {
     container.style.minHeight = '100vh';
     container.style.background = 'radial-gradient(circle at top,rgba(11, 11, 11, 0.48) 0%, rgba(11, 11, 11, 0.21) 100%)';
     let pfp = "https://avatars.githubusercontent.com/u/9919?s=200&v=4";
-
 
 	let currentUser: { username: string } | null = null;
 	try {
@@ -113,7 +115,6 @@ export default class UserProfilePage extends Page {
         <button id="add-friend-btn" style="${greenButtonStyle}">${i18n.t('add_friend')}</button>
         <button id="unfriend-btn" style="${greenButtonStyle}; display:none; background-color:#ff4444;">${i18n.t('unfriend')}</button>
         <button id="pending-btn" style="${greenButtonStyle}; display:none; background-color:#ffcc33;">${i18n.t('pending_decline')}</button>
-        <button id="send-dm-btn" style="${greenButtonStyle}">${i18n.t('send_dm')}</button>
       </div>
     ` : '';
 
@@ -121,6 +122,25 @@ export default class UserProfilePage extends Page {
       <button id="edit-username-btn" style="background: none; border: none; cursor: pointer; font-size: 14px; margin-left: 8px;" title="Edit">
         ✏️
       </button>
+    ` : '';
+
+    const avatarEditOverlay = isMyProfile ? `
+      <div id="avatar-edit-overlay" style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      ">
+        <span style="font-size: 24px;">📷</span>
+      </div>
     ` : '';
 
     container.innerHTML = `
@@ -180,6 +200,10 @@ export default class UserProfilePage extends Page {
           transform: scale(1.03);
           box-shadow: 0 0 25px #00ffff55;
         }
+
+        #avatar-container:hover #avatar-edit-overlay {
+          display: flex !important;
+        }
       
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(30px); }
@@ -197,13 +221,23 @@ export default class UserProfilePage extends Page {
         border-radius: 13px;
         transition: all 0.3s ease;
       ">
-        <div style="display: flex; align-items: center; gap: 16px; flex-direction: row; margin-bottom: 20px; 
-          background-color: #00000054;
-          padding: 10px 35px;
-          border-radius: 15px;
-          animation: fadeInUp 0.35s ease-out;
+        <div style="
+           display: flex;
+           align-items: center;
+           gap: 16px;
+           flex-direction: row;
+           margin-bottom: 20px;
+           background-color: #00000054;
+           padding: 10px 35px;
+           border-radius: 15px;
+           animation: fadeInUp 0.35s ease-out;
+           position: relative;
         ">
-          <img src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
+
+          <div id="avatar-container" style="position: relative; width: 80px; height: 80px;">
+            <img id="profile-avatar" src="${pfp}" alt="User Avatar" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;" />
+            ${avatarEditOverlay}
+          </div>
           <div style="display: flex; align-items: center; gap: 1px; margin-right: 20px;  flex-direction: column;">
             <div style="display: flex; align-items: center;">
               <h1 style="font-size: 28px; margin: 0; color: white;">${USER_DATA?.username}</h1>
@@ -212,8 +246,9 @@ export default class UserProfilePage extends Page {
             <h2 style="font-size: 18px; margin: 0; color: white; margin-top: 5px; ">${USER_DATA?.elo} ELO 🏆</h2>
           </div>
           
-          <div style="display: flex; align-items: center; gap: 8px; margin-left:auto;">
-            <span style="
+         <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+           <!-- Status -->
+           <span style="
               display: inline-block;
               width: 12px;
               height: 12px;
@@ -221,21 +256,24 @@ export default class UserProfilePage extends Page {
               background-color: ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
               box-shadow: 0 0 8px ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
               transition: background-color 0.3s, box-shadow 0.3s;
-            "></span>
-            <span style="
-              font-size: 14px;
-              color: ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
-              text-shadow: 0 0 4px ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
-            ">
-              ${USER_DATA?.is_online ? i18n.t('online') : i18n.t('offline')}
-            </span>
-          </div>
-        </div>
+        "></span>
+        <span style="
+             font-size: 14px;
+             color: ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
+             text-shadow: 0 0 4px ${USER_DATA?.is_online ? '#00ff44' : '#ff4c4c'};
+        ">
+        ${USER_DATA?.is_online ? i18n.t('online') : i18n.t('offline')}
+       </span>
 
-
+       <!-- Social Buttons -->
+       <div style="display:flex; gap:12px;">
+         ${social_btns_HTML}
+     </div>
+    </div>
+  </div>
 
         <h1 style="font-size: 18px; margin: 10px; color: white; text-align: left;">${i18n.t('winrate')} ${win_rate}</h1>
-        <div style"display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 30px;">
+        <div style="display: flex; flex-direction: column; margin: 0 auto; min-width: 300px; margin-top: 30px;">
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">${i18n.t('last_seen')} ${USER_DATA?.last_online}</h1>
           <h1 style="font-size: 11px; margin: 0; color: white; text-align: left;">${i18n.t('member_since')} ${USER_DATA?.created_at}</h1>
         </div>
@@ -243,11 +281,11 @@ export default class UserProfilePage extends Page {
         <div style="display: flex; margin-top: 30px; gap: 30px; flex-wrap: wrap; justify-content: center;">
 
           <!-- GAMESSSSS -->
-          <div id="game-history" style="flex: 1; min-width: 600px;
+          <div id="game-history" style="flex: 1; min-width: 500px;
                 border: 2px solid #333; padding: 16px;
                 overflow-y: scroll;
                 animation: fadeInUp 0.6s ease-out;
-          >
+          ">
             <h2 style="margin: 0 0 16px 0;">${i18n.t('game_history')}</h2>
             <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
               <span style="color: lime;">${i18n.t('winner_caps')}</span>
@@ -256,37 +294,33 @@ export default class UserProfilePage extends Page {
             <div style="background: #222; padding: 8px; margin-bottom: 6px;">${i18n.t('player_1')} &nbsp;&nbsp;&nbsp; ${i18n.t('player_2')}</div>
           </div>
 
-          <!-- STATISTICS -->
-          <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column, gap: 20px;">
-            
-            ${social_btns_HTML}
-    
+	 <!-- STATISTICS -->
+        <div style="
+              flex: 1;
+              min-width: 500px;
+              display: flex;
+              flex-direction: column;
+              gap: 20px;
+              position: relative;
+        ">
 
-            <div style="border: 2px solid #333; padding: 16px; 
-                animation: fadeInUp 1.1s ease-out;
-            ">
-              <h3 style="margin: 0 0 12px 0;">${i18n.t('wins')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${i18n.t('losses')}</h3>
-              <div style="font-size: 32px;">
-                <span style="color: lime;">${USER_DATA?.wins}</span> &nbsp;&nbsp;&nbsp;&nbsp;
-                <span style="color: red;">${USER_DATA?.losses}</span>
-              </div>
-            </div>
+   <!-- WINS / LOSSES -->
+     <div style="
+            border: 2px solid #333;
+            min-width: 500px;
+            padding: 16px;
+            animation: fadeInUp 1.1s ease-out;
+            margin-top: 40px;
+      ">
+      <h3 style="margin: 0 0 12px 0;">${i18n.t('wins')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${i18n.t('losses')}</h3>
+      <div style="font-size: 32px;">
+        <span style="color: lime;">${USER_DATA?.wins}</span> &nbsp;&nbsp;&nbsp;&nbsp;
+        <span style="color: red;">${USER_DATA?.losses}</span>
+      </div>
+    </div>
 
-            <!-- Achievements -->
-            <div style="border: 2px solid #333; padding: 16px;
-                    animation: fadeInUp 1.3s ease-out;
-            ">
-              <h3 style="margin: 0 0 12px 0;">${i18n.t('achievements')}</h3>
-              <div style="display: grid; grid-template-columns: repeat(3, 40px); gap: 12px;">
-                <div style="width: 40px; height: 40px; background: #fff;"></div>
-                <div style="width: 40px; height: 40px; background: #666;"></div>
-                <div style="width: 40px; height: 40px; background: #666;"></div>
-                <div style="width: 40px; height: 40px; background: #333;"></div>
-                <div style="width: 40px; height: 40px; background: #333;"></div>
-                <div style="width: 40px; height: 40px; background: #333;"></div>
-              </div>
-            </div>
-          </div>
+  </div>
+
         </div>
 
         <!-- DASHBOARD SECTION -->
@@ -306,11 +340,63 @@ export default class UserProfilePage extends Page {
       </div>
     `;
 
-	// Button for adding the current user as a friend :
-	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;
+	const content = document.getElementById('content');
+	if (content) {
+		content.innerHTML = '';
+		content.appendChild(container);
+	}
 
-    // Logic for edit username button
-    const editUsernameBtn = container.querySelector('#edit-username-btn') as HTMLButtonElement;
+	//// BLUE ORBS IF OPTION SHOWCANVAS ////
+		if (showCanvas) {
+
+			const orbContainer = document.createElement('div');
+			Object.assign(orbContainer.style, {
+			position: 'fixed',
+			top: '0',
+			left: '0',
+			width: '100%',
+			height: '100%',
+			pointerEvents: 'none',
+			zIndex: '-1'
+		});
+
+		const NUM_ORBS = 80;
+		for (let i = 0; i < NUM_ORBS; i++) {
+			const orb = document.createElement('div');
+			const size = Math.random() * 6 + 4;
+			Object.assign(orb.style, {
+				width: `${size}px`,
+				height: `${size}px`,
+				background: '#00ffff',
+				position: 'absolute',
+				borderRadius: '50%',
+				opacity: (Math.random() * 0.3 + 0.1).toString(),
+				left: `${Math.random() * 100}%`,
+				top: `${Math.random() * 100}%`,
+				animation: `orbBlink ${1.5 + Math.random() * 3}s infinite ease-in-out`
+			});
+			orbContainer.appendChild(orb);
+		}
+
+		// Orbs animation
+		if (!document.querySelector('#orbBlink-style')) {
+
+			const style = document.createElement('style');
+			style.id = 'orbBlink-style';
+			style.textContent = `
+			@keyframes orbBlink {
+				0% { transform: scale(0.8); opacity: 0.1; }
+				50% { transform: scale(1); opacity: 0.5; }
+				100% { transform: scale(0.8); opacity: 0.1; }
+			}`;
+			document.head.appendChild(style);
+		}
+
+		container.appendChild(orbContainer);
+	}
+
+// Logic for edit username button
+  const editUsernameBtn = container.querySelector('#edit-username-btn') as HTMLButtonElement;
     if (editUsernameBtn) {
       editUsernameBtn.onclick = async () => {
         const newName = prompt("New username:", USER_DATA?.username);
@@ -337,6 +423,96 @@ export default class UserProfilePage extends Page {
       };
     }
 
+  // Logic for edit profile picture
+  if (isMyProfile) {
+    const avatarContainer = container.querySelector('#avatar-container') as HTMLElement;
+    const avatarEditOverlay = container.querySelector('#avatar-edit-overlay') as HTMLElement;
+    
+    if (avatarContainer && avatarEditOverlay) {
+      avatarEditOverlay.onclick = async () => {
+        // Create a file input element
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        
+        fileInput.onchange = async (e: Event) => {
+          const target = e.target as HTMLInputElement;
+          const file = target.files?.[0];
+          
+          if (!file)
+            return;
+          
+          if (file.size > 3 * 1024 * 1024) {
+            alert('File too large. Maximum size is 3MB.');
+            return;
+          }
+          
+          if (!file.type.startsWith('image/')) {
+            alert('Please select an image file.');
+            return;
+          }
+          
+          try {
+            // Convert to base64
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+              const base64String = event.target?.result as string;
+              
+              // Check base64 size (max ~4MB base64 = ~3MB file)
+              if (base64String.length > 4 * 1024 * 1024) {
+                alert('Image too large after conversion. Please select a smaller image (max 3MB).');
+                return;
+              }
+              
+              try {
+                const res = await fetch('http://localhost:3010/api/user/avatar', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ avatar_url: base64String })
+                });
+                
+                const data = await res.json();
+                if (res.ok && data.success) {
+                  // Update avatar immediately without reload
+                  const avatarImg = container.querySelector('#profile-avatar') as HTMLImageElement;
+                  if (avatarImg) {
+                    avatarImg.src = base64String;
+                  }
+                  alert('Avatar updated successfully!');
+                } else {
+                  console.error('Avatar update failed:', data);
+                  alert("Failed to update avatar: " + (data.error || data.message || "Unknown error"));
+                }
+              } catch (fetchError) {
+                console.error('Network error:', fetchError);
+                alert('Failed to upload image. The file may be too large or there was a network error. Please try a smaller image (max 2MB recommended).');
+              }
+            };
+            
+            reader.onerror = () => {
+              alert('Error reading file. Please try again.');
+              console.error('FileReader error');
+            };
+            
+            reader.readAsDataURL(file);
+          } catch (e) {
+            console.error('Unexpected error:', e);
+            alert("Error processing image. Please try a smaller file.");
+          }
+        };
+        
+        // Trigger file selection
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
+      };
+    }
+  }
+
+	// Button for adding the current user as a friend :
+	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;  
 	if (addFriendBtn) {
 
 		addFriendBtn.onclick = async () => {

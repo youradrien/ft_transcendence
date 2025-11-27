@@ -52,7 +52,6 @@ export class App {
         return this.renderPage(Tournament, 'tournament-page');
     });
 
-
     this.router.addRoute('/profile/:username', async () => {
       return this.renderPage(Profile, 'profile-page');
     });

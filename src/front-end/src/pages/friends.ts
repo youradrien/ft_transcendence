@@ -43,6 +43,8 @@ type Friend = {
 
 export default class Friends extends Page {
 
+  cleanup?: () => void;
+
   //Method for fetching user's friends.
   async FETCH_FRIENDS(): Promise<Friend[]> {
 
@@ -378,6 +380,9 @@ export default class Friends extends Page {
         card.style.transform = "translateY(0) scale(1)";
         card.style.boxShadow = "0 0 8px rgba(0,255,0,0.06)";
     });
+	card.onclick = () => {
+		this.router.navigate(`/profile/${friend.username}`);
+	};
 
     return card;
 }
@@ -399,6 +404,67 @@ async render(): Promise<HTMLElement> {
 		minHeight: "70vh",
 		borderRadius: "18px"
 	});
+
+    const bgCanvas = document.createElement('canvas');
+    bgCanvas.style.position = 'absolute';
+    bgCanvas.style.top = '0';
+    bgCanvas.style.left = '0';
+    bgCanvas.style.width = '100%';
+    bgCanvas.style.height = '100%';
+    bgCanvas.style.zIndex = '-1';
+    bgCanvas.style.pointerEvents = 'none';
+    container.appendChild(bgCanvas);
+
+    const ctx = bgCanvas.getContext('2d')!;
+    const NUM_PARTICLES = 85;
+
+    type Particle = { x:number, y:number, vx:number, vy:number, r:number, color:string, halo:string };
+    const particles: Particle[] = [];
+
+    for (let i=0; i<NUM_PARTICLES; i++) {
+        const isGreen = Math.random() > 0.5;
+        particles.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: (Math.random() - 0.5) * 1.5,
+            r: Math.random() * 4 + 2,
+            color: isGreen ? 'rgba(0,255,0,1)' : 'rgba(230, 22, 22, 1)',
+            halo: isGreen ? 'rgba(0,255,0,0.2)' : 'rgba(255,255,255,0.2)'
+        });
+    }
+
+    function resizeCanvas() {
+        bgCanvas.width = window.innerWidth;
+        bgCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function animate() {
+        ctx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+
+        for (const p of particles) {
+            p.x += p.vx;
+            p.y += p.vy;
+
+            if (p.x < p.r || p.x > bgCanvas.width - p.r) p.vx *= -1;
+            if (p.y < p.r || p.y > bgCanvas.height - p.r) p.vy *= -1;
+
+            const gradient = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2);
+            gradient.addColorStop(0, p.color);
+            gradient.addColorStop(0.7, p.halo);
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        }
+
+        requestAnimationFrame(animate);
+    }
+    animate();
 
 	const content = document.createElement("div");
 	Object.assign(content.style, {

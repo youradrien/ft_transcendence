@@ -111,6 +111,7 @@ export default class Header extends Page {
       '/play': 'playBtn',
       '/leaderboard': 'leaderboardBtn',
       '/friends': 'friendsBtn',
+	  '/tournament': 'tournamentBtn',
     };
     Object.entries(routeButtonMap).forEach(([route, buttonId]) => {
       const b = container.querySelector(`#${buttonId}`) as HTMLButtonElement;
