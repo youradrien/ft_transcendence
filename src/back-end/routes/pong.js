@@ -5,6 +5,8 @@ const { db } = require('../db.js');
 // -------------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------------
 
+let AI_USER_ID = null;
+
 // [TOURNAMENT - SOCKETS BROADCAST]
 const broadcast_tournament = async (fastify, payload = {} /*peut etre <USER_ID> pour self-send letat du tournament et opti mais flemme */) => {
     const t = fastify.p_tournament;
@@ -1657,20 +1659,26 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
     // --- DATABASE OPERATIONS ---
     try {
         console.log('💾 [AI_GAME_END] Starting DB operations...');
-        
-        let AI_USER_ID = -1; // ID spécial pour l'AI
+        let winner_id = null;
         try {
-            const aiUser = await fastify.db.get('SELECT id FROM users WHERE username = ?', ['AI_BOT']);
-            if (aiUser) {
-                AI_USER_ID = aiUser.id;
-            } else {
-                const result = await fastify.db.run(
+            let aiUser = await fastify.db.get('SELECT id FROM users WHERE username = ?', ['AI_BOT']);
+
+            if (!aiUser) {
+
+                await fastify.db.run(
                     'INSERT INTO users (username, password) VALUES (?, ?)',
                     ['AI_BOT', 'no_password']
                 );
-                AI_USER_ID = result?.lastID;
-                console.log('✅ [AI_GAME_END] AI user created with ID:', AI_USER_ID);
+				aiUser = await fastify.db.get('SELECT id FROM users WHERE username = ?',
+					['AI_BOT']
+				);
+				AI_USER_ID = aiUser.id;
+				if (!AI_USER_ID) {
+					throw new Error('AI_USER_ID could not be retrieved.');
+				}
+				console.log('✅ [AI_GAME_END] AI user ID:', AI_USER_ID);
             }
+			winner_id = (winner === 'p1') ? players[0] : AI_USER_ID;
         } catch (err) {
             console.error('❌ [AI_GAME_END] Error creating/finding AI user:', err);
             // If AI user creation fails, use -1 as fallback
@@ -1683,7 +1691,7 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
                 player1_score, player2_score,
                 p1_name, p2_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [   players[0],  AI_USER_ID, (winner === 'p1') ? 1 : 2,
+            [   players[0],  AI_USER_ID, winner_id,
                 scores.p1,  scores.p2,
                 player_names[0], player_names[1]
             ]
