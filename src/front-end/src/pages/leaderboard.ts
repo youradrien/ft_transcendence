@@ -1,3 +1,4 @@
+import { API_URL } from '../app.ts';
 import Page from '../template/page.ts';
 import { i18n } from '../i18n';
 
@@ -15,7 +16,7 @@ export default class LeaderboardPage extends Page {
 
   async FETCH_PLAYERS(): Promise<Player[]> {
     try {
-      const R = await fetch('https://localhost:3010/api/leaderboard', {
+      const R = await fetch(`${API_URL}/api/leaderboard`, {
         credentials: 'include'
       });
       if (!R.ok)

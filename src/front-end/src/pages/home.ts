@@ -1,5 +1,6 @@
 import Page from '../template/page.ts';
 import Profile from './profile.ts'; // adjust path as needed
+import { API_URL } from '../app.ts';
 import { i18n } from '../i18n';
 
 type User = {
@@ -12,7 +13,7 @@ type User = {
 export default class MainPage extends Page {
   async own_user(): Promise<User | null> {
     try {
-      const res = await fetch('https://localhost:3010/api/me-info', {
+      const res = await fetch(`${API_URL}/api/me-info`, {
         credentials: 'include',
       });
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
