@@ -55,10 +55,10 @@ const fastify = require('fastify')({
   requestIdLogLabel: 'request_id',
   disableRequestLogging: false,
   https: {
-    
+
     key: fs.readFileSync('./ssl_certs/transssl.key'),
     cert: fs.readFileSync('./ssl_certs/transssl.crt'),
-    
+
   }
 });
 const { db, _INIT_DB } = require('./db.js'); // chemin relatif selon ton projet
@@ -83,15 +83,15 @@ fastify.decorate('p_tournament', {
     players: [],         // array of 8 plyr-info-objs: {username, pfp, elo..}
     players_status: [], // 8 plyr ["waiting" | "in_match" | "eliminated" | "winner"]
     game_states: [ // game states will still be in p_rooms, to be visibile to everyone
-      [null, null, null, null], 
-      [null, null], 
+      [null, null, null, null],
+      [null, null],
       [null]
     ],
     bracket: [  // en gros, une array-bracket qui contient des array de matchups: [ [p1,p2], [p3,p4], [p2, p6]...]
-        [null, null, null, null,    null, null, null, null], // quarterfinals 
+        [null, null, null, null,    null, null, null, null], // quarterfinals
         [null, null,   null, null], // semi-finals
         [null, null] // final
-    ],        
+    ],
     current_bracket: 0,     // 0=QF, 1=SF, 2=Final
     current_match: 0,
     matches_done: [
@@ -105,19 +105,41 @@ fastify.decorate('p_tournament', {
       quarter: [null, null, null, null],
       semi_finals: [null, null],
       final: [null]
-    },      
-    prize: null, // prix en elo? 
+    },
+    prize: null, // prix en elo?
     status: "inactive" // statut descriptif [inactive, preparing, in-progress, completed]
 });
 
 
-// CORS (our frontend)
 fastify.register(cors, {
-  origin: 'https://localhost:5173', // ✅ must match EXACTLY
+  // On fournit UNE SEULE propriété origin : la fonction
+  origin: (origin, cb) => {
+    // Pas d'Origin (curl, mobile native, etc.) — autoriser si c'est voulu
+    if (!origin) return cb(null, true);
+
+    // Autoriser exactement le front en dev
+    if (origin === 'https://10.14.4.10:5173') {
+      return cb(null, true);
+    }
+
+    // Autoriser le réseau intranet 10.x.x.x (https://10.0.0.1:5173 par ex.)
+    try {
+      if (typeof origin === 'string' && origin.startsWith('https://10.')) {
+        return cb(null, true);
+      }
+    } catch (err) {
+      return cb(new Error('Origin validation error'));
+    }
+
+    // Par défaut : rejeter la requête CORS
+    return cb(new Error('Not allowed by CORS'));
+  },
+
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
 });
+
 
 // Cookie (Registered before i18n to allow cookie-based locale detection)
 fastify.register(cookie);
@@ -201,7 +223,7 @@ const start = async () => {
       const jwtSecret = await readSecret('jwt');
 
       let oauthSecrets = await readSecret('oauth');
-      
+
       const envOAuth = {
           github_client_id: process.env.GITHUB_CLIENT_ID,
           github_client_secret: process.env.GITHUB_CLIENT_SECRET,
@@ -239,7 +261,7 @@ const start = async () => {
       fastify.register(require('./routes/pong.js'));
 
       await _INIT_DB(); // ✅ DB init here <------------
-      gen_fake_games(Math.floor(Math.random() * 2)); // 
+      gen_fake_games(Math.floor(Math.random() * 2)); //
       // gen_fake_users(db);
       await fastify.listen({ port: 3010, host: '0.0.0.0' });
       console.log('🚀 server is running at https://localhost:3010');
@@ -301,7 +323,7 @@ fastify.decorate("authenticate", async function(request, reply)
 {
     try {
         let token = request.cookies ? request.cookies.token : null;
-        
+
         // Fallback: manually parse cookie if fastify-cookie didn't populate it
         if (!token && request.headers.cookie) {
             const rawCookies = request.headers.cookie.split(';');
@@ -321,10 +343,10 @@ fastify.decorate("authenticate", async function(request, reply)
           else
             throw new Error("no_token_in_cookie");
         }
-        
+
         // Verify the token explicitly
         const decoded = await fastify.jwt.verify(token);
-        
+
         request.user = decoded;
         await fastify.updateLastOnline(decoded.id); // Update last_online here
     } catch (err)

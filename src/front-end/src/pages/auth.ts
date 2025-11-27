@@ -1,12 +1,13 @@
 // src/auth/index.ts
 import Page from '../template/page.ts';
 import { i18n } from '../i18n';
+import { API_URL } from '../app.ts';
 
 export default class AuthPage extends Page {
   async render(): Promise<HTMLElement> {
     const container = document.createElement('div');
     container.id = this.id;
-
+    console.log('API_URL:', API_URL);
     container.innerHTML = `
       <style>
 
@@ -93,13 +94,13 @@ export default class AuthPage extends Page {
     const githubLoginBtn = container.querySelector('#githubLogin') as HTMLButtonElement;
     githubLoginBtn.addEventListener('click', () => {
       // Redirige vers le backend
-      window.location.href = 'https://localhost:3010/api/auth/github/login';
+      window.location.href = `${API_URL}/api/auth/github/login`;
     });
 
     const googleLoginBtn = container.querySelector("#googleLogin") as HTMLButtonElement;
     googleLoginBtn.addEventListener('click', () => {
       // Redirige vers le backend
-      window.location.href = 'https://localhost:3010/api/auth/google/login';
+      window.location.href = `${API_URL}/api/auth/google/login`;
     });
 
 
@@ -128,7 +129,7 @@ export default class AuthPage extends Page {
       }
 
       try {
-        const endpoint = isLogin ? 'https://localhost:3010/api/login' : 'https://localhost:3010/api/register';
+        const endpoint = isLogin ? `${API_URL}/api/login` : `${API_URL}/api/register`;
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
