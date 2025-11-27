@@ -78,7 +78,7 @@ export default class Friends extends Page {
 	async FETCH_FRIEND_REQUESTS(): Promise<Friend[]> {
 
 		try {
-				const res = await fetch('${API_URL}/api/friends/requests', {
+				const res = await fetch(`${API_URL}/api/friends/requests`, {
 				method: 'GET',
 				credentials: 'include',
 			});

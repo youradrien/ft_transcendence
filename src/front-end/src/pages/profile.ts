@@ -513,7 +513,7 @@ export default class UserProfilePage extends Page {
   }
 
 	// Button for adding the current user as a friend :
-	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;  
+	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;
 	if (addFriendBtn) {
 
 		addFriendBtn.onclick = async () => {
