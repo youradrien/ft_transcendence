@@ -1,6 +1,7 @@
 import Page from '../template/page.ts';
 import { i18n } from '../i18n';
           declare const Chart: any;
+import { API_URL } from '../app.ts';
 
 type FriendshipStatus = 'friends' | 'pending' | 'none';
 
@@ -83,7 +84,7 @@ export default class UserProfilePage extends Page {
 	}
 	let USER_DATA: any;
     try {
-        const response = await fetch(`https://localhost:3010/${user_api_call}`, {
+        const response = await fetch(`${API_URL}/${user_api_call}`, {
           credentials: 'include'
         });
         if (!response.ok) {
@@ -520,8 +521,8 @@ export default class UserProfilePage extends Page {
 			addFriendBtn.textContent = i18n.t('sending');
 
 			try {
-				const route = 'api/friends/requests';
-				const response = await fetch(`https://localhost:3010/${route}`, {
+				const route = 'api/friends/add';
+				const response = await fetch(`${API_URL}/${route}`, {
 					method: 'POST',
 					credentials: 'include',
 					headers: {
@@ -642,7 +643,7 @@ export default class UserProfilePage extends Page {
 
     // fill ts with game infos
     try {
-        const g = await fetch(`https://localhost:3010/api/${USER_DATA?.username}/games`, {
+        const g = await fetch(`${API_URL}/api/${USER_DATA?.username}/games`, {
           credentials: 'include'
         });
         let u = await(g.json());

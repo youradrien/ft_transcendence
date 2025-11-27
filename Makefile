@@ -1,12 +1,12 @@
 # Makefile
 
 # Default target
-.PHONY: all up build re fclean logs elk-logs elk-up elk-down elk-status elk-clean test-labels
+.PHONY: all up build re fclean logs elk-logs elk-up elk-down elk-status elk-clean test-labels generate-ip generate-secret
 
 all: elk-up up
 
 # Build without cache and start the containers
-build: generate-secret
+build: generate-secret generate-ip
 	docker compose build --no-cache
 
 up: build
@@ -20,6 +20,38 @@ elk-down:
 
 elk-status:
 	@bash monitoring/scripts/master_script.sh status
+
+# generate-ip:
+# 	@IP=$$(ip -4 -o addr show eno2 | awk '{print $$4}' | cut -d/ -f1); \
+# 	if [ -z "$$IP" ]; then \
+# 		echo "❌ Could not detect IP for eno2"; \
+# 		exit 1; \
+# 	fi; \
+# 	echo "Detected eno2 IP: $$IP"; \
+# 	echo "VITE_API_URL=http://$$IP:3010" > ./src/front-end/.env; \
+# 	echo "Updated front-end .env:"; \
+# 	cat src/front-end/.env
+
+generate-ip:
+	@echo "🔍 Detecting local IP..." ; \
+	if command -v ip >/dev/null 2>&1 ; then \
+		IP=$$(ip -4 -o addr show eno2 2>/dev/null | awk '{print $$4}' | cut -d/ -f1) ; \
+	else \
+		echo "⚠️ No IP detected, using localhost" ; \
+		IP=localhost ; \
+	fi ; \
+	if [ -z "$$IP" ] ; then \
+		echo "⚠️ No IP detected, using localhost" ; \
+		IP=localhost ; \
+	else \
+		echo "✅ Detected IP: $$IP" ; \
+	fi ; \
+	echo "Writing VITE_API_URL to front-end .env..." ; \
+	echo "VITE_API_URL=http://$$IP:3010" > ./src/front-end/.env ; \
+	echo "📝 Updated front-end .env:" ; \
+	cat ./src/front-end/.env
+
+
 
 # i use this to gen new .env var for JWT token at compile time, just to have to re-log 
 # and make previous users JWT-cookies invalid on api

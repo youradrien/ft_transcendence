@@ -106,14 +106,54 @@ fastify.decorate('p_tournament', {
       semi_finals: [null, null],
       final: [null]
     },      
-    prize: null, // prix en elo? 
-    status: "inactive" // statut descriptif [inactive, preparing, in-progress, completed]
+    prize: 1200 // prix en elo?   
 });
 
-
 // CORS (our frontend)
+/*
 fastify.register(cors, {
-  origin: 'https://localhost:5173', // ✅ must match EXACTLY
+  origin: ['http://localhost:5173'], // ✅ must match EXACTLY
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+});
+// add LAN: any intranet machine
+fastify.register(cors, {
+  origin: (origin, cb) => {
+    // allow no origin requests mobile (apps, curl)
+    if (!origin) 
+      return cb(null, true);
+
+    if (origin.startsWith("http://10.16.") ||
+        origin == "") {
+      return cb(null, true);
+    }
+
+    cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+});
+
+*/
+fastify.register(cors, {
+  origin: (origin, cb) => {
+    //  no-origin requests (mobile apps, curl, etc.)
+    if (!origin) return cb(null, true);
+
+    // localhost
+    if (origin === "http://localhost:5173") {
+      return cb(null, true);
+    }
+
+    // any intranet machine in 10.x.x.x
+    if (origin.startsWith("http://10.")) {
+      return cb(null, true);
+    }
+
+    // Otherwise block
+    cb(new Error("Not allowed by CORS"));
+  },
+
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
