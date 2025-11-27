@@ -40,7 +40,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     const client = new OAuth2Client(
         GOOGLE_CLIENT_ID, 
         GOOGLE_CLIENT_SECRET, 
-        'https://localhost:3010/api/auth/google/callback'
+        '${API_URL}/api/auth/google/callback'
     );
 
     fastify.get('/api/test', async (request, reply) => {
