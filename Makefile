@@ -21,16 +21,6 @@ elk-down:
 elk-status:
 	@bash monitoring/scripts/master_script.sh status
 
-# generate-ip:
-# 	@IP=$$(ip -4 -o addr show eno2 | awk '{print $$4}' | cut -d/ -f1); \
-# 	if [ -z "$$IP" ]; then \
-# 		echo "❌ Could not detect IP for eno2"; \
-# 		exit 1; \
-# 	fi; \
-# 	echo "Detected eno2 IP: $$IP"; \
-# 	echo "VITE_API_URL=http://$$IP:3010" > ./src/front-end/.env; \
-# 	echo "Updated front-end .env:"; \
-# 	cat src/front-end/.env
 
 generate-ip:
 	@echo "🔍 Detecting local IP..." ; \

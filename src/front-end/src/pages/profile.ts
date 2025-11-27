@@ -63,7 +63,7 @@ export default class UserProfilePage extends Page {
 
 	let currentUser: { username: string } | null = null;
 	try {
-			const meRes = await fetch('${API_URL}/api/me-info', {
+			const meRes = await fetch(`${API_URL}/api/me-info`, {
 			credentials: 'include'
 		});
 		if (meRes.ok) {
@@ -403,7 +403,7 @@ export default class UserProfilePage extends Page {
         const newName = prompt("New username:", USER_DATA?.username);
         if (newName && newName !== USER_DATA?.username) {
           try {
-            const res = await fetch('${API_URL}/api/user', {
+            const res = await fetch(`${API_URL}/api/user`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
@@ -467,7 +467,7 @@ export default class UserProfilePage extends Page {
               }
               
               try {
-                const res = await fetch('http://localhost:3010/api/user/avatar', {
+                const res = await fetch(`${API_URL}/api/user/avatar`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   credentials: 'include',
@@ -521,7 +521,7 @@ export default class UserProfilePage extends Page {
 			addFriendBtn.textContent = i18n.t('sending');
 
 			try {
-				const route = 'api/friends/add';
+				const route = 'api/friends/requests';
 				const response = await fetch(`${API_URL}/${route}`, {
 					method: 'POST',
 					credentials: 'include',

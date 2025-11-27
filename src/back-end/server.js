@@ -111,35 +111,6 @@ fastify.decorate('p_tournament', {
 });
 
 
-// fastify.register(cors, {
-//   origin: (origin, cb) => {
-//     //  no-origin requests (mobile apps, curl, etc.)
-//     if (!origin) return cb(null, true);
-
-//     // localhost
-//     if (origin === "https://localhost:5173") {
-//       return cb(null, true);
-//     }
-
-//     // any intranet machine in 10.x.x.x
-//     if (origin.startsWith("https://10.")) {
-//       return cb(null, true);
-//     }
-
-//     // Otherwise block
-//     cb(new Error("Not allowed by CORS"));
-//   },
-
-//   // origin: 'https://localhost:5173', // ✅ must match EXACTLY
-  
-
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   allowedHeaders: ['Content-Type', 'Authorization']
-// });
-
-// import cors from '@fastify/cors';
-
 fastify.register(cors, {
   // On fournit UNE SEULE propriété origin : la fonction
   origin: (origin, cb) => {
@@ -169,13 +140,6 @@ fastify.register(cors, {
   allowedHeaders: ['Content-Type', 'Authorization'],
 });
 
-
-// fastify.register(cors, {
-//   origin: 'https://localhost:5173', // ✅ must match EXACTLY
-//   credentials: true,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   allowedHeaders: ['Content-Type', 'Authorization']
-// });
 
 // Cookie (Registered before i18n to allow cookie-based locale detection)
 fastify.register(cookie);

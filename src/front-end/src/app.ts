@@ -8,10 +8,9 @@ import Header from './pages/header';
 import Leaderboard from './pages/leaderboard';
 import Friends from './pages/friends';
 import Tournament from './pages/tournament';
-// src/config/api.ts
 export const API_URL = import.meta.env.VITE_API_URL;
 // export const API_URL = 'https://localhost:3010';
-console.log('API_URL:', API_URL);
+// console.log('API_URL:', API_URL);
 
 export class App {
   private router = new Router('app');

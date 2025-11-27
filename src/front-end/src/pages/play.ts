@@ -450,7 +450,10 @@ export default class PlayPage extends Page {
     aiBtn.onclick = async () => {
         if(queued_up) return;
         try {
-            aiSocket = new WebSocket('ws://localhost:/api/pong/ai/ws'); 
+            let url = API_URL;
+            url = url.replace("https://", "wss://");
+
+            aiSocket = new WebSocket(`${url}/api/pong/ai/ws`);
             aiBtn.innerText = '🤖 Connecting to AI...';
             aiBtn.disabled = true;
             
@@ -496,7 +499,9 @@ export default class PlayPage extends Page {
       try {
           if(!socket || socket == null)
           {
-            socket = new WebSocket('wss://localhost:3010/api/pong/ws');
+            let url = API_URL;
+            url = url.replace("https://", "wss://");
+            socket = new WebSocket(`${url}/api/pong/ws`);
           }
           socket.onmessage = async (msg) => {
               const data = JSON.parse(msg.data);
@@ -572,7 +577,9 @@ export default class PlayPage extends Page {
       if (!joined_game) {
         // Start local multiplayer game via backend
         try {
-          const localSocket = new WebSocket('wss://localhost:3010/api/pong/local/ws');
+          let url = API_URL;
+          url = url.replace("https://", "wss://");
+          const localSocket = new WebSocket(`${url}/api/pong/local/ws`);
           s.innerText = '🎮 Connecting...';
           s.disabled = true;
           
