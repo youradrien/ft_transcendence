@@ -16,7 +16,7 @@ npm-debug.log*
 
 data/
 
-src/back-end/vault_handler/secrets/*
+src/back-end/vault_handler/secrets/vault_keys.json
 
 src/back-end/node_modules/
 

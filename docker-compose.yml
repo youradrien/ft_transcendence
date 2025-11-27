@@ -2,13 +2,14 @@ services:
   frontend:
     build: ./src/front-end
     ports:
-      - "80"   # exposé pour le réseau interne, plus de port mappé sur l’hôte
-      - "8080" # pour le live reload interne si nécessaire
+      - "443"
     depends_on:
       - backend
     volumes:
       - ./src/front-end:/app
       - /app/node_modules
+      - ./src/back-end/vault_handler/secrets/ssl_certs/transssl.crt:/etc/nginx/ssl/transssl.crt:ro
+      - ./src/back-end/vault_handler/secrets/ssl_certs/transssl.key:/etc/nginx/ssl/transssl.key:ro
     environment:
       - CHOKIDAR_USEPOLLING=true
       - NODE_ENV=production
@@ -18,13 +19,14 @@ services:
       driver: "syslog"
       options:
         syslog-address: "tcp://localhost:5000"
-          # syslog-address: "udp://127.0.0.1:5000" #mac os workaround
         tag: "frontend"
         syslog-format: "rfc5424"
     labels:
       service.name: "frontend"
       service.type: "web"
       app.component: "ui"
+
+
 
   backend:
     build:
@@ -35,14 +37,13 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - VAULT_ADDR=http://vault:8200
+      - VAULT_ADDR=https://vault:8200
     networks:
       - ft_transcendence_net
     logging:
       driver: "syslog"
       options:
         syslog-address: "tcp://localhost:5000"
-        # syslog-address: "udp://127.0.0.1:5000" #mac os workaround
         tag: "backend"
         syslog-format: "rfc5424"
     labels:
@@ -50,8 +51,9 @@ services:
       service.type: "api"
       app.component: "server"
     volumes:
-      # - ./vault-config/vault.crt:/app/certs/vault.crt:ro # Monte le certificat pour que Node.js puisse le lire
-      - ./src/back-end/vault_handler:/app/vault_handler  # <-- watch for changes
+      - ./src/back-end/vault_handler/secrets/vault_certs/vault.crt:/app/vault_certs/vault.crt:ro
+      - ./src/back-end/vault_handler/secrets/ssl_certs:/app/ssl_certs:ro
+      - ./src/back-end/vault_handler/secrets:/app/vault_handler/secrets:rw
     entrypoint: ["node", "server.js"]
     depends_on:
       - vault
@@ -60,7 +62,7 @@ services:
     image: owasp/modsecurity-crs:3.3.7-nginx-alpine-202510030310
     container_name: modsecurity
     ports:
-      - "5173:80"
+      - "5173:443"
     environment:
       - PARANOIA=1
       - ANOMALY_INBOUND=10
@@ -69,6 +71,8 @@ services:
       - LOGLEVEL=debug
     volumes:
       - ./src/modsecurity/nginx-custom.conf:/etc/nginx/conf.d/reverse-proxy.conf:ro
+      - ./src/back-end/vault_handler/secrets/ssl_certs/transssl.crt:/etc/nginx/ssl/transssl.crt:ro
+      - ./src/back-end/vault_handler/secrets/ssl_certs/transssl.key:/etc/nginx/ssl/transssl.key:ro
     depends_on:
       - frontend
     networks:
@@ -82,11 +86,11 @@ services:
     cap_add:
       - IPC_LOCK                             # prevent memory swap for secrets
     environment:
-      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_ADDR=https://0.0.0.0:8200
     volumes:
       - ./vault/vault-data:/vault/file             # persistent data
       - ./vault/vault-config:/vault/config         # mount config and certs
-    # command: server -config /vault/config/vault.hcl # Utilise notre fichier de config
+      - ./src/back-end/vault_handler/secrets/vault_certs:/vault/config/certs:ro
     entrypoint: ["vault", "server", "-config=/vault/config/vault.hcl"]
     networks:
       - ft_transcendence_net

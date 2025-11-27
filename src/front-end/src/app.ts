@@ -18,7 +18,7 @@ export class App {
 
   private async check_authentication(): Promise<boolean>{
     try {
-        const res = await fetch('http://localhost:3010/api/me', { credentials: 'include' });
+        const res = await fetch('https://localhost:3010/api/me', { credentials: 'include' });
         const data = await res.json();
         if (data && data.success)
           {

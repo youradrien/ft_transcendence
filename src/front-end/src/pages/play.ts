@@ -326,7 +326,7 @@ export default class PlayPage extends Page {
     // Fetch active games helper
     const fetch_games = async () => {
         try {
-            const res = await fetch('http://localhost:3010/api/pong/active-games', {
+            const res = await fetch('https://localhost:3010/api/pong/active-games', {
                 credentials: 'include'
             });
             const data = await res.json();
@@ -372,7 +372,7 @@ export default class PlayPage extends Page {
 
     // (FETCH) stats of current serv state - initial page load
     try {
-        const ress = await fetch('http://localhost:3010/api/pong/active-games', {
+        const ress = await fetch('https://localhost:3010/api/pong/active-games', {
           credentials: 'include'
         });
         const dataa = await ress.json();
@@ -417,7 +417,7 @@ export default class PlayPage extends Page {
         const ga = document.querySelector('#game-area');
         if (ga)
           ga.innerHTML = '';
-        const res = await fetch('http://localhost:3010/api/pong/status', {
+        const res = await fetch('https://localhost:3010/api/pong/status', {
           credentials: 'include'
         });
         const data = await res.json();
@@ -449,7 +449,7 @@ export default class PlayPage extends Page {
     aiBtn.onclick = async () => {
         if(queued_up) return;
         try {
-            aiSocket = new WebSocket('ws://localhost:3010/api/pong/ai/ws'); 
+            aiSocket = new WebSocket('wss://localhost:3010/api/pong/ai/ws'); 
             aiBtn.innerText = '🤖 Connecting to AI...';
             aiBtn.disabled = true;
             
@@ -495,7 +495,7 @@ export default class PlayPage extends Page {
       try {
           if(!socket || socket == null)
           {
-            socket = new WebSocket('ws://localhost:3010/api/pong/ws');
+            socket = new WebSocket('wss://localhost:3010/api/pong/ws');
           }
           socket.onmessage = async (msg) => {
               const data = JSON.parse(msg.data);
@@ -571,7 +571,7 @@ export default class PlayPage extends Page {
       if (!joined_game) {
         // Start local multiplayer game via backend
         try {
-          const localSocket = new WebSocket('ws://localhost:3010/api/pong/local/ws');
+          const localSocket = new WebSocket('wss://localhost:3010/api/pong/local/ws');
           s.innerText = '🎮 Connecting...';
           s.disabled = true;
           
