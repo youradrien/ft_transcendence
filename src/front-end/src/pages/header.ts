@@ -86,7 +86,7 @@ export default class Header extends Page {
     });
     container.querySelector('#logoutBtn')?.addEventListener('click', async () => {
       try {
-        const res = await fetch(`${API_URL}api/logout`, {
+        const res = await fetch(`${API_URL}/api/logout`, {
           method: 'POST',
           credentials: 'include',
         });
