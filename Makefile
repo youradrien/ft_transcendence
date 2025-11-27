@@ -22,28 +22,47 @@ elk-status:
 	@bash monitoring/scripts/master_script.sh status
 
 
+# generate-ip:
+# 	@echo "🔍 Detecting local IP..." ; \
+# 	if command -v ip >/dev/null 2>&1 ; then \
+# 		IP=$$(ip address -4 -o addr show eno2 2>/dev/null | awk '{print $$4}' | cut -d/ -f1) ; \
+# 	else \
+# 		echo "⚠️ No IP detected, using localhost" ; \
+# 		IP=localhost ; \
+# 	fi ; \
+# 	if [ -z "$$IP" ] ; then \
+# 		echo "⚠️ No IP detected, using localhost" ; \
+# 		IP=localhost ; \
+# 	else \
+# 		echo "✅ Detected IP: $$IP" ; \
+# 	fi ; \
+# 	echo "Writing VITE_API_URL to front-end .env..." ; \
+# 	echo "VITE_API_URL=https://$$IP:3010" > ./src/front-end/.env ; \
+# 	echo "📝 Updated front-end .env:" ; \
+# 	cat ./src/front-end/.env
 generate-ip:
-	@echo "🔍 Detecting local IP..." ; \
-	if command -v ip >/dev/null 2>&1 ; then \
-		IP=$$(ip -4 -o addr show eno2 2>/dev/null | awk '{print $$4}' | cut -d/ -f1) ; \
+	@echo "🔍 Detecting local IP (network 10.x.x.x)..."
+	@if command -v ip >/dev/null 2>&1 ; then \
+		IP=$$(ip -4 -o addr show | awk '{print $$4}' | cut -d/ -f1 | grep '^10\.' | head -n 1); \
 	else \
-		echo "⚠️ No IP detected, using localhost" ; \
-		IP=localhost ; \
-	fi ; \
-	if [ -z "$$IP" ] ; then \
-		echo "⚠️ No IP detected, using localhost" ; \
-		IP=localhost ; \
+		echo "⚠️ 'ip' command not found, using localhost"; \
+		IP="localhost"; \
+	fi; \
+	if [ -z "$$IP" ]; then \
+		echo "⚠️ No 10.x.x.x IP detected, using localhost"; \
+		IP="localhost"; \
 	else \
-		echo "✅ Detected IP: $$IP" ; \
-	fi ; \
-	echo "Writing VITE_API_URL to front-end .env..." ; \
-	echo "VITE_API_URL=https://$$IP:3010" > ./src/front-end/.env ; \
-	echo "📝 Updated front-end .env:" ; \
+		echo "✅ Detected IP: $$IP"; \
+	fi; \
+	echo "Writing VITE_API_URL to front-end .env..."; \
+	echo "VITE_API_URL=https://$$IP:3010" > ./src/front-end/.env; \
+	echo "📝 Updated front-end .env:"; \
 	cat ./src/front-end/.env
 
 
 
-# i use this to gen new .env var for JWT token at compile time, just to have to re-log 
+
+# i use this to gen new .env var for JWT token at compile time, just to have to re-log
 # and make previous users JWT-cookies invalid on api
 generate-secret:
 	@NEW_SECRET=$$(openssl rand -hex 32); \
