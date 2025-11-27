@@ -1517,7 +1517,6 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
 
     const { scores, players, sockets, player_names } = game;
 
-    // --- DETERMINE WINNER ---
     let winner = null;
 
     if (reason === 'victory') {
@@ -1532,7 +1531,6 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
 
     const player_id = players[0];
 
-    // --- SOCKET NOTIFICATION (before DB) ---
     console.log("SOCKETWZZZZ:", game.sockets[0], " 2:", game.sockets[1]);
     const socket = game.sockets[0];
 
@@ -1553,7 +1551,6 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
         console.error('❌ [AI_GAME_END] Cannot send message - socket not ready (state:', socket?.readyState, ')');
     }
 
-    // --- DATABASE OPERATIONS ---
     try {
         console.log('💾 [AI_GAME_END] Starting DB operations...');
 
@@ -1565,7 +1562,6 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
                 ['AI_BOT']
             );
 
-            // Create AI user if missing
             if (!aiUser) {
                 await fastify.db.run(
                     'INSERT INTO users (username, password) VALUES (?, ?)',
@@ -1587,15 +1583,12 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
                 AI_USER_ID = aiUser.id;
             }
 
-            // Correct scope: assign to outer variable
-            winner_id = (winner === 'p1') ? players[0] : AI_USER_ID;
-
         } catch (err) {
             console.error('❌ [AI_GAME_END] Error creating/finding AI user:', err);
             AI_USER_ID = -1;
         }
 
-        // Insert game result
+		winner_id = (winner === 'p1') ? players[0] : AI_USER_ID;
         await fastify.db.run(
             `INSERT INTO games (
                 player1_id, player2_id, winner_id,
@@ -1612,8 +1605,6 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
                 player_names[1]
             ]
         );
-
-        // Update player's stats
         if (winner === 'p1') {
             await fastify.db.run(
                 `UPDATE users SET wins = wins + 1 WHERE id = ?`,
@@ -1631,8 +1622,6 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
     } catch (err) {
         console.error("❌ [AI_GAME_END] DB error:", err);
     }
-
-    // --- CLEANUP ---
     if (fastify) {
         fastify.p_rooms.delete(game.id);
     }
