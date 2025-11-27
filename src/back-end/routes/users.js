@@ -52,11 +52,11 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             type: 'object',
             required: ['username', 'password'],
             properties: {
-                username: { type: 'string', minLength: 3, maxLength: 20 },
+                username: { type: 'string', minLength: 3, maxLength: 20, pattern: '^\\S+$' },
                 password: { 
                     type: 'string', 
-                    // min 8 chars, 1 lower, 1 upper, 1 number, 1 special
-                    pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#=$%^&*+-?|;:<>_~`{}/()]).{8,64}$' 
+                    // min 8 chars, 1 lower, 1 upper, 1 number, 1 special, NO SPACES
+                    pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^0-9A-Za-z])(?!.*\\s).{8,64}$' 
                 }
             }
         }
@@ -101,7 +101,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                     reason: 'username_exists',
                     username
                 });
-                return reply.status(409).send({ success: false, error: 'username_already_exist' });
+                return reply.status(409).send({ success: false, error: t });
             }
         } catch (err) {
             request.log.error({
@@ -304,7 +304,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     try {
             const existingUser = await db.get("SELECT id FROM users WHERE username = ? AND id != ?", [username, userId]);
             if (existingUser) {
-                return reply.status(409).send({ success: false, error: 'username_already_exist' });
+                return reply.status(409).send({ success: false, error: request.i18n.t('error_username_already_exist') });
             }
 
             await db.run("UPDATE users SET username = ? WHERE id = ?", [username, userId]);

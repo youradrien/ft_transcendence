@@ -3,5 +3,6 @@
   "welcome": "Welcome to Transcendence",
   "login_success": "Login successful",
   "login_failed": "Login failed",
-  "error_user_not_found": "Wrong username or password"
+  "error_user_not_found": "Wrong username or password",
+  "error_username_already_exist": "Username already exists"
 }
