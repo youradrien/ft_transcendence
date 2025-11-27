@@ -55,8 +55,8 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                 username: { type: 'string', minLength: 3, maxLength: 20 },
                 password: { 
                     type: 'string', 
-                    // min 12 chars, 1 lower, 1 upper, 1 number, 1 special
-                    pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{12,64}$' 
+                    // min 8 chars, 1 lower, 1 upper, 1 number, 1 special
+                    pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#=$%^&*+-?|;:<>_~`{}/()]).{8,64}$' 
                 }
             }
         }
