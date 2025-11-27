@@ -6,9 +6,17 @@ const multipart = require ('@fastify/multipart');
 const websocket = require('@fastify/websocket');
 const path = require('path');
 const i18n = require('fastify-i18n');
+const fs = require('fs');
 
 // Configure Pino logger for better structured logging
 const isDevelopment = process.env.NODE_ENV !== 'production';
+// const sslDir = path.resolve('./');
+
+// // Lister les fichiers présents
+// console.log('Contenu du dossier app:', fs.readdirSync(sslDir));
+
+// Lister les fichiers présents
+// console.log('Contenu du dossier ssl_certs :', fs.readdirSync(sslDir));
 
 const fastify = require('fastify')({
   logger: isDevelopment ? {
@@ -45,7 +53,13 @@ const fastify = require('fastify')({
   // Request ID generation for tracing
   requestIdHeader: 'x-request-id',
   requestIdLogLabel: 'request_id',
-  disableRequestLogging: false
+  disableRequestLogging: false,
+  https: {
+    
+    key: fs.readFileSync('./ssl_certs/transssl.key'),
+    cert: fs.readFileSync('./ssl_certs/transssl.crt'),
+    
+  }
 });
 const { db, _INIT_DB } = require('./db.js'); // chemin relatif selon ton projet
 const bcrypt = require('bcrypt');
@@ -70,7 +84,8 @@ fastify.decorate('p_tournament', {
     players_status: [], // 8 plyr ["waiting" | "in_match" | "eliminated" | "winner"]
     game_states: [ // game states will still be in p_rooms, to be visibile to everyone
       [null, null, null, null], 
-      [null, null], [null]
+      [null, null], 
+      [null]
     ],
     bracket: [  // en gros, une array-bracket qui contient des array de matchups: [ [p1,p2], [p3,p4], [p2, p6]...]
         [null, null, null, null,    null, null, null, null], // quarterfinals 
@@ -78,64 +93,89 @@ fastify.decorate('p_tournament', {
         [null, null] // final
     ],        
     current_bracket: 0,     // 0=QF, 1=SF, 2=Final
-    currentMatch: 0,     
-    results: { // match winners: [similaire aux brackets, contient infos sur WINNER/LOOSER/SCORES etc...]
+    current_match: 0,
+    matches_done: [
+      0 /* 0/4 */, 0 /* 0/2 */, 0
+    ],
+    bracket_results: { // match winners: [similaire aux brackets, contient infos sur WINNER/LOOSER/SCORES etc...]
+      // brack_result-obj: {
+      //    scores: [15 - 64],
+      //    winner: (player_id)
+      // }
       quarter: [null, null, null, null],
       semi_finals: [null, null],
-      final: null
+      final: [null]
     },      
-    prize: 1200 // prix en elo?   
+    prize: null, // prix en elo? 
+    status: "inactive" // statut descriptif [inactive, preparing, in-progress, completed]
 });
 
-// CORS (our frontend)
-/*
+
+// fastify.register(cors, {
+//   origin: (origin, cb) => {
+//     //  no-origin requests (mobile apps, curl, etc.)
+//     if (!origin) return cb(null, true);
+
+//     // localhost
+//     if (origin === "https://localhost:5173") {
+//       return cb(null, true);
+//     }
+
+//     // any intranet machine in 10.x.x.x
+//     if (origin.startsWith("https://10.")) {
+//       return cb(null, true);
+//     }
+
+//     // Otherwise block
+//     cb(new Error("Not allowed by CORS"));
+//   },
+
+//   // origin: 'https://localhost:5173', // ✅ must match EXACTLY
+  
+
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// });
+
+// import cors from '@fastify/cors';
+
 fastify.register(cors, {
-  origin: ['http://localhost:5173'], // ✅ must match EXACTLY
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-});
-// add LAN: any intranet machine
-fastify.register(cors, {
+  // On fournit UNE SEULE propriété origin : la fonction
   origin: (origin, cb) => {
-    // allow no origin requests mobile (apps, curl)
-    if (!origin) 
-      return cb(null, true);
-
-    if (origin.startsWith("http://10.16.") ||
-        origin == "") {
-      return cb(null, true);
-    }
-
-    cb(new Error("Not allowed by CORS"));
-  },
-  credentials: true
-});
-
-*/
-fastify.register(cors, {
-  origin: (origin, cb) => {
-    //  no-origin requests (mobile apps, curl, etc.)
+    // Pas d'Origin (curl, mobile native, etc.) — autoriser si c'est voulu
     if (!origin) return cb(null, true);
 
-    // localhost
-    if (origin === "http://localhost:5173") {
+    // Autoriser exactement le front en dev
+    if (origin === 'https://localhost:5173') {
       return cb(null, true);
     }
 
-    // any intranet machine in 10.x.x.x
-    if (origin.startsWith("http://10.")) {
-      return cb(null, true);
+    // Autoriser le réseau intranet 10.x.x.x (https://10.0.0.1:5173 par ex.)
+    try {
+      if (typeof origin === 'string' && origin.startsWith('https://10.')) {
+        return cb(null, true);
+      }
+    } catch (err) {
+      return cb(new Error('Origin validation error'));
     }
 
-    // Otherwise block
-    cb(new Error("Not allowed by CORS"));
+    // Par défaut : rejeter la requête CORS
+    return cb(new Error('Not allowed by CORS'));
   },
 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
 });
+
+
+// fastify.register(cors, {
+//   origin: 'https://localhost:5173', // ✅ must match EXACTLY
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// });
 
 // Cookie (Registered before i18n to allow cookie-based locale detection)
 fastify.register(cookie);
@@ -260,7 +300,7 @@ const start = async () => {
       gen_fake_games(Math.floor(Math.random() * 2)); // 
       // gen_fake_users(db);
       await fastify.listen({ port: 3010, host: '0.0.0.0' });
-      console.log('🚀 server is running at http://localhost:3010');
+      console.log('🚀 server is running at https://localhost:3010');
     } catch (err) {
       fastify.log.error(err);
       process.exit(1);

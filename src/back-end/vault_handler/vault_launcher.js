@@ -6,17 +6,17 @@
 //
 // IMPORTANT: Ce fichier NE MODIFIE PAS la logique existante — seules des
 // annotations et des commentaires JSDoc ont été ajoutés pour la lisibilité.
+const fs = require('fs');
+const path = require('path');
+const certPath = path.resolve('/app/vault_certs/vault.crt');
+const customCa = fs.readFileSync(certPath);
 const vault = require('node-vault')({
   apiVersion: 'v1',
   endpoint: process.env.VAULT_ADDR || 'https://vault:8200',
-  // tlsOptions: {
-  //   ca: fs.readFileSync('/app/certs/vault.crt'),
-  // },
-  // Le token sera défini dynamiquement
+  requestOptions: {
+    ca: customCa,
+  },
 });
-const fs = require('fs');
-
-const path = require('path');
 
 let rootToken = 'initResult.root_token';
 let keys = 'initResult.keys';
@@ -58,8 +58,9 @@ async function vaultstart() {
 			fs.mkdirSync(secretsDir, { recursive: true });
 		}
 		const savepath = path.resolve(secretsDir, 'vault_keys.json');
+
 		fs.writeFileSync(savepath, JSON.stringify({keys, rootToken}, null, 2), { mode: 0o600 });
-		console.log('Vault keys saved to:', savepath);
+
 
 		//MOUNT le secret envgin
 		await vault.mount({ mount_point: 'secret', type: 'kv-v2', options: { version: '2' }});
@@ -114,7 +115,7 @@ async function vaultstart() {
 		}
 		else {
 			console.log('Vault is already unsealed.');
-			const savepath = path.resolve(__dirname, 'secrets', 'vault_keys.json');
+			const savepath = path.resolve(__dirname,'secrets', 'vault_keys.json');
 			console.log('savepath1: ', savepath);
 
 			if (!fs.existsSync(savepath)) {
@@ -185,6 +186,7 @@ async function vaultdown() {
 	  // Ici, on pourrait implémenter une logique pour "fermer" Vault si nécessaire
   		console.log('Vault handler is shutting down.');
 		const savepath = path.resolve(__dirname, 'secrets', 'vault_keys.json');
+		console.log('Saving Vault keys to:', savepath);
 		fs.writeFileSync(savepath, JSON.stringify({keys, rootToken}, null, 2), { mode: 0o600 });
 
 	}

@@ -10,6 +10,8 @@ import Friends from './pages/friends';
 import Tournament from './pages/tournament';
 // src/config/api.ts
 export const API_URL = import.meta.env.VITE_API_URL;
+// export const API_URL = 'https://localhost:3010';
+console.log('API_URL:', API_URL);
 
 export class App {
   private router = new Router('app');
@@ -20,6 +22,7 @@ export class App {
 
   private async check_authentication(): Promise<boolean>{
     try {
+        console.log('API_URL:', API_URL);
         // console.log(API_URL);
         const res = await fetch(`${API_URL}/api/me`, { credentials: 'include' });
         const data = await res.json();
@@ -54,7 +57,6 @@ export class App {
     this.router.addRoute('/tournament', async () => {
         return this.renderPage(Tournament, 'tournament-page');
     });
-
 
     this.router.addRoute('/profile/:username', async () => {
       return this.renderPage(Profile, 'profile-page');

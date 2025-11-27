@@ -2,6 +2,7 @@ import { API_URL } from '../app.ts';
 import Page from '../template/page.ts';
 import { i18n } from '../i18n';
 
+
 type Player = {
   username: string;
   avatar_url: string;
@@ -33,6 +34,7 @@ export default class LeaderboardPage extends Page {
     const container = document.createElement('div');
     container.id = this.id;
     Object.assign(container.style, {
+      position: "relative",
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -93,6 +95,15 @@ export default class LeaderboardPage extends Page {
         C.style.transform = 'translateY(0) scale(1)';
         C.style.boxShadow = '0 0 8px rgba(0, 255, 0, 0.1)';
       });
+	//   C.addEventListener('click', async () => {
+    //   const profile = new UserProfilePage('profile-page', this.router);
+    //   const profileEl = await profile.render({ showCanvas: true }); // orbes activées
+    //   const outlet = document.getElementById('app'); // ton outlet principal
+    //   outlet!.innerHTML = '';
+    //   outlet!.appendChild(profileEl);
+    //   history.pushState(null, '', `/profile/${player.username}`); // met à jour l'URL
+    //   });
+
 
       C.addEventListener('click', () => {
         this.router.navigate(`/profile/${player.username}`);
@@ -100,6 +111,62 @@ export default class LeaderboardPage extends Page {
       list.appendChild(C);
     });
 
-    return container;
+
+	// YELLOW ORBS !!
+
+	const trophyContainer = document.createElement('div');
+	Object.assign(trophyContainer.style, {
+		position: 'fixed',
+		top: '0',
+		left: '0',
+		width: '100%',
+		height: '100%',
+		pointerEvents: 'none',
+		zIndex: '-1',
+	});
+
+	const NUM_TROPHIES_SIDE = 72;
+	const sides = ['left', 'right'];
+
+	sides.forEach(side => {
+
+		for (let i = 0; i < NUM_TROPHIES_SIDE; i++) {
+
+			const trophy = document.createElement('div');
+			Object.assign(trophy.style, {
+			width: '8px',
+			height: '8px',
+			backgroundColor: 'yellow',
+			border: '1px solid orange',
+			borderRadius: '50%',
+			position: 'absolute',
+			top: `${Math.random() * 95 + 2.5}%`,
+			animation: `blink ${Math.random() * 2 + 1}s infinite alternate`
+		});
+
+		if (side === 'left') {
+			trophy.style.left = `${Math.random() * 50}%`; // 0 → 25% largeur page
+			trophy.style.right = 'auto';
+		} else {
+			trophy.style.right = `${Math.random() * 50}%`; // 0 → 25% largeur page côté droit
+			trophy.style.left = 'auto';
+		}
+
+		trophyContainer.appendChild(trophy);
+	}
+  });
+
+	const style = document.createElement('style');
+	style.textContent = `
+		@keyframes blink {
+		0% { opacity: 0.2; transform: translateY(0); }
+		50% { opacity: 1; transform: translateY(-2px); }
+		100% { opacity: 0.2; transform: translateY(0); }
+	}
+	`;
+	document.head.appendChild(style);
+	container.appendChild(trophyContainer);
+
+	return container;
   }
 }

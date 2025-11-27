@@ -55,6 +55,7 @@
   "play_vs_ai": "🤖 PLAY VS AI",
   "user_not_found": "User not found",
   "add_friend": "ADD FRIEND",
+  "unfriend": "UNFRIEND",
   "send_dm": "SEND DM",
   "tournament_mode": "🏆 Tournament Mode",
   "player_registration": "Player Registration",
@@ -100,7 +101,16 @@
   "chart_description": "This chart will show the score difference between players across recent matches",
   "game_label": "Game {{n}}",
   "vs": "vs",
+  "processing" : "in process",
+  "request_pending" : "REQUEST SENT",
+  "pending_decline" : "CANCEL REQUEST",
+  "request_received" : "REQUEST RECEIVED",
   "TOURNAMENT_MODE": "TOURNAMENT MODE",
   "mode_tournament": "START PLAY TOURNAMENT MODE NOW !",
-  "play_tournament": "➡️ JOIN TOURNAMENT "
+  "play_tournament": "➡️ JOIN TOURNAMENT ",
+  "no_friends_title" : "No friends or requests yet",
+  "friends_page_title" : "FRIENDS",
+  "unfriend_button" : "Unfriend",
+  "accept_button" : "accept",
+  "decline_button" : "refuse"
 }

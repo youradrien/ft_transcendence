@@ -7,7 +7,7 @@ export default class AuthPage extends Page {
   async render(): Promise<HTMLElement> {
     const container = document.createElement('div');
     container.id = this.id;
-
+    console.log('API_URL:', API_URL);
     container.innerHTML = `
       <style>
 
