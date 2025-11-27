@@ -118,7 +118,7 @@ fastify.register(cors, {
     if (!origin) return cb(null, true);
 
     // Autoriser exactement le front en dev
-    if (origin === 'https://10.14.4.10:5173') {
+    if (origin === 'https://localhost:5173') {
       return cb(null, true);
     }
 
