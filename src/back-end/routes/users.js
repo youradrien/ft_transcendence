@@ -286,6 +286,11 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     
     // LOGOUT
     fastify.post('/api/logout', {preValidation: [fastify.authenticate]}, async (request, reply) => {
+        request.log.info({
+            event_type: 'logout',
+            user_id: request.user.id,
+            username: request.user.username
+        });
         reply.clearCookie('token');
         return reply.send({ success: true });
     });
@@ -296,15 +301,32 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     const userId = request.user.id;
 
     if (!username || typeof username !== 'string') {
+        request.log.warn({
+            event_type: 'username_update_failed',
+            reason: 'invalid_format',
+            user_id: userId
+        });
         return reply.status(400).send({ success: false, error: 'invalid_username' });
     }
     if (username.length < 3 || username.length > 20) {
+        request.log.warn({
+            event_type: 'username_update_failed',
+            reason: 'invalid_length',
+            user_id: userId,
+            length: username.length
+        });
         return reply.status(400).send({ success: false, error: 'username_length_invalid' });
     }
 
     try {
             const existingUser = await db.get("SELECT id FROM users WHERE username = ? AND id != ?", [username, userId]);
             if (existingUser) {
+                request.log.warn({
+                    event_type: 'username_update_failed',
+                    reason: 'username_taken',
+                    user_id: userId,
+                    attempted_username: username
+                });
                 return reply.status(409).send({ success: false, error: request.i18n.t('error_username_already_exist') });
             }
 
@@ -339,6 +361,11 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
         const userId = request.user.id;
 
         if (!avatar_url || typeof avatar_url !== 'string') {
+            request.log.warn({
+                event_type: 'avatar_update_failed',
+                reason: 'invalid_format',
+                user_id: userId
+            });
             return reply.status(400).send({ success: false, error: 'invalid_avatar_url' });
         }
 
@@ -352,6 +379,12 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 
         // If it's base64, validate size (max ~7MB base64 = ~5MB file)
         if (isBase64 && avatar_url.length > 7 * 1024 * 1024) {
+            request.log.warn({
+                event_type: 'avatar_update_failed',
+                reason: 'file_too_large',
+                user_id: userId,
+                size_bytes: avatar_url.length
+            });
             return reply.status(400).send({ success: false, error: 'avatar_too_large' });
         }
 
@@ -360,6 +393,12 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             try {
                 new URL(avatar_url);
             } catch (e) {
+                request.log.warn({
+                    event_type: 'avatar_update_failed',
+                    reason: 'invalid_url',
+                    user_id: userId,
+                    error: e.message
+                });
                 return reply.status(400).send({ success: false, error: 'invalid_url_format' });
             }
         }
@@ -392,9 +431,19 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
           const sql_request = "UPDATE users SET secret_totp = ? WHERE id = ?";
           await db.run(sql_request, [secret_key, request.user.id]);
           const qr_image = await qrcode.toDataURL(secret.otpauth_url);
+          request.log.info({
+              event_type: '2fa_setup',
+              user_id: request.user.id,
+              username: request.user.username
+          });
           return ({success:true, qr_image, secret_key});
       } catch (err)
       {
+          request.log.error({
+              event_type: '2fa_setup_error',
+              error: err.message,
+              user_id: request.user.id
+          });
           return ({success:false, error:"db_access"});
       }
     });
@@ -404,8 +453,16 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     //PREMIERE ROUTE = CLIQUE SUR LOGIN AVEC GHUB
   fastify.get('/api/auth/github/login', async (req, reply) => {
         if (!GITHUB_CLIENT_ID) {
+             req.log.error({
+                 event_type: 'github_oauth_error',
+                 reason: 'not_configured'
+             });
              return reply.status(500).send({ success: false, error: 'github_auth_not_configured' });
         }
+        req.log.info({
+            event_type: 'github_oauth_initiated',
+            ip: req.ip
+        });
         const githubAuthURL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user`;
         return reply.redirect(githubAuthURL);
     });
@@ -413,9 +470,19 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     ///CALLBACK LA OU ON REDIRIGE L'UTILISATEUR ET RECUPERER LE CODE DONNE PAR GHUB 1ERE ETAPE
     fastify.get('/api/auth/github/callback', async (req, reply) => {
         const code = req.query.code;
-        if (!code) return reply.status(400).send('Code not provided');
+        if (!code) {
+            req.log.warn({
+                event_type: 'github_oauth_callback_failed',
+                reason: 'no_code'
+            });
+            return reply.status(400).send('Code not provided');
+        }
 
         if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+             req.log.error({
+                 event_type: 'github_oauth_error',
+                 reason: 'not_configured'
+             });
              return reply.status(500).send({ success: false, error: 'github_auth_not_configured' });
         }
 
@@ -444,6 +511,18 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                 const profile_pic = githubUser.avatar_url;
                 await db.run("INSERT INTO users (username, sub_github, avatar_url) VALUES (?, ?, ?)", [username, githubUser.id, profile_pic]);
                 user = await db.get("SELECT * FROM users WHERE sub_github = ?", [githubUser.id]);
+                req.log.info({
+                    event_type: 'github_oauth_user_created',
+                    user_id: user.id,
+                    username: username,
+                    github_id: githubUser.id
+                });
+            } else {
+                req.log.info({
+                    event_type: 'github_oauth_login_success',
+                    user_id: user.id,
+                    username: user.username
+                });
             }
 
             // Générer JWT et cookie
@@ -457,7 +536,11 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             }).redirect(FRONTEND_URL);
 
         } catch (err) {
-            console.error(err);
+            req.log.error({
+                event_type: 'github_oauth_error',
+                error: err.message,
+                stack: err.stack
+            });
             return reply.status(500).send({ success: false, error: 'OAuth GitHub error' });
         }
     });
@@ -465,6 +548,10 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 
 
     fastify.get('/api/auth/google/login', async (request, reply) => {
+        request.log.info({
+            event_type: 'google_oauth_initiated',
+            ip: request.ip
+        });
         const authUrl = client.generateAuthUrl({access_type: 'offline',scope: ['profile', 'email', 'openid']});
         reply.redirect(authUrl);
     });
@@ -485,7 +572,6 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             ///check if the username is alredy in the db and if the payload.sub isnt in the db if its the case it means we have two different google users with the same username and we need to handle it
             nick_in_use = await db.get("SELECT * FROM users WHERE username = ?", [payload.name]);
             if (!user){
-                console.log(`${payload.name}`);
                 let pseudo_new;
                 if (!nick_in_use) {
                     pseudo_new = payload.name;
@@ -494,9 +580,21 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                     pseudo_new = `${payload.name}${rand}`;
                 }
                 const profile_pic = payload.picture;
-                console.log(`USER AVATR : ${payload.picture}`);
                 await db.run("INSERT INTO users (username, sub_google, avatar_url) VALUES (?, ?, ?)", [pseudo_new, payload.sub, profile_pic]);
                 user = await db.get("SELECT * FROM users WHERE sub_google = ?", [payload.sub]);
+                request.log.info({
+                    event_type: 'google_oauth_user_created',
+                    user_id: user.id,
+                    username: pseudo_new,
+                    google_id: payload.sub,
+                    username_conflict: !!nick_in_use
+                });
+            } else {
+                request.log.info({
+                    event_type: 'google_oauth_login_success',
+                    user_id: user.id,
+                    username: user.username
+                });
             }
             
             const jwt_content = await getJWTContent(user.id);
@@ -510,6 +608,11 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             }).redirect(FRONTEND_URL); // Redirect to frontend
             
         } catch (err) {
+            request.log.error({
+                event_type: 'google_oauth_error',
+                error: err.message,
+                stack: err.stack
+            });
             reply.status(500).send({ success: false, error: 'auth_failed' });
         }
     });
@@ -532,13 +635,20 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             "SELECT id, username, avatar_url, wins, last_online, elo, created_at, losses FROM users WHERE username = ?",
             [u]
             );
-            console.log('JWT username:', `"${request.user.username}"`);
             if (!user) {
+                request.log.warn({
+                    event_type: 'me_info_not_found',
+                    username: request.user.username
+                });
                 return reply.status(404).send({ success: false, message: 'User not found' });
             }
             return reply.send({ success: true, user });
         } catch (err) {
-            request.log.error(err);
+            request.log.error({
+                event_type: 'me_info_error',
+                error: err.message,
+                user_id: request.user.id
+            });
             return reply.status(500).send({ success: false, message: 'Internal server error' });
         }
     });
@@ -550,6 +660,11 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
             // get id frm username
             const user = await fastify.db.get(`SELECT id FROM users WHERE username = ?`, [username]);
             if (!user) {
+                request.log.warn({
+                    event_type: 'games_fetch_failed',
+                    reason: 'user_not_found',
+                    username: username
+                });
                 return reply.status(404).send({ success: false, message: 'user not-found' });
             }
             const games = await fastify.db.all(
@@ -558,9 +673,19 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                 ORDER BY played_at DESC`,
                 [user.id, user.id]
             );
+            request.log.info({
+                event_type: 'games_fetched',
+                username: username,
+                user_id: user.id,
+                game_count: games.length
+            });
             return reply.send({ success: true, games });
         } catch (err) {
-            request.log.error(err);
+            request.log.error({
+                event_type: 'games_fetch_error',
+                error: err.message,
+                username: username
+            });
             return reply.status(500).send({ success: false, message: 'Internal server error' });
         }
     });
@@ -570,13 +695,21 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 
     // get all users
     fastify.get('/api/leaderboard', { preValidation: [fastify.authenticate] }, async (request, reply) => {
-        console.log("GETTING LEADERBOARD");
         try {
             const users = await db.all("SELECT id, username, elo, avatar_url FROM users");
+            request.log.info({
+                event_type: 'leaderboard_fetched',
+                user_id: request.user.id,
+                total_users: users.length
+            });
             return reply.send({ success: true, users });
         } catch (err) 
         {
-            fastify.log.error(err);
+            request.log.error({
+                event_type: 'leaderboard_error',
+                error: err.message,
+                user_id: request.user.id
+            });
             return reply.status(500).send({ success: false, error: 'db_error' });
         }
     });
@@ -591,9 +724,16 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                 WHERE strftime('%s','now') - strftime('%s', last_online) < ${l_ago}
             `);
 
+            request.log.info({
+                event_type: 'online_count_fetched',
+                online_players: row.onlineCount
+            });
             return reply.send({ success: true, data: { online_players: row.onlineCount } });
         } catch (err) {
-            request.log.error(err);
+            request.log.error({
+                event_type: 'online_count_error',
+                error: err.message
+            });
             return reply.status(500).send({ success: false, error: 'db_error' });
         }
     });
@@ -610,9 +750,18 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
                     user = await db.get("SELECT * FROM users WHERE id = ?", [identifier]);
             }
         } catch (err) {
+            request.log.error({
+                event_type: 'profile_fetch_error',
+                error: err.message,
+                identifier: identifier
+            });
             return reply.status(500).send({ success: false, error: 'db_access' });
         }
         if (!user) {
+            request.log.warn({
+                event_type: 'profile_not_found',
+                identifier: identifier
+            });
             return reply.status(404).send({ success: false, error: "user_not_found" });
         }
         const isMyProfile = request.user.id === user.id;
@@ -694,9 +843,18 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 				last_seen: f.last_online
 			}));
 
+			request.log.info({
+				event_type: 'friends_list_fetched',
+				user_id: userId,
+				friend_count: friends.length
+			});
 			return reply.send({ success: true, friends });
 		} catch (err) {
-			console.error(err);
+			request.log.error({
+				event_type: 'friends_list_error',
+				error: err.message,
+				user_id: userId
+			});
 			return reply.status(500).send({ success: false, error: 'db_error' });
 		}
 	});
@@ -721,9 +879,18 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 				last_seen: f.last_online
 			}));
 
+			request.log.info({
+				event_type: 'friend_requests_fetched',
+				user_id: userId,
+				request_count: formatted.length
+			});
 			reply.send({ success: true, requests: formatted} );
 		} catch (error) {
-			console.error(error);
+			request.log.error({
+				event_type: 'friend_requests_error',
+				error: error.message,
+				user_id: userId
+			});
 			reply.status(500).send({ success: false, error: 'db_error' });
 		}
 	});
@@ -766,7 +933,12 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 			}
 			return reply.send({ success: true, status: 'none', pendingType: null });
 		} catch (error) {
-			console.error(error);
+			req.log.error({
+				event_type: 'friend_status_error',
+				error: error.message,
+				user_id: currentUserId,
+				target_username: username
+			});
 			return reply.status(500).send({ success: false, error: 'db_error', pendingType: null });
 		}
 	});
@@ -808,9 +980,20 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 				VALUES (?, ?)`,
 			[senderId, receiverId]);
 
+			req.log.info({
+				event_type: 'friend_request_sent',
+				sender_id: senderId,
+				receiver_id: receiverId,
+				receiver_username: username
+			});
 			reply.send({ success: true });
 		} catch (error) {
-			console.error(error);
+			req.log.error({
+				event_type: 'friend_request_error',
+				error: error.message,
+				sender_id: senderId,
+				target_username: username
+			});
 			reply.status(500).send({ success: false, error: 'db_error' });
 		}
 	});
@@ -839,9 +1022,20 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 			await _add_friend(receiverId, senderId);
 
 			await _delete_friend_request(request.id);
+			req.log.info({
+				event_type: 'friend_request_accepted',
+				user_id: receiverId,
+				friend_id: senderId,
+				friend_username: username
+			});
 			reply.send({ success: true });
 		} catch (err) {
-			console.error(err);
+			req.log.error({
+				event_type: 'friend_accept_error',
+				error: err.message,
+				user_id: receiverId,
+				target_username: username
+			});
 			reply.status(500).send({ success: false, error: 'db_error' });
 		}
 	})
@@ -861,9 +1055,20 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 				WHERE sender_id = ? AND receiver_id = ? AND status = 'pending'`,
 			[currentUserId, userTo.id]);
 
+			req.log.info({
+				event_type: 'friend_request_cancelled',
+				user_id: currentUserId,
+				target_id: userTo.id,
+				target_username: username
+			});
 			return reply.send({ success: true });
 		} catch (err) {
-			console.error(err);
+			req.log.error({
+				event_type: 'friend_cancel_error',
+				error: err.message,
+				user_id: currentUserId,
+				target_username: username
+			});
 			return reply.status(500).send({ success: false, error: 'db_error' });
 		}
 	});
@@ -890,10 +1095,21 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 				return reply.status(400).send({ success: false, error: 'request_not_found' });
 
 			await _delete_friend_request(request.id);
+			req.log.info({
+				event_type: 'friend_request_declined',
+				user_id: receiverId,
+				sender_id: senderId,
+				sender_username: username
+			});
 			reply.send({ success: true });
 
 		} catch (err) {
-			console.error(err);
+			req.log.error({
+				event_type: 'friend_decline_error',
+				error: err.message,
+				user_id: receiverId,
+				target_username: username
+			});
 			reply.status(500).send({ success: false, error: 'db_error' });
 		}
 	});
@@ -918,9 +1134,20 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 			await db.run(`DELETE FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)`,
 			[userId, targetId, targetId, userId]);
 
+			req.log.info({
+				event_type: 'friend_removed',
+				user_id: userId,
+				removed_friend_id: targetId,
+				removed_friend_username: username
+			});
 			reply.send({ success: true });
 		} catch (err) {
-			console.error(err);
+			req.log.error({
+				event_type: 'friend_remove_error',
+				error: err.message,
+				user_id: userId,
+				target_username: username
+			});
 			reply.status(500).send({ success: false, error: 'db_error' });
 		}
 	});

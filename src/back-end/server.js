@@ -218,8 +218,16 @@ const gen_fake_games = (count = 1) => {
 // START SERV, and link db
 const start = async () => {
     try {
+      fastify.log.info({
+        event_type: 'server_starting',
+        node_env: process.env.NODE_ENV
+      });
       const token = await vaultstart();
       vault.token = token;
+      fastify.log.info({
+        event_type: 'vault_initialized',
+        has_token: !!token
+      });
       const jwtSecret = await readSecret('jwt');
 
       let oauthSecrets = await readSecret('oauth');
@@ -232,7 +240,11 @@ const start = async () => {
       };
 
       if (envOAuth.github_client_id || envOAuth.google_client_id) {
-          console.log('🔄 Seeding/Updating OAuth secrets in Vault from .env');
+          fastify.log.info({
+            event_type: 'oauth_secrets_seeded',
+            has_github: !!envOAuth.github_client_id,
+            has_google: !!envOAuth.google_client_id
+          });
           await writeSecret('oauth', envOAuth);
           oauthSecrets = envOAuth;
       }
@@ -260,13 +272,29 @@ const start = async () => {
       fastify.register(require('./routes/users.js'));
       fastify.register(require('./routes/pong.js'));
 
+      fastify.log.info({
+        event_type: 'db_initializing'
+      });
       await _INIT_DB(); // ✅ DB init here <------------
+      fastify.log.info({
+        event_type: 'db_initialized'
+      });
       gen_fake_games(Math.floor(Math.random() * 2)); //
       // gen_fake_users(db);
       await fastify.listen({ port: 3010, host: '0.0.0.0' });
+      fastify.log.info({
+        event_type: 'server_started',
+        port: 3010,
+        host: '0.0.0.0',
+        ssl_enabled: true
+      });
       console.log('🚀 server is running at https://localhost:3010');
     } catch (err) {
-      fastify.log.error(err);
+      fastify.log.error({
+        event_type: 'server_startup_error',
+        error: err.message,
+        stack: err.stack
+      });
       process.exit(1);
     }
 };
@@ -314,7 +342,11 @@ fastify.decorate('updateLastOnline', async function(userId) {
       [userId]
     );
   } catch (err) {
-    fastify.log.error(`Failed to update last_online for user ${userId}:`, err);
+    fastify.log.error({
+      event_type: 'last_online_update_error',
+      error: err.message,
+      user_id: userId
+    });
   }
 });
 
@@ -338,6 +370,12 @@ fastify.decorate("authenticate", async function(request, reply)
 
         if (!token)
         {
+          fastify.log.warn({
+            event_type: 'auth_failed',
+            reason: 'no_token',
+            url: request?.url,
+            ip: request?.ip
+          });
           if (reply)
             return reply.code(401).send({success:false, error:"no_token_in_cookie"})
           else
@@ -351,6 +389,13 @@ fastify.decorate("authenticate", async function(request, reply)
         await fastify.updateLastOnline(decoded.id); // Update last_online here
     } catch (err)
     {
+        fastify.log.warn({
+            event_type: 'auth_failed',
+            reason: 'invalid_token',
+            error: err.message,
+            url: request?.url,
+            ip: request?.ip
+        });
         if (reply)
             return reply.code(401).send({success:false, error:"invalid_token"})
         else
@@ -390,13 +435,19 @@ fastify.get('/api/i18n-test', async (request, reply) => {
 
 // Capture les signaux de terminaison
 process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down Vault...');
+  fastify.log.info({
+    event_type: 'server_shutdown',
+    signal: 'SIGINT'
+  });
   await vaultdown();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down Vault...');
+  fastify.log.info({
+    event_type: 'server_shutdown',
+    signal: 'SIGTERM'
+  });
   await vaultdown();
   process.exit(0);
 });
@@ -404,12 +455,25 @@ process.on('SIGTERM', async () => {
 // Pour les erreurs non attrapées
 process.on('uncaughtException', async (err) => {
   console.error('Erreur non gérée :', err);
+  if (fastify?.log) {
+    fastify.log.error({
+      event_type: 'uncaught_exception',
+      error: err.message,
+      stack: err.stack
+    });
+  }
   await vaultdown();
   process.exit(1);
 });
 
 process.on('unhandledRejection', async (reason) => {
   console.error('Promise rejetée non gérée :', reason);
+  if (fastify?.log) {
+    fastify.log.error({
+      event_type: 'unhandled_rejection',
+      reason: reason?.message || reason
+    });
+  }
   await vaultdown();
   process.exit(1);
 });

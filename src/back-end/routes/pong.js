@@ -171,6 +171,11 @@ const handle_tournament_registration = async (USER_ID, fastify)  => {
     // start new tournament if noneactive
     // reset bracket & results
     if (!t.active) {
+        fastify.log.info({
+            event_type: 'tournament_started',
+            user_id: USER_ID,
+            prize: Math.floor(Math.random() * (2500 - 800 + 100)) + 800
+        });
         t.active = true;
         t.players = [];
         t.players_status = [];
@@ -217,6 +222,14 @@ const handle_tournament_registration = async (USER_ID, fastify)  => {
     t.players_status[t.players?.length] = "waiting";
     t.bracket[0][t.players?.length] =  (player_info);
     t.players.push(player_info);
+
+    fastify.log.info({
+        event_type: 'tournament_player_registered',
+        user_id: USER_ID,
+        username: row.username,
+        player_count: t.players.length,
+        elo: row.elo
+    });
 
     broadcast_tournament(fastify, {
         event: 'player-joined',
@@ -448,12 +461,24 @@ async function pong_routes(fastify, options)
         for (const [r, game] of fastify.p_rooms.entries()) {
             if (Array.isArray(game.players) && game.players.includes(USER__ID))
             {
-                console.log('IDK WHICH USER BUT ITS INSIDE A GAME ALREDY');
+                request.log.info({
+                    event_type: 'pong_status_check',
+                    user_id: USER__ID,
+                    already_in_game: true,
+                    game_id: game.id,
+                    is_ai: game.id.startsWith('ai')
+                });
                 alr_in_game = true;
                 is_ai_game = game.id.startsWith('ai');
                 break;
             }
         }
+        request.log.info({
+            event_type: 'pong_status_retrieved',
+            user_id: USER__ID,
+            active_rooms: fastify.p_rooms.size,
+            queued_players: fastify.p_waitingPlayers.size
+        });
         return reply.send({ success: true, data: {
             activeRooms: fastify.p_rooms.size,
             onlinePlayers:  fastify.p_waitingPlayers.size + (fastify.p_rooms.size * 2), // or count from user sessions
@@ -473,8 +498,17 @@ async function pong_routes(fastify, options)
     fastify.get('/api/pong/active-games', {preValidation: [fastify.authenticate]}, async (request, reply) => {
         const USER__ID = request.user.id;
         if(!USER__ID){
+            request.log.warn({
+                event_type: 'active_games_unauthorized',
+                ip: request.ip
+            });
             return reply.status(401).send({ success: false, error: 'aunthorizsed' });
         }
+        request.log.info({
+            event_type: 'active_games_request',
+            user_id: USER__ID,
+            total_rooms: fastify.p_rooms.size
+        });
         const rooms = [];
         for (const [id, game] of fastify.p_rooms.entries()) {
             if (game.isAI === true)
@@ -543,7 +577,11 @@ async function pong_routes(fastify, options)
             await fastify.authenticate(req);
             USER_ID = req.user.id;
         } catch (err) {
-            console.log('JWT verification failed:', err.message);
+            fastify.log.warn({
+                event_type: 'pong_ws_auth_failed',
+                error: err.message,
+                ip: req.ip
+            });
             if (connection.socket && typeof connection.socket.send === 'function') {
                 connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
                 connection.socket.close();
@@ -556,7 +594,13 @@ async function pong_routes(fastify, options)
         // user is already in room?
         for (const [roomId, _g] of fastify.p_rooms.entries()) {
             if (Array.isArray(_g.players) && _g.players.includes(USER_ID)) {
-                console.log(`JOIN-BACK: ${USER_ID} reconnected himself to pong room. ${roomId} and ehh: ${_g?.countdown}`);
+                fastify.log.info({
+                    event_type: 'pong_player_reconnect',
+                    user_id: USER_ID,
+                    game_id: roomId,
+                    countdown: _g?.countdown,
+                    game_active: _g?.countdown <= 0
+                });
                 // !!! [update player's socket in p_room] !!!
                 const p_index = _g.players.indexOf(USER_ID);
                 if (p_index !== -1) {
@@ -595,6 +639,10 @@ async function pong_routes(fastify, options)
         }
         // user is already in queue??
         if (fastify.p_waitingPlayers.has(USER_ID)) {
+            fastify.log.warn({
+                event_type: 'pong_duplicate_queue',
+                user_id: USER_ID
+            });
             connection.socket.send(JSON.stringify({ type: 'error', message: 'already in queue' }));
             connection.socket.close();
             return ;
@@ -602,7 +650,11 @@ async function pong_routes(fastify, options)
          // add user to waiting queue
         p_waitingPlayers.set(USER_ID, connection.socket);
 
-        console.log(`INFO: ${fastify.p_waitingPlayers.size} are in waiting queue...`);
+        fastify.log.info({
+            event_type: 'pong_queue_joined',
+            user_id: USER_ID,
+            queue_size: fastify.p_waitingPlayers.size
+        });
         // 2 players -> create new game
         const waitingEntries = [...p_waitingPlayers.entries()];
         if (p_waitingPlayers.size >= 2)
@@ -617,6 +669,13 @@ async function pong_routes(fastify, options)
 
             const game_id = `${Date.now()}_${p1Id}_${p2Id}`;
             const c = Math.floor(Math.random() * (8 - 2 + 1)) + 2; // rand int between 8 and 2
+            fastify.log.info({
+                event_type: 'pong_match_created',
+                game_id: game_id,
+                player1_id: p1Id,
+                player2_id: p2Id,
+                countdown: c
+            });
             // p1-p2 usernames from DB -> one query
             const game = {
                 id: game_id,
@@ -672,6 +731,13 @@ async function pong_routes(fastify, options)
                     if (timeLeft > 0) {
                         game.countdown -= 1;
                     } else {
+                        fastify.log.info({
+                            event_type: 'pong_game_started',
+                            game_id: game.id,
+                            player1: game.player_names[0],
+                            player2: game.player_names[1],
+                            max_score: game.max_score
+                        });
                         const safe_game = {
                             scores: game.scores, countdown: game.countdown, width: game.width, height: game.height, 
                             paddleWidth: game.paddleWidth, paddleHeight: game.paddleHeight, max_score: game.max_score, 
@@ -771,7 +837,11 @@ async function pong_routes(fastify, options)
             }
         }); */
         connection.socket.on('close', () => {
-            console.log('Player disconnected');
+            fastify.log.info({
+                event_type: 'pong_player_disconnect',
+                user_id: USER_ID,
+                was_in_queue: p_waitingPlayers.has(USER_ID)
+            });
             // cleanup  waiting-queue
             if (p_waitingPlayers.has(USER_ID)) {
                 p_waitingPlayers.delete(USER_ID);
@@ -793,7 +863,11 @@ async function pong_routes(fastify, options)
             await fastify.authenticate(req);
             USER_ID = req.user.id;
         } catch (err) {
-            console.log('JWT verification failed:', err.message);
+            fastify.log.warn({
+                event_type: 'pong_ai_ws_auth_failed',
+                error: err.message,
+                ip: req.ip
+            });
             if (connection.socket && typeof connection.socket.send === 'function') {
                 connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
                 connection.socket.close();
@@ -808,7 +882,11 @@ async function pong_routes(fastify, options)
         for (const [roomId, game] of p_rooms.entries()) {
             if (game.isAI && Array.isArray(game.players) && game.players[0] === USER_ID) {
                 existingGame = game;
-                console.log(`🔄 [AI_RECONNECT] User ${USER_ID} reconnecting to existing AI game ${roomId}`);
+                fastify.log.info({
+                    event_type: 'pong_ai_reconnect',
+                    user_id: USER_ID,
+                    game_id: roomId
+                });
                 break;
             }
         }
@@ -855,6 +933,12 @@ async function pong_routes(fastify, options)
         // Crée une partie AI
         const game_id = `ai_${Date.now()}_${USER_ID}`;
         const AI_ID = 'AI_BOT';
+        fastify.log.info({
+            event_type: 'pong_ai_game_created',
+            user_id: USER_ID,
+            username: username,
+            game_id: game_id
+        });
         const game = {
             id: game_id,
             players: [USER_ID, AI_ID],
@@ -925,7 +1009,11 @@ async function pong_routes(fastify, options)
             await fastify.authenticate(req);
             USER_ID = req.user.id;
         } catch (err) {
-            console.log('JWT verification failed:', err.message);
+            fastify.log.warn({
+                event_type: 'pong_local_ws_auth_failed',
+                error: err.message,
+                ip: req.ip
+            });
             if (connection.socket && typeof connection.socket.send === 'function') {
                 connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
                 connection.socket.close();
@@ -936,13 +1024,20 @@ async function pong_routes(fastify, options)
             return;
         }
 
-        console.log(`User ${USER_ID} connected to local multiplayer game`);
+        fastify.log.info({
+            event_type: 'pong_local_ws_connected',
+            user_id: USER_ID
+        });
 
         let existingGame = null;
         for (const [roomId, game] of p_rooms.entries()) {
             if (game.isLocal && Array.isArray(game.players) && game.players[0] === USER_ID) {
                 existingGame = game;
-                console.log(`🔄 [LOCAL_RECONNECT] User ${USER_ID} reconnecting to local game ${roomId}`);
+                fastify.log.info({
+                    event_type: 'pong_local_reconnect',
+                    user_id: USER_ID,
+                    game_id: roomId
+                });
                 break;
             }
         }
@@ -984,6 +1079,12 @@ async function pong_routes(fastify, options)
 
         const game_id = `local_${Date.now()}_${USER_ID}`;
         
+        fastify.log.info({
+            event_type: 'pong_local_game_created',
+            user_id: USER_ID,
+            username: username,
+            game_id: game_id
+        });
         const game = {
             id: game_id,
             players: [USER_ID, `${USER_ID}_local_p2`], // Virtual second player ID
@@ -1029,7 +1130,11 @@ async function pong_routes(fastify, options)
         attach_local_socket_handler(connection.socket, game, fastify, USER_ID);
 
         connection.socket.on('close', () => {
-            console.log(`Local game ${game_id} ended`);
+            fastify.log.info({
+                event_type: 'pong_local_game_ended',
+                user_id: USER_ID,
+                game_id: game_id
+            });
             if (game.interval)
                 clearInterval(game.interval);
             p_rooms.delete(game_id);
@@ -1046,7 +1151,12 @@ async function pong_routes(fastify, options)
         try {
             await fastify.authenticate(req);
             USER_ID = req.user.id;
-        } catch {
+        } catch (err) {
+            fastify.log.warn({
+                event_type: 'tournament_ws_auth_failed',
+                error: err?.message,
+                ip: req.ip
+            });
             connection.socket.send(JSON.stringify({ type: 'error', msg: 'Unauthorized' }));
             return connection.socket.close();
         }
@@ -1123,14 +1233,17 @@ function attach_local_socket_handler(socket, game, fastify, USER_ID) {
 }
 
 const handle_local_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
-    console.log('🔵 [LOCAL_GAME_END] Function called with:', {
-        game_id: game?.id,
-        reason,
-        user_id
-    });
-
     if (!game || game?.ended)
         return;
+    
+    fastify?.log.info({
+        event_type: 'pong_local_game_ended',
+        game_id: game?.id,
+        reason: reason,
+        user_id: user_id,
+        p1_score: game.scores.p1,
+        p2_score: game.scores.p2
+    });
 
     game.ended = true;
     
@@ -1186,6 +1299,13 @@ const handle_local_game_end = async (game, reason = 'victory', fastify = null, u
              player_names[0], player_names[1]]
         );
 
+        fastify?.log.info({
+            event_type: 'pong_local_game_saved',
+            game_id: game.id,
+            winner: winner,
+            player_id: player_id
+        });
+
         if (winner && reason === 'victory') {
             await fastify.db.run(
                 `UPDATE users SET wins = wins + 1 WHERE id = ?`, 
@@ -1193,7 +1313,11 @@ const handle_local_game_end = async (game, reason = 'victory', fastify = null, u
             );
         }
     } catch (err) {
-        console.error("❌ [LOCAL_GAME_END] Error saving local game:", err);
+        fastify?.log.error({
+            event_type: 'pong_local_game_save_error',
+            error: err.message,
+            game_id: game?.id
+        });
     }
     
     safeCloseSocket(socket);
@@ -1423,6 +1547,16 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
         return;
     }
     game.ended = true;
+    
+    fastify?.log.info({
+        event_type: 'pong_game_ended',
+        game_id: game.id,
+        reason: reason,
+        player1_score: game.scores.p1,
+        player2_score: game.scores.p2,
+        player1_id: game.players[0],
+        player2_id: game.players[1]
+    });
     if (game.interval) {
         clearInterval(game.interval);
         game.interval = null;
@@ -1486,8 +1620,13 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
                 player_names[0], player_names[1]
             ]
         );
-        console.log(`OUPI GOUPI LE WINNER EST ${((winner === 'p1') ? players[0] : players[1])}`)
-        console.log(`game ${game.id} saved to DB`);
+        fastify?.log.info({
+            event_type: 'pong_game_saved',
+            game_id: game.id,
+            winner_id: W_id,
+            player1_id: players[0],
+            player2_id: players[1]
+        });
 
         // --- update users (wins/losses) ---
         if (W_id){
@@ -1496,7 +1635,11 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
             await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [L_id]);
         }
     } catch (err) {
-        console.error("❌ Error saving game:", err);
+        fastify?.log.error({
+            event_type: 'pong_game_save_error',
+            error: err.message,
+            game_id: game?.id
+        });
     }
 
     sockets.forEach(socket => safeCloseSocket(socket));
@@ -1510,14 +1653,17 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
 
 
 const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
-    console.log('🔵 [AI_GAME_END] Function called with:', {
-        game_id: game?.id,
-        reason,
-        user_id
-    });
-
     if (!game || game?.ended)
         return;
+    
+    fastify?.log.info({
+        event_type: 'pong_ai_game_ended',
+        game_id: game?.id,
+        reason: reason,
+        user_id: user_id,
+        player_score: game.scores.p1,
+        ai_score: game.scores.p2
+    });
     
     game.ended = true;
     
@@ -1586,12 +1732,23 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
              player_names[0], player_names[1]]
         );
         
+        fastify?.log.info({
+            event_type: 'pong_ai_game_saved',
+            game_id: game.id,
+            winner: winner,
+            player_id: player_id
+        });
+        
         if (winner === 'p1')
             await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [player_id]);
         else
             await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [player_id]);
     } catch (err) {
-        console.error("❌ [AI_GAME_END] Database error:", err);
+        fastify?.log.error({
+            event_type: 'pong_ai_game_save_error',
+            error: err.message,
+            game_id: game?.id
+        });
     }
     
     safeCloseSocket(socket);
