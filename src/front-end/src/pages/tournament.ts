@@ -690,7 +690,7 @@ export default class TournamentPage extends Page {
             }
             if(data?.type === 'tournament_match_start'){
               const g_data = data?.ehh;
-              console.log(g_data);
+              // console.log(g_data);
               const pong_page = new Pong(
                   "tournament-pong",
                   this.router,

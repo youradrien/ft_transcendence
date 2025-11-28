@@ -53,6 +53,7 @@ async render(): Promise<HTMLElement> {
     p1.textContent = i18n.t('player1_score', { score: 0 });
     const img_p1 = document.createElement('img');
     img_p1.id = 'player1-pfp';
+    console.log(this?.game_data);
     img_p1.src = this?.game_data?.player_pfps?.[0]?.[0] || 'https://avatars.githubusercontent.com/u/9919?s=200&v=4';
     img_p1.width = 100;
     img_p1.height = 100;

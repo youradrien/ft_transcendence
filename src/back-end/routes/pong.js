@@ -172,12 +172,12 @@ const t_run_next_match = async (fastify) => {
                     console.log(user_player?.username);
                     ///GET THE PLAYER NAME FROM THE DB
                     let username = 'Player';
-                    try {
-                        const user = await fastify.db.get('SELECT username FROM users WHERE id = ?', [user_player?.userId]);
-                        username = user?.username || 'Player';
-                    } catch (err) {
-                        console.error('Failed to fetch username:', err);
-                    }
+                    // try {
+                    //     const user = await fastify.db.get('SELECT username FROM users WHERE id = ?', [user_player?.userId]);
+                    //     username = user?.username || 'Player';
+                    // } catch (err) {
+                    //     console.error('Failed to fetch username:', err);
+                    // }
                     // partie AI
                     const game_id = `ai_${Date.now()}_${user_player?.userId}`;
                     const AI_ID = 'AI_BOT';
@@ -211,6 +211,32 @@ const t_run_next_match = async (fastify) => {
                         TC: (tc)
                     };
                     p_rooms.set(game_id, game);
+
+                    try {
+                            // const p_names = await fastify.db.all(
+                            //     'SELECT id, elo, avatar_url, username FROM users WHERE id IN (?, ?)',
+                            //     [p1Id, p2Id]
+                            // );
+                            // const map = {};
+                            // for (const row of p_names) map[row.id] = row;
+                            if(p1.pfp || p2.pfp){
+                                game.player_pfps = [
+                                    p1.pfp,
+                                    p2.pfp,
+                                ];
+                            }
+                        
+                            if(p1.username || p2.username)
+                            {
+                                game.player_names = [
+                                        p1.username,
+                                        p2.username,
+                                ];
+                            }
+                    
+                    } catch (error) {
+                        console.log("db querries err: " + error);
+                    }
                     const safe_game = {
                         scores: game.scores,
                         countdown: game.countdown,
@@ -284,33 +310,21 @@ const t_run_next_match = async (fastify) => {
                             // );
                             // const map = {};
                             // for (const row of p_names) map[row.id] = row;
-                            // game.player_names = [
-                            //     map[p1Id]?.username || "Unknown",
-                            //     map[p2Id]?.username || "Unknown",
-                            // ];
-
-                            // game.player_pfps = [
-                            //     map[p1Id]?.avatar_url || "default.png",
-                            //     map[p2Id]?.avatar_url || "default.png",
-                            // ];
-
-                            // game.player_elos = [
-                            //     map[p1Id]?.elo || 0,
-                            //     map[p2Id]?.elo || 0,
-                            // ];
-                            /*console.log(p_names[0]);
-                            const name_map = Object.fromEntries((p_names).map(r => [r.id, r.username]));
-                            game.player_names = [
-                                name_map[p1Id] || `/${p1Id}/`,
-                                name_map[p2Id] || `/${p2Id}/`
-                            ];
-                            const pfp_map = Object.fromEntries((p_names).map(r => [r.id, r.avatar_url]));
-                            game.player_pfps = [
-                                pfp_map[p1Id] || `https://avatars.githubusercontent.com/u/9919?s=200&v=4`,
-                                pfp_map[p2Id] || `https://avatars.githubusercontent.com/u/9919?s=200&v=4`
-                            ];
-                            console.log("pfp: " + pfp_map[p1Id]);
-                            */
+                            if(p1.pfp || p2.pfp){
+                                game.player_pfps = [
+                                    p1.pfp,
+                                    p2.pfp,
+                                ];
+                            }
+                        
+                            if(p1.username || p2.username)
+                            {
+                                game.player_names = [
+                                        p1.username,
+                                        p2.username,
+                                ];
+                            }
+                    
                     } catch (error) {
                         console.log("db querries err: " + error);
                     }
