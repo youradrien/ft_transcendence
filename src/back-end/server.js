@@ -10,13 +10,6 @@ const fs = require('fs');
 
 // Configure Pino logger for better structured logging
 const isDevelopment = process.env.NODE_ENV !== 'production';
-// const sslDir = path.resolve('./');
-
-// // Lister les fichiers présents
-// console.log('Contenu du dossier app:', fs.readdirSync(sslDir));
-
-// Lister les fichiers présents
-// console.log('Contenu du dossier ssl_certs :', fs.readdirSync(sslDir));
 
 const fastify = require('fastify')({
   logger: isDevelopment ? {
@@ -264,7 +257,7 @@ const start = async () => {
       gen_fake_games(Math.floor(Math.random() * 2)); //
       // gen_fake_users(db);
       await fastify.listen({ port: 3010, host: '0.0.0.0' });
-      console.log('🚀 server is running at https://localhost:3010');
+      console.log('🚀 server is running at https://localhost:5173');
     } catch (err) {
       fastify.log.error(err);
       process.exit(1);
