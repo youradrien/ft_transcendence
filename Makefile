@@ -22,6 +22,7 @@ elk-status:
 	@bash monitoring/scripts/master_script.sh status
 
 
+
 generate-ip:
 	@echo "🔍 Detecting local IP..." ; \
 	if command -v ip >/dev/null 2>&1 ; then \
@@ -38,6 +39,7 @@ generate-ip:
 	fi ; \
 	echo "Writing VITE_API_URL to front-end .env..." ; \
 	echo "VITE_API_URL=https://$$IP:5173" > ./src/front-end/.env ; \
+	echo "VITE_API_URL_WS=wss://$$IP:3010" >> ./src/front-end/.env; \
 	echo "📝 Updated front-end .env:" ; \
 	cat ./src/front-end/.env
 # generate-ip:
