@@ -28,7 +28,7 @@ async function getJWTContent(user_id)
 
 async function userRoutes(fastify, options) // Options permet de passer des variables personnalisées
 {
-     const API_URL = 'https://localhost:3010';
+     const API_URL = 'https://localhost:5173';
     // Retrieve OAuth secrets from Fastify decorator (loaded from Vault)
     const { 
         github_client_id: GITHUB_CLIENT_ID, 
