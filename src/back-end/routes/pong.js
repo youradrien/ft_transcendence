@@ -198,6 +198,9 @@ const t_run_next_match = async (fastify) => {
                         max_score:5,
                         aiSpeed: 3,
                         player_names: [username, 'AI Bot'],
+                        player_pfps: [
+                            "https://avatars.githubusercontent.com/u/9919?s=200&v=4", 
+                            "https://avatars.githubusercontent.com/u/9919?s=200&v=4"],
                         ended:false,
                         ai_state: {
                             viewRefreshMs: 1000,
@@ -210,7 +213,6 @@ const t_run_next_match = async (fastify) => {
                         p2_index_in_t: (p2_index),
                         TC: (tc)
                     };
-                    p_rooms.set(game_id, game);
 
                     try {
                             // const p_names = await fastify.db.all(
@@ -222,7 +224,7 @@ const t_run_next_match = async (fastify) => {
                             if(p1.pfp || p2.pfp){
                                 game.player_pfps = [
                                     p1.pfp,
-                                    p2.pfp,
+                                    "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Aidan",
                                 ];
                             }
                         
@@ -237,6 +239,7 @@ const t_run_next_match = async (fastify) => {
                     } catch (error) {
                         console.log("db querries err: " + error);
                     }
+                    p_rooms.set(game_id, game);
                     const safe_game = {
                         scores: game.scores,
                         countdown: game.countdown,
@@ -245,7 +248,8 @@ const t_run_next_match = async (fastify) => {
                         paddleWidth: game.paddleWidth,
                         paddleHeight: game.paddleHeight,
                         max_score: game.max_score,
-                        player_names: game.player_names
+                        player_names: game.player_names,
+                        player_pfps: [game.player_pfps],
                     };
                     (user_socket)
                         .send(JSON.stringify({ 
@@ -1130,6 +1134,18 @@ async function pong_routes(fastify, options)
             return;
         }
 
+        for (const [roomId, _g] of fastify.p_rooms.entries()) {
+            if (Array.isArray(_g.players) && _g.players.includes(USER_ID) && !_g.isAI)
+            {
+                // !!! [update player's socket in p_room] !!!
+                if (_g.players.indexOf(USER_ID) !== -1) {
+                    connection.socket.send(JSON.stringify({ type: 'error', message: 'Unauthorized' }));
+                    connection.socket.close();
+                    return ;
+                }
+            }
+        }
+
         let existingGame = null;
         for (const [roomId, game] of p_rooms.entries()) {
             if (game.isAI && Array.isArray(game.players) && game.players[0] === USER_ID) {
@@ -1314,7 +1330,7 @@ async function pong_routes(fastify, options)
             players: [USER_ID, `${USER_ID}_local_p2`], // Virtual second player ID
             sockets: [connection.socket, null],
             paddles: { p1: 50, p2: 50 },
-            ball: { x: 100, y: 100, vx: 5, vy: 5 },
+            ball: { x: 100, y: 100, vx: 7, vy: 7 },
             scores: { p1: 0, p2: 0 },
             countdown: 0,
             width: 1200,
@@ -1409,7 +1425,11 @@ async function pong_routes(fastify, options)
                 id: USER_ID
             });
         } else {
-            connection.socket.send(JSON.stringify(t));
+            // connection.socket.send(JSON.stringify(t));
+            broadcast_tournament(fastify, {
+                event: 'player-socket',
+                id: USER_ID
+            });
         }
         // t.conn_socket = (connection.socket);
 

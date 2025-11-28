@@ -483,7 +483,7 @@ export default class TournamentPage extends Page {
         </div>
 
 
-        <div id="game-area"> </div>
+        <div id="game-area"  style="animation: fadeInUp 1s ease-out"> </div>
     </div>
     </div>
     `;
@@ -689,7 +689,7 @@ export default class TournamentPage extends Page {
                 alert("Can't register to tournament now.");
             }
             if(data?.type === 'tournament_match_start'){
-              const g_data = data?.ehh;
+              const game_data = data?.ehh;
               // console.log(g_data);
               const pong_page = new Pong(
                   "tournament-pong",
@@ -697,7 +697,7 @@ export default class TournamentPage extends Page {
                   {
                       multiplayer: true as Boolean,
                       socket: (ws_tournament) as WebSocket,
-                      g_data,
+                      game_data,
                       isaigame: false,
                       islocal: false
                   }
