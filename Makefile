@@ -56,6 +56,7 @@ generate-ip:
 # 	fi; \
 # 	echo "Writing VITE_API_URL to front-end .env..."; \
 # 	echo "VITE_API_URL=https://$$IP:3010" > ./src/front-end/.env; \
+# 	echo "VITE_API_URL=https://$$IP:5173/auth" > ./src/back-end/.env; \
 # 	echo "📝 Updated front-end .env:"; \
 # 	cat ./src/front-end/.env
 
