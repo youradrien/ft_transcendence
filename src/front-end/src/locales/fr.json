@@ -112,5 +112,11 @@
    "friends_page_title" : "AMIS",
    "unfriend_button" : "Supprimer",
    "accept_button" : "accepter",
-   "decline_button" : "refuser"
+   "decline_button" : "refuser",
+   "avatar_update_success": "Avatar mis à jour avec succès !",
+   "avatar_update_failed": "Échec de la mise à jour de l'avatar : ",
+   "avatar_upload_failed": "Échec du téléchargement de l'image. Le fichier peut être trop volumineux ou une erreur réseau s'est produite. Veuillez essayer avec une image plus petite (2 Mo maximum recommandé).",
+   "error_reading_file": "Erreur lors de la lecture du fichier. Veuillez réessayer.",
+   "error_processing_image": "Erreur lors du traitement de l'image. Veuillez essayer avec un fichier plus petit.",
+   "unknown_error": "Erreur inconnue"
 }

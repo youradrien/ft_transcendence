@@ -481,26 +481,26 @@ export default class UserProfilePage extends Page {
                   if (avatarImg) {
                     avatarImg.src = base64String;
                   }
-                  alert('Avatar updated successfully!');
+                  alert(i18n.t('avatar_update_success'));
                 } else {
                   console.error('Avatar update failed:', data);
-                  alert("Failed to update avatar: " + (data.error || data.message || "Unknown error"));
+                  alert(i18n.t('avatar_update_failed') + (data.error || data.message || i18n.t('unknown_error')));
                 }
               } catch (fetchError) {
                 console.error('Network error:', fetchError);
-                alert('Failed to upload image. The file may be too large or there was a network error. Please try a smaller image (max 2MB recommended).');
+                alert(i18n.t('avatar_upload_failed'));
               }
             };
             
             reader.onerror = () => {
-              alert('Error reading file. Please try again.');
+              alert(i18n.t('error_reading_file'));
               console.error('FileReader error');
             };
             
             reader.readAsDataURL(file);
           } catch (e) {
             console.error('Unexpected error:', e);
-            alert("Error processing image. Please try a smaller file.");
+            alert(i18n.t('error_processing_image'));
           }
         };
         

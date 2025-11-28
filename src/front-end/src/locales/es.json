@@ -112,5 +112,11 @@
   "friends_page_title" : "AMIGOS",
   "unfriend_button" : "Borrar",
   "accept_button" : "aceptar",
-  "decline_button" : "rechazar"
+  "decline_button" : "rechazar",
+  "avatar_update_success": "¡Avatar actualizado con éxito!",
+  "avatar_update_failed": "Error al actualizar el avatar: ",
+  "avatar_upload_failed": "Error al subir la imagen. El archivo puede ser demasiado grande o hubo un error de red. Por favor, intenta con una imagen más pequeña (se recomienda un máximo de 2MB).",
+  "error_reading_file": "Error al leer el archivo. Por favor, inténtalo de nuevo.",
+  "error_processing_image": "Error al procesar la imagen. Por favor, intenta con un archivo más pequeño.",
+  "unknown_error": "Error desconocido"
 }

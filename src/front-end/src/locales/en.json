@@ -112,5 +112,11 @@
   "friends_page_title" : "FRIENDS",
   "unfriend_button" : "Unfriend",
   "accept_button" : "accept",
-  "decline_button" : "refuse"
+  "decline_button" : "refuse",
+  "avatar_update_success": "Avatar updated successfully!",
+  "avatar_update_failed": "Failed to update avatar: ",
+  "avatar_upload_failed": "Failed to upload image. The file may be too large or there was a network error. Please try a smaller image (max 2MB recommended).",
+  "error_reading_file": "Error reading file. Please try again.",
+  "error_processing_image": "Error processing image. Please try a smaller file.",
+  "unknown_error": "Unknown error"
 }
