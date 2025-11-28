@@ -1,5 +1,7 @@
 import Page from "../template/page";
 import { i18n } from '../i18n';
+import Pong from '../component/pong.ts';
+import { WS_API_URL} from '../app.ts';
 
 export default class TournamentPage extends Page {
   async render(): Promise<HTMLElement> {
@@ -7,6 +9,7 @@ export default class TournamentPage extends Page {
     container.id = this.id;
     let tournament_online: boolean = false;
     let _registered: boolean = false;
+    let l_bracket: number = 0;
 
     container.innerHTML = `
     <style>
@@ -138,7 +141,7 @@ export default class TournamentPage extends Page {
             padding: 0.4rem 0.6rem;
             background: #1f1f1f;
             border-radius: 8px;
-            border: 1px solid #444;
+            border: 2px solid #444;
             width: 200px;
         }
 
@@ -371,9 +374,21 @@ export default class TournamentPage extends Page {
     <div id="bracket">
 
         <!-- Quarterfinals -->
-        <div class="round-box">
+        <div class="round-box" id="rb-1">
             <h3>Quarterfinals</h3>
             <h4 id="qf-count">0/4</h4>
+
+            <!-- Score (absoutepositions) -->
+            <div id="score-qf-1" style="font-size: 12px; z-index: 10; margin-top: 59px; margin-left: 80px; position: absolute; animation: fadeInUp 0.85s ease-out;">
+                </div>
+            <div id="score-qf-2"  style="font-size: 12px; z-index: 10; margin-top: 234px; margin-left: 80px; position: absolute; animation: fadeInUp 0.85s ease-out;">
+                </div>
+            <div id="score-qf-3"  style="font-size: 12px; z-index: 10; margin-top: 408px; margin-left: 80px; position: absolute;animation: fadeInUp 0.85s ease-out;">
+                </div>
+            <div id="score-qf-4" style="font-size: 12px; z-index: 10; margin-top: 583px; margin-left: 80px; position: absolute;animation: fadeInUp 0.85s ease-out;">
+                </div>
+
+
             <div class="round qf">
             <div class="match">
                 <div id="qf-1" class="player"><div class="pfp">A</div>
@@ -393,7 +408,7 @@ export default class TournamentPage extends Page {
                 </div>
             </div>
 
-            <div class="match">
+            <div class="match" id="rb-2">
                 <div id="qf-5" class="player"><div class="pfp">E</div>
                     <div style="display: flex; flex-direction: column;">  <span>Eva</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_5</p> </div>
                 </div>
@@ -402,7 +417,7 @@ export default class TournamentPage extends Page {
                 </div>
             </div>
 
-            <div class="match">
+            <div class="match" id="rb-3">
                 <div id="qf-7" class="player"><div class="pfp">G</div>
                     <div style="display: flex; flex-direction: column;">  <span>Gino</span> <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_7</p></div> 
                 </div>
@@ -411,199 +426,247 @@ export default class TournamentPage extends Page {
                 </div> 
             </div>
             </div>
+
+
         </div>
 
 
         <!-- Semifinals -->
-        <div class="round-box">
+        <div class="round-box"  id="rb-2">
             <h3>Semifinals</h3>
             <h4 id="sf-count">0/2</h4>
+
+
+            <!-- Score (absoutepositions) -->
+            <div id="score-sf-1" style="z-index: 10; margin-top: 150px; margin-left: 80px; position: absolute; animation: fadeInUp 0.85s ease-out;">
+                </div>
+            <div id="score-sf-2"  style="z-index: 10; margin-top: 520px; margin-left: 80px; position: absolute; animation: fadeInUp 0.85s ease-out;">
+                </div>
+
+
             <div class="round sf">
                 <div class="match mid">
                     <div id="sf-1" class="player winner"> <div class="pfp">W1</div>
-                      Winner 1 </div>
+                       
+                      <div style="display: flex; flex-direction: column;">  <span>PEDRO</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> Winner 1</p> </div>
+                    </div>
                     <div id="sf-2"class="player winner"> <div class="pfp">W2</div>
-                      Winner 2 </div>
+                      <div style="display: flex; flex-direction: column;">  <span>KEKW</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> Winner 2</p> </div>
+                    </div>
                 </div>
                 <div class="match mid">
                     <div id="sf-3" class="player winner"> <div class="pfp">W3</div>
-                        Winner 3  </div>
+                        <div style="display: flex; flex-direction: column;">  <span>LUCAS</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> Winner 3</p> </div>
+                    </div>
                     <div id="sf-4" class="player winner"> <div class="pfp">W4</div>
-                        Winner 4  </div>
+                        <div style="display: flex; flex-direction: column;">  <span>SARAH</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> Winner </p> </div>
+                    </div>
                 </div>
             </div>
         </div>
 
 
         <!-- Final -->
-        <div class="round-box">
+        <div class="round-box"  id="rb-3">
             <h3>FINAL 🏁</h3>
             <h4 id="f-count">0/1</h4>
             <div class="round final">
             <div class="match final-match">
-                <div class="player champion">Champion</div>
-                <div class="player champion">Finalist</div>
+                   <div id="f-1" class="player champion"> <div class="pfp">F1</div>
+                        <div style="display: flex; flex-direction: column;">  <span>LUCAS</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> CHAMPION </p> </div>
+                    </div>
+                    <div id="f-2" class="player champion"> <div class="pfp">F2</div>
+                        <div style="display: flex; flex-direction: column;">  <span>SARAH</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> FINALIST </p> </div>
+                    </div>
             </div>
             </div>
         </div>
 
+
+        <div id="game-area"> </div>
     </div>
-
-
     </div>
     `;
     // === DOM elm ===
     const nameInput = container.querySelector("#player-name") as HTMLInputElement;
     const addBtn = container.querySelector("#add-player-btn") as HTMLButtonElement;
     const f_startBtn = container.querySelector("#force-start-btn") as HTMLButtonElement;
+    const game_area = container.querySelector('#game-area');
     let ws_tournament: WebSocket;
 
 
     // update tournament, fill. everythn
     const update_tournament_state = async (tournament_data: any, self_registered: boolean) => {
-        console.log("e");
-        console.log(tournament_data);
-
-        // online
-        const on = container.querySelector("#onln") as HTMLButtonElement;
-        const on2 = container.querySelector("#onln-2") as HTMLButtonElement;
-        if(tournament_data?.active)
-        {
-          on.style.color = "#7bff00ff";
-          on.style.boxShadow = "0 0 8px #7bff00ff";
-          on.style.backgroundColor = "#7bff00ff";
-          on2.style.color = "#7bff00ff";
-          on2.style.textShadow = "0 0 4px #7bff00ff";
-          on2.innerHTML = "ONLINE";
-        }
-
-        // plyr count
-        const c = document.getElementById("player-count") as HTMLElement;
-        c.innerHTML = `${tournament_data.players.length} / 8 players joined.`;
-        // prize
-        const tp = document.getElementById("t-prize") as HTMLElement;
-        if(tournament_data?.tournament_prize){
-          tp.innerHTML = `TOURNAMENT PRIZE:  +${tournament_data?.tournament_prize}elo 🥇`;
-        }
-        // cost 
-        const tc = document.getElementById("t-cost") as HTMLElement;
-        tc.innerHTML = `${tournament_data?.tournament_prize / 4} ELO`;
-
-        // plyr list
-        const plyr_display = document.getElementById("players-display") as HTMLElement;
-        plyr_display.innerHTML = "";
-        let i: number  = 0;
-        tournament_data.players.forEach((player: any) => {
-          const card = document.createElement("div");
-          card.className = "player-card";
-          // card.style.animation = "fadeInUp 0.85s ease-out";
-          let C = "#ffffffff";
-          let t:string = "rr";
-          if(player?.status == "waiting"){
-            C = "#fff200ff";
-            t = "Waiting..."
-          }
-          if(player?.status == "in_match"){
-            C = "#00e5ffff";
-            t = "Playing (IN-MATCH!)";
-          }
-          if(player?.status == "eliminated"){
-            C = "#ff3434ff";
-            t = "Eliminated ❌";
-          }
-          card.innerHTML = `
-            <div class="pfp">
-              <img src=${player.pfp} ></img>
-            
-            </div>
-            <div class="player-info" style="text-align: left;">
-              <span class="player-username">${player.username} as <i style="text-shadow: 0 0 4px white;">${player.tournament_pseudo}</i></span>
-              <span class="player-elo">ELO: ${player.elo ?? 1000}</span>
-              <span  style="color: ${C}; text-shadow: 0 0 4px ${C}" class="player-elo"> ${t} </span>
-            </div>
-          `;
-          card.onclick = async () => {  this.router.navigate('/profile/' + player?.username);  }
-          plyr_display.appendChild(card);
-          i++;
-        });
-    
-        // status
-        const lb1 = document.getElementById("lobby-status-1") as HTMLElement;
-        const lb2 = document.getElementById("lobby-status-2") as HTMLElement;
-        let color: string = "#ffffffff";
-        if(tournament_data?.tournament_status == "inactive"){
-            lb2.innerHTML = `Inactive: Empty Tournament`;
-            color  = "#888888ff";
-        }
-        if(tournament_data?.tournament_status == "preparing"){
-            lb2.innerHTML = `Registration Open: (waiting for players...)`;
-            color  = "#09b9ffff";
-        }
-        if(tournament_data?.tournament_status == "in-progress"){
-            lb2.innerHTML = `Registration closed: Tournament in-progress`;
-            color  = "#7bff00ff";
-
-            f_startBtn.innerHTML = "STARTED !";
-            f_startBtn.style.backgroundColor = "#7bff00ff";
-        }
-        lb1.style.backgroundColor = (color);
-        lb2.style.color = (color);
-        lb1.style.boxShadow = `0 0 8px ${color}`;
-        lb2.style.textShadow = `0 0 4px ${color}`;
-        // btn-status
-        if(self_registered) {
-          addBtn.innerHTML = 'JOINED';
-          addBtn.style.backgroundColor = '#00b7ffff';
-          _registered = (true);
-        }
-        // brackets
-        for(let i = 0; i < 3; i++)
-        {  
-          let s:string[] = ["qf", "sf", "f"];
-          let w:string[] = ["quarter", "semi_finals", "final"];
-          for(let j = 0; j < tournament_data?.bracket[i].length; j++)
-          {
-            let player = tournament_data?.bracket[i][j];
-            const br_result = tournament_data?.bracket_results[w[i]][Math.floor(j / 2)];
-            console.log("br_result: " + br_result);
-            if(player != null)
-            {
-              const match = document.getElementById(s[i] + "-" + (j + 1)) as HTMLElement;
-
-              if(match) {
-                  // colouring for win/losses bracket
-                  // console.log(player);
-                  if(br_result){
-                    if(br_result?.winner == player.userId){
-                      match.style.border = "2px solid #00ff28";
-                    }else{
-                      match.style.border = "2px solid #a63c3c";
-                    }
-                  }
-                  const d = match.querySelector("div") as HTMLElement;  // returns first span OR div
-                  const e = match.querySelector("span") as HTMLElement;  // returns first span OR div
-                  const f = match.querySelector("p") as HTMLElement;  // returns first span OR div
-                  d.innerHTML = `<img src=${player?.pfp} />`;
-                  e.innerHTML = `${player?.tournament_pseudo}`;
-                  f.innerHTML = `${player?.username}`;
+        // console.log("e");
+        // console.log(tournament_data);
+        try {
+              // online
+              const on = container.querySelector("#onln") as HTMLButtonElement;
+              const on2 = container.querySelector("#onln-2") as HTMLButtonElement;
+              if(tournament_data?.active)
+              {
+                on.style.color = "#7bff00ff";
+                on.style.boxShadow = "0 0 8px #7bff00ff";
+                on.style.backgroundColor = "#7bff00ff";
+                on2.style.color = "#7bff00ff";
+                on2.style.textShadow = "0 0 4px #7bff00ff";
+                on2.innerHTML = "ONLINE";
               }
-            }
+
+              // plyr count
+              const c = document.getElementById("player-count") as HTMLElement;
+              c.innerHTML = `${tournament_data.players.length} / 8 players joined.`;
+              // prize
+              const tp = document.getElementById("t-prize") as HTMLElement;
+              if(tournament_data?.tournament_prize){
+                tp.innerHTML = `TOURNAMENT PRIZE:  +${tournament_data?.tournament_prize}elo 🥇`;
+              }
+              // cost 
+              const tc = document.getElementById("t-cost") as HTMLElement;
+              tc.innerHTML = `${tournament_data?.tournament_prize / 4} ELO`;
+
+              // plyr list
+              const plyr_display = document.getElementById("players-display") as HTMLElement;
+              plyr_display.innerHTML = "";
+              let i: number  = 0;
+              tournament_data.players.forEach((player: any) => {
+                const card = document.createElement("div");
+                card.className = "player-card";
+                // card.style.animation = "fadeInUp 0.85s ease-out";
+                let C = "#ffffffff";
+                let t:string = "rr";
+                if(player?.status == "waiting"){
+                  C = "#fff200ff";
+                  t = "Waiting..."
+                }
+                if(player?.status == "in_match"){
+                  C = "#00e5ffff";
+                  t = "Playing (IN-MATCH!)";
+                }
+                if(player?.status == "eliminated"){
+                  C = "#ff3434ff";
+                  t = "Eliminated ❌";
+                }
+                card.innerHTML = `
+                  <div class="pfp">
+                    <img src=${player.pfp} ></img>
+                  
+                  </div>
+                  <div class="player-info" style="text-align: left;">
+                    <span class="player-username">${player.username} as <i style="text-shadow: 0 0 4px white;">${player.tournament_pseudo}</i></span>
+                    <span class="player-elo">ELO: ${player.elo ?? 1000}</span>
+                    <span  style="color: ${C}; text-shadow: 0 0 4px ${C}" class="player-elo"> ${t} </span>
+                  </div>
+                `;
+                card.onclick = async () => {  this.router.navigate('/profile/' + player?.username);  }
+                plyr_display.appendChild(card);
+                i++;
+              });
+          
+              // status
+              const lb1 = document.getElementById("lobby-status-1") as HTMLElement;
+              const lb2 = document.getElementById("lobby-status-2") as HTMLElement;
+              let color: string = "#ffffffff";
+              if(tournament_data?.tournament_status == "inactive"){
+                  lb2.innerHTML = `Inactive: Empty Tournament`;
+                  color  = "#888888ff";
+              }
+              if(tournament_data?.tournament_status == "preparing"){
+                  lb2.innerHTML = `Registration Open: (waiting for players...)`;
+                  color  = "#09b9ffff";
+              }
+              if(tournament_data?.tournament_status == "in-progress"){
+                  lb2.innerHTML = `Registration closed: Tournament in-progress`;
+                  color  = "#7bff00ff";
+
+                  f_startBtn.innerHTML = "STARTED !";
+                  f_startBtn.style.backgroundColor = "#7bff00ff";
+              }
+              lb1.style.backgroundColor = (color);
+              lb2.style.color = (color);
+              lb1.style.boxShadow = `0 0 8px ${color}`;
+              lb2.style.textShadow = `0 0 4px ${color}`;
+              // btn-status
+              if(self_registered) {
+                addBtn.innerHTML = 'JOINED';
+                addBtn.style.backgroundColor = '#00b7ffff';
+                _registered = (true);
+              }
+              // brackets
+              for(let i = 0; i < 3; i++)
+              {  
+                let s:string[] = ["qf", "sf", "f"];
+                let w:string[] = ["quarter", "semi_finals", "final"];
+                for(let j = 0; j < tournament_data?.bracket[i].length; j++)
+                {
+                  let player = tournament_data?.bracket[i][j];
+                  const br_result = tournament_data?.bracket_results[w[i]][Math.floor(j / 2)];
+                  if(player != null)
+                  {
+                    const match = document.getElementById(s[i] + "-" + (j + 1)) as HTMLElement;
+                    const m_score = document.getElementById(
+                        "score-" + s[i] + "-" + (Math.floor(j / 2) + 1)
+                      ) as HTMLElement;
+
+                    if(match) {
+                        // colouring for win/losses bracket
+                        // console.log(player);
+                        if(br_result != null){
+                          if(br_result?.winner == player.userId){
+                            match.style.border = "2px solid #00ff28";
+                          }else{
+                            match.style.border = "2px solid #a63c3c";
+                          }
+                          if(m_score && br_result){
+                              m_score.innerHTML = `${br_result.scores[0]} vs ${br_result.scores[1]}`;
+                          }
+                        }
+                        const d = match.querySelector("div") as HTMLElement;  // returns first span OR div
+                        const e = match.querySelector("span") as HTMLElement;  // returns first span OR div
+                        const f = match.querySelector("p") as HTMLElement;  // returns first span OR div
+                        
+                        d.innerHTML = `<img src=${player?.pfp} />`;
+                        e.innerHTML = `${player?.tournament_pseudo}`;
+                        f.innerHTML = `${player?.username}`;
+                    }
+                  
+                  }
+                }
+              }
+              // matchescount
+              const a = container.querySelector("#qf-count") as HTMLInputElement;
+              const b = container.querySelector("#sf-count") as HTMLInputElement;
+              const cc = container.querySelector("#player-name") as HTMLInputElement;
+              if(tournament_data?.matches_done)
+              {
+                a.innerHTML = `${tournament_data?.matches_done[0]} / 4`;
+                b.innerHTML = `${tournament_data?.matches_done[1]} / 2`;
+                cc.innerHTML = `${tournament_data?.matches_done[2]} / 1`;
+              }
+              // current round
+              const d = container.querySelector("#curr_bracket") as HTMLInputElement;
+              let vs:string [] = ["QUARTER-FINAL", "SEMI-FINAL", "FINAL"];
+              d.innerHTML = `CURRENT ROUND: ${vs[tournament_data?.current_bracket] || '...'}`;
+              for(let i = 0; i < 3; i++){
+                // const rb = document.getElementById("rb-" + i) as HTMLElement;
+                // console.log(rb);
+                // if(tournament_data?.current_bracket == i){
+                //   rb.style.border = "1px solid #ffffffff";
+                //   rb.style.boxShadow = "0 0 20px rgba(255, 255, 255, 0.72)";
+                // }else{
+                //   rb.style.border = "1px solid #333";
+                //   rb.style.boxShadow = "0 0 20px rgba(0, 0, 0, 0.39)";
+                // }
+              }   
+          if(tournament_data?.current_bracket !== l_bracket){
+              if (game_area) {
+                  game_area.innerHTML = '';
+              }
           }
+          l_bracket = (tournament_data?.current_bracket);
+        } catch (error) {
+            console.log(error);
         }
-        // matchescount
-        const a = container.querySelector("#qf-count") as HTMLInputElement;
-        const b = container.querySelector("#sf-count") as HTMLInputElement;
-        const cc = container.querySelector("#player-name") as HTMLInputElement;
-        if(tournament_data?.matches_done)
-        {
-          a.innerHTML = `${tournament_data?.matches_done[0]} / 4`;
-          b.innerHTML = `${tournament_data?.matches_done[1]} / 2`;
-          cc.innerHTML = `${tournament_data?.matches_done[2]} / 1`;
-        }
-        // current round
-        const d = container.querySelector("#curr_bracket") as HTMLInputElement;
-        let vs:string [] = ["QUARTER-FINAL", "SEMI-FINAL", "FINAL"];
-        d.innerHTML = `CURRENT ROUND: ${vs[tournament_data?.current_bracket] || '...'}`;        
     };
 
 
@@ -611,7 +674,7 @@ export default class TournamentPage extends Page {
   
     // (tournament) ws-endpoint handler
     try {
-        ws_tournament = new WebSocket('wss://localhost:3010/api/pong/tournament/ws'); 
+        ws_tournament = new WebSocket(`${WS_API_URL}/api/pong/tournament/ws`); 
         
         ws_tournament.onmessage = async (msg) => {
             const data = JSON.parse(msg.data);
@@ -625,7 +688,27 @@ export default class TournamentPage extends Page {
             if(data?.type === 'cant_join'){
                 alert("Can't register to tournament now.");
             }
-        };
+            if(data?.type === 'tournament_match_start'){
+              const g_data = data?.ehh;
+              console.log(g_data);
+              const pong_page = new Pong(
+                  "tournament-pong",
+                  this.router,
+                  {
+                      multiplayer: true as Boolean,
+                      socket: (ws_tournament) as WebSocket,
+                      g_data,
+                      isaigame: false,
+                      islocal: false
+                  }
+              );
+              const pong_container = await pong_page.render();
+              if (game_area) {
+                  game_area.innerHTML = '';
+                  game_area.appendChild(pong_container);   
+              }
+            }
+        }
         ws_tournament.onerror = (err) => {
             console.error('ws_tournament error:', err);
         };

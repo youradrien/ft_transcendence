@@ -83,15 +83,15 @@ fastify.decorate('p_tournament', {
     players: [],         // array of 8 plyr-info-objs: {username, pfp, elo..}
     players_status: [], // 8 plyr ["waiting" | "in_match" | "eliminated" | "winner"]
     game_states: [ // game states will still be in p_rooms, to be visibile to everyone
-      [null, null, null, null],
-      [null, null],
+      [null, null, null, null], 
+      [null, null], 
       [null]
     ],
     bracket: [  // en gros, une array-bracket qui contient des array de matchups: [ [p1,p2], [p3,p4], [p2, p6]...]
-        [null, null, null, null,    null, null, null, null], // quarterfinals
+        [null, null, null, null,    null, null, null, null], // quarterfinals 
         [null, null,   null, null], // semi-finals
         [null, null] // final
-    ],
+    ],        
     current_bracket: 0,     // 0=QF, 1=SF, 2=Final
     current_match: 0,
     matches_done: [
@@ -105,8 +105,8 @@ fastify.decorate('p_tournament', {
       quarter: [null, null, null, null],
       semi_finals: [null, null],
       final: [null]
-    },
-    prize: null, // prix en elo?
+    },      
+    prize: null, // prix en elo? 
     status: "inactive" // statut descriptif [inactive, preparing, in-progress, completed]
 });
 

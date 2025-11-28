@@ -9,6 +9,8 @@ import Leaderboard from './pages/leaderboard';
 import Friends from './pages/friends';
 import Tournament from './pages/tournament';
 export const API_URL = import.meta.env.VITE_API_URL;
+export const WS_API_URL = import.meta.env.VITE_API_URL;
+
 // export const API_URL = 'https://localhost:3010';
 // console.log('API_URL:', API_URL);
 
