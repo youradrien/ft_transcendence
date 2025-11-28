@@ -33,7 +33,7 @@ services:
       context: ./src/back-end
       dockerfile: Dockerfile
     ports:
-      - "3010:3010"
+      - "3010"
     restart: unless-stopped
     environment:
       - NODE_ENV=production
@@ -81,7 +81,7 @@ services:
   vault:
     image: hashicorp/vault:latest
     container_name: vault
-    ports: 
+    ports:
       - "8200:8200"
     cap_add:
       - IPC_LOCK                             # prevent memory swap for secrets
