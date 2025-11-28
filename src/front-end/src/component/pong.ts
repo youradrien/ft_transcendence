@@ -12,8 +12,6 @@ export default class SinglePong extends Page {
     super(id, router, options); // ✅ Pass required args
     this.multiplayer = options?.multiplayer ?? false;
     this.socket = options?.socket;
-    console.log(options);
-    console.log(options?.game_data);
     this.game_data = options?.game_data;
     this.isaigame = options?.isaigame;
     this.islocal = options?.islocal;

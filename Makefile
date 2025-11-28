@@ -22,6 +22,7 @@ elk-status:
 	@bash monitoring/scripts/master_script.sh status
 
 
+
 generate-ip:
 	@echo "🔍 Detecting local IP..." ; \
 	if command -v ip >/dev/null 2>&1 ; then \
@@ -34,7 +35,6 @@ generate-ip:
 		echo "⚠️ No IP detected, using localhost" ; \
 		IP=localhost ; \
 	else \
-
 		echo "✅ Detected IP: $$IP" ; \
 	fi ; \
 	echo "Writing VITE_API_URL to front-end .env..." ; \

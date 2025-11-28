@@ -73,7 +73,30 @@ const broadcast_tournament = async (fastify, payload = {} /*peut etre <USER_ID> 
 
 // [TOURNAMENT - ENDING]
 const t_ending = async (fastify) => {
+    const t = fastify.p_tournament;
+    t.active = false;
+    t.players = [];
+    // t.players_status = [];
 
+    t.current_bracket = 0;
+    t.currentMatch = 0;
+
+    // t.bracket = [
+    //     [null, null, null, null,    null, null, null, null], // quarterfinals 
+    //     [null, null,   null, null], // semi-finals
+    //     [null, null] // final
+    // ];
+    // t.results = {
+    //     quarter:  [null, null, null, null],
+    //     semi:     [null, null],
+    //     final:    null
+    // };
+    // t.prize =  Math.floor(Math.random() * (2500 - 800 + 100)) + 800; // rand int between 8 and 2
+    t.status = "inactive";
+    // player_sockets: new Map(), // {userId → socket} map
+    broadcast_tournament(fastify, {
+        event: './'
+    });
 }
 
 
@@ -99,6 +122,12 @@ const t_run_next_match = async (fastify) => {
 
     // i
     const ix = t.current_match * (t.current_bracket == 0 ? 2 : 1);
+    if(t.current_bracket == 1)
+    {
+        if(t.currentMatch > 0){
+            ix = 2;
+        }
+    }
     const [p1, p2] = [ 
         t.bracket[ t.current_bracket ][ix ],
         t.bracket[ t.current_bracket ][ ix + 1 ]  
@@ -135,8 +164,7 @@ const t_run_next_match = async (fastify) => {
 
                         const br = t.current_bracket;
                         t.matches_done[br] += 1;
-                        t_detect_next_bracket(fastify);
-
+                  
                         const bucket_names = ["quarter", "semi_finals", "final"];
                         console.log("bracket_res [" + bucket_names[br] + "]  ["+  t.current_match + "]"); 
                         t.bracket_results[bucket_names[br]][tc] = {
@@ -145,14 +173,18 @@ const t_run_next_match = async (fastify) => {
                             scores: [W_score, L_score], // Optional format
                             is_bot_match: true
                         };
-
+                        if(br !== 2){
+                            t_detect_next_bracket(fastify);
+                        }
                         // t.game_states[br][idx] = {
                         //     type: "bot-simulated",
                         // };
                         // playerz statuses
                         t.players[p1_index].status = "waiting";  
                         t.players[p2_index].status  = "eliminated";
-
+                        if(br == 2){
+                            t_detect_next_bracket(fastify);
+                        }
                         broadcast_tournament(fastify, {
                             event: './'
                         });
@@ -292,7 +324,7 @@ const t_run_next_match = async (fastify) => {
                         height: 600,
                         paddleWidth: 10,
                         paddleHeight: 80,
-                        max_score: Math.floor(Math.random() * (75 - 10 + 1)) + 10, // score [10- 75]
+                        max_score: Math.floor(Math.random() * (25 - 10 + 1)) + 10, // score [10- 75]
                         player_names: ["player_1", "player_2"],
                         player_pfps: [
                             "https://avatars.githubusercontent.com/u/9919?s=200&v=4", 
@@ -386,7 +418,7 @@ const t_detect_next_bracket = async (fastify) => {
     // move to next bracket
     const f = [4, 2, 1];
     const br = t.current_bracket;
-    console.log("DETECTING NEXT-BRACKET:  " + t.matches_done[br] + "  vs   " +  f[t.current_bracket]);
+    // console.log("DETECTING NEXT-BRACKET:  " + t.matches_done[br] + "  vs   " +  f[t.current_bracket]);
     if(t.matches_done[br] >= f[t.current_bracket]) {
         if(t.current_bracket == 2)
         {
@@ -394,7 +426,7 @@ const t_detect_next_bracket = async (fastify) => {
             t_ending(fastify);
             return ;
         }
-        console.log("SWITCH TO BRACKET: " + (br + 1));
+        // console.log("SWITCH TO BRACKET: " + (br + 1));
         /*const alive = t.players.filter(p => p.status !== "eliminated");
         alive.sort(() => Math.random() - 0.5);
         if(t.current_bracket == 0)
@@ -410,7 +442,8 @@ const t_detect_next_bracket = async (fastify) => {
         const prev_winnerz = t.bracket_results[prev]
             .filter(r => r && r.winner != null) // remove nulls
             .map(r => t.players.find(p => p.userId === r.winner));
-        console.log("PREV_WINNERS: " + prev_winnerz.length);
+            // .filter((p, idx, arr) => p && arr.findIndex(x => x.userId === p.userId) === idx);
+        // console.log("PREV_WINNERS: " + prev_winnerz.length);
         let semi_final = false;
         if (t.current_bracket === 0) { // semi-finals
             // if (prev_winnerz.length !== 4)   return;
@@ -445,9 +478,10 @@ const t_detect_next_bracket = async (fastify) => {
             }, (3000));
     
         }else{
+            console.log(t.bracket[2][0].username + "  vs  " + t.bracket[2][1].username);
             setTimeout(() => {
                 t_run_next_match(fastify);
-            }, (500000));
+            }, (8000));
         }
         // for(let i = 0; i < (semi_final == true) ? 2 :1 ; i++){
         //     t_run_next_match(fastify);
@@ -1884,7 +1918,7 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
         t_detect_next_bracket(fastify);
     }
 
-    sockets.forEach(socket => safeCloseSocket(socket));
+    // sockets.forEach(socket => safeCloseSocket(socket));
 
     if(fastify){
         fastify?.p_rooms.delete(game.id);
@@ -2004,7 +2038,7 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
     
         t_detect_next_bracket(fastify);
     }
-    safeCloseSocket(socket);
+    // safeCloseSocket(socket);
     if (fastify) {
         fastify.p_rooms.delete(game.id);
     }

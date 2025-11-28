@@ -498,7 +498,7 @@ export default class TournamentPage extends Page {
     // update tournament, fill. everythn
     const update_tournament_state = async (tournament_data: any, self_registered: boolean) => {
         // console.log("e");
-        // console.log(tournament_data);
+        console.log(tournament_data);
         try {
               // online
               const on = container.querySelector("#onln") as HTMLButtonElement;
@@ -636,7 +636,7 @@ export default class TournamentPage extends Page {
               // matchescount
               const a = container.querySelector("#qf-count") as HTMLInputElement;
               const b = container.querySelector("#sf-count") as HTMLInputElement;
-              const cc = container.querySelector("#player-name") as HTMLInputElement;
+              const cc = container.querySelector("#f-count") as HTMLInputElement;
               if(tournament_data?.matches_done)
               {
                 a.innerHTML = `${tournament_data?.matches_done[0]} / 4`;
