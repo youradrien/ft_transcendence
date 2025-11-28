@@ -10,7 +10,7 @@ const { pipeline } = require ('stream/promises');
 const { db, _add_friend, _remove_friend, _delete_friend_request } = require('../db.js'); // chemin relatif
 
 const { OAuth2Client } = require('google-auth-library');
-const FRONTEND_URL = 'https://localhost:5173/auth';
+const FRONTEND_URL = `https://localhost:5173/auth`;
 
 
 async function getJWTContent(user_id)
@@ -28,6 +28,7 @@ async function getJWTContent(user_id)
 
 async function userRoutes(fastify, options) // Options permet de passer des variables personnalisées
 {
+     const API_URL = 'https://localhost:3010';
     // Retrieve OAuth secrets from Fastify decorator (loaded from Vault)
     const { 
         github_client_id: GITHUB_CLIENT_ID, 
@@ -40,7 +41,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
     const client = new OAuth2Client(
         GOOGLE_CLIENT_ID, 
         GOOGLE_CLIENT_SECRET, 
-        '${API_URL}/api/auth/google/callback'
+        `${API_URL}/api/auth/google/callback`
     );
 
     fastify.get('/api/test', async (request, reply) => {
@@ -926,3 +927,4 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
 }
 
   module.exports = userRoutes;
+  

@@ -638,7 +638,8 @@ async function pong_routes(fastify, options)
                 player_elos: [
                     500, 500
                 ],
-                ended: false
+                ended: false,
+                interval: null
             };
             p_rooms.set(game_id, game);
             // [creating....]
@@ -876,7 +877,8 @@ async function pong_routes(fastify, options)
                 nextRefreshTs: Date.now(),
                 targetY: null,
                 currentDirection: null // 'up' | 'down' | null
-            }
+            },
+            interval: null
         };
         p_rooms.set(game_id, game);
         
@@ -996,7 +998,8 @@ async function pong_routes(fastify, options)
             paddleHeight: 80,
             isLocal: true,
             max_score: 10,
-            player_names: [`${username} (P1)`, `${username} (P2)`]
+            player_names: [`${username} (P1)`, `${username} (P2)`],
+            interval : null
         };
         
         p_rooms.set(game_id, game);
@@ -1126,10 +1129,15 @@ const handle_local_game_end = async (game, reason = 'victory', fastify = null, u
         user_id
     });
 
-    if (!game)
+    if (!game || game?.ended)
         return;
 
-    clearInterval(game.interval);
+    game.ended = true;
+    
+    if (game.interval) {
+        clearInterval(game.interval);
+        game.interval = null;
+    }
 
     const { scores, players, sockets, player_names } = game;
 
@@ -1140,7 +1148,7 @@ const handle_local_game_end = async (game, reason = 'victory', fastify = null, u
         else if (scores.p2 > scores.p1) 
             winner = 'p2';
     } else if (reason === "give-up") {
-        winner = null; // No winner on give-up for local
+        winner = null;
     }
 
     if (!sockets || !Array.isArray(sockets))
@@ -1148,7 +1156,6 @@ const handle_local_game_end = async (game, reason = 'victory', fastify = null, u
 
     const player_id = players[0];
     
-    // Send game end message
     const socket = game.sockets[0];
     if (socket && socket.readyState === 1) {
         const d = {
@@ -1158,15 +1165,14 @@ const handle_local_game_end = async (game, reason = 'victory', fastify = null, u
             winner: winner === 'p1' ? player_names[0] : winner === 'p2' ? player_names[1] : 'None',
             looser: winner === 'p1' ? player_names[1] : winner === 'p2' ? player_names[0] : 'None',
             player_names: player_names,
-            you_are_winner: null, // ot applicable for local games
+            you_are_winner: null,
             is_local: true
         };
         socket.send(JSON.stringify(d));
     }
     
-    // Save to db (optional for local games)
     try {
-        const LOCAL_PLAYER_ID = -2; // special ID for local player 2
+        const LOCAL_PLAYER_ID = -2;
         
         await fastify.db.run(
             `INSERT INTO games (
@@ -1174,16 +1180,12 @@ const handle_local_game_end = async (game, reason = 'victory', fastify = null, u
                 player1_score, player2_score,
                 p1_name, p2_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-                player_id, LOCAL_PLAYER_ID, 
-                winner === 'p1' ? 1 : winner === 'p2' ? 2 : null,
-                scores.p1, scores.p2,
-                player_names[0], player_names[1]
-            ]
+            [player_id, LOCAL_PLAYER_ID, 
+             winner === 'p1' ? 1 : winner === 'p2' ? 2 : null,
+             scores.p1, scores.p2,
+             player_names[0], player_names[1]]
         );
-        console.log(`✅ [LOCAL_GAME_END] Local game ${game.id} saved to DB`);
 
-        // Update wins for the human player (only if there's a clear winner)
         if (winner && reason === 'victory') {
             await fastify.db.run(
                 `UPDATE users SET wins = wins + 1 WHERE id = ?`, 
@@ -1194,38 +1196,43 @@ const handle_local_game_end = async (game, reason = 'victory', fastify = null, u
         console.error("❌ [LOCAL_GAME_END] Error saving local game:", err);
     }
     
+    safeCloseSocket(socket);
+    
     if (fastify) {
         fastify?.p_rooms.delete(game.id);
-        console.log('🗑️ [LOCAL_GAME_END] Room deleted from p_rooms');
     }
-    console.log(`✅ [LOCAL_GAME_END] Local Game ${game.id} ended (${reason}) — Winner: ${winner}`);
+    
+    console.log(`✅ [LOCAL_GAME_END] Local Game ${game.id} ended (${reason}) — Winner: ${winner} — Socket closed`);
 };
 
 
-const start_game_loop = (game, fastify = null) =>
-{
-  const interval = setInterval(() => {
-        // ball physics
+const start_game_loop = (game, fastify = null) => {
+    if (game.interval) {
+        clearInterval(game.interval);
+        game.interval = null;
+    }
+
+    const interval = setInterval(() => {
+        if (game.ended) {
+            clearInterval(interval);
+            return;
+        }
+
         game.ball.x += game.ball.vx;
         game.ball.y += game.ball.vy;
 
-        // bounce top/bottom
         if (game.ball.y <= 0 || game.ball.y >= game.height) {
             game.ball.vy *= -1;
         }
 
-        // scores
         if (game.ball.x <= 0) {
             game.scores.p2++;
         } else if (game.ball.x >= game.width) {
             game.scores.p1++;
         }
-        // detect game-ending
-        if(game.ball.x <= 0 || game.ball.x >= game.width)
-        {
-            if(game.scores.p1 >= game.max_score 
-                || game.scores.p2 >= game.max_score
-            ){
+
+        if(game.ball.x <= 0 || game.ball.x >= game.width) {
+            if(game.scores.p1 >= game.max_score || game.scores.p2 >= game.max_score) {
                 if (game.isLocal) {
                     handle_local_game_end(game, "victory", fastify);
                 } else {
@@ -1235,7 +1242,6 @@ const start_game_loop = (game, fastify = null) =>
             }
         }
 
-        // bounce left/right
         if (game.ball.x <= 0 || game.ball.x >= game.width) {
             if(Math.abs(game.ball.vx) < 3.5){
                 game.ball.vx *= -1.15;
@@ -1243,47 +1249,130 @@ const start_game_loop = (game, fastify = null) =>
                 game.ball.vx *= -1;
             }
         }
-        // paddle collisions
-        // left paddle
+
         if (game.ball.x <= 20 + game.paddleWidth &&
-            game.ball.x >= 20 - game.paddleWidth 
-            &&
+            game.ball.x >= 20 - game.paddleWidth &&
             game.ball.y >= game.paddles.p1 &&
-            game.ball.y <= game.paddles.p1 + game.paddleHeight
-        ){
-            console.log("LEFT PADDLE HIT");
-            game.ball.vx = Math.abs(game.ball.vx); // bounce right
-        }
-        // right paddle
-        if (game.ball.x >= (game.width - 30) - game.paddleWidth &&
-            game.ball.x <= (game.width - 30) + game.paddleWidth 
-            &&
-            game.ball.y >= game.paddles.p2 &&
-            game.ball.y <= game.paddles.p2 + game.paddleHeight
-            )
-            {
-                console.log("right PADDLE HIT:  " + game.ball.x + " vs " + (game.width - 30));
-            game.ball.vx = -Math.abs(game.ball.vx); // bounce left
+            game.ball.y <= game.paddles.p1 + game.paddleHeight) {
+            game.ball.vx = Math.abs(game.ball.vx);
         }
 
-        // broadcast game state -> both players (FIXED: handle null sockets)
+        if (game.ball.x >= (game.width - 30) - game.paddleWidth &&
+            game.ball.x <= (game.width - 30) + game.paddleWidth &&
+            game.ball.y >= game.paddles.p2 &&
+            game.ball.y <= game.paddles.p2 + game.paddleHeight) {
+            game.ball.vx = -Math.abs(game.ball.vx);
+        }
+
         game.sockets.forEach((socket) => {
-            // ✅ Check if socket exists AND is open
-            if (socket && socket.readyState === 1) { // WebSocket.OPEN
+            if (socket && socket.readyState === 1) {
                 socket.send(JSON.stringify({
-                        type: 'game_state',
-                        ball: game.ball,
-                        paddles: game.paddles,
-                        scores: game.scores
-                    })
-                );
+                    type: 'game_state',
+                    ball: game.ball,
+                    paddles: game.paddles,
+                    scores: game.scores
+                }));
             }
         });
-  }, 1000 / 60); // 60 FPS
-  game.interval = interval;
-}
+    }, 1000 / 60);
+    
+    game.interval = interval;
+};
 
+const start_ai_game_loop = (game, fastify = null) => {
+    if (game.interval) {
+        clearInterval(game.interval);
+        game.interval = null;
+    }
 
+    const interval = setInterval(() => {
+        if (game.ended) {
+            clearInterval(interval);
+            return;
+        }
+
+        game.ball.x += game.ball.vx;
+        game.ball.y += game.ball.vy;
+
+        if (game.ball.y <= 0 || game.ball.y >= game.height) {
+            game.ball.vy *= -1;
+        }
+
+        if (game.ball.x <= 0){
+            game.scores.p2 += 1;
+        } else if (game.ball.x >= game.width){
+            game.scores.p1 += 1;
+        }
+
+        if (game.ball.x <= 0 || game.ball.x >= game.width) {
+            if (game.scores.p1 >= game.max_score || game.scores.p2 >= game.max_score) {
+                handle_ai_game_end(game, "victory", fastify);
+                return;
+            }
+            if (Math.abs(game.ball.vx) < 3.5)
+                game.ball.vx *= -1.15;
+            else
+                game.ball.vx *= -1;
+        }
+
+        if (
+            game.ball.x <= 20 + game.paddleWidth &&
+            game.ball.x >= 20 - game.paddleWidth &&
+            game.ball.y >= game.paddles.p1 &&
+            game.ball.y <= game.paddles.p1 + game.paddleHeight
+        ) {
+            game.ball.vx = Math.abs(game.ball.vx);
+        }
+
+        if (
+            game.ball.x >= (game.width - 30) - game.paddleWidth &&
+            game.ball.x <= (game.width - 30) + game.paddleWidth &&
+            game.ball.y >= game.paddles.p2 &&
+            game.ball.y <= game.paddles.p2 + game.paddleHeight
+        ) {
+            game.ball.vx = -Math.abs(game.ball.vx);
+        }
+
+        const now = Date.now();
+        if (now >= game.ai_state.nextRefreshTs) {
+            const predictedY = predictBallYAtX(game, game.width - 30);
+            const targetY = Math.max(0, Math.min(predictedY - game.paddleHeight / 2, game.height - game.paddleHeight));
+            game.ai_state.targetY = targetY;
+
+            const center = game.paddles.p2 + game.paddleHeight / 2;
+            game.ai_state.currentDirection =
+                center > targetY + 6 ? 'up' :
+                center < targetY - 6 ? 'down' :
+                null;
+
+            game.ai_state.nextRefreshTs = now + game.ai_state.viewRefreshMs;
+        }
+
+        if (game.ai_state.currentDirection) {
+            const center = game.paddles.p2 + game.paddleHeight / 2;
+            if (
+                (game.ai_state.currentDirection === 'up' && center <= game.ai_state.targetY + 6) ||
+                (game.ai_state.currentDirection === 'down' && center >= game.ai_state.targetY - 6)
+            ) {
+                game.ai_state.currentDirection = null;
+            } else {
+                simulateAIKey(game, game.ai_state.currentDirection);
+            }
+        }
+
+        const socket = game.sockets[0];
+        if (socket?.readyState === 1) {
+            socket.send(JSON.stringify({
+                type: 'game_state',
+                ball: game.ball,
+                paddles: game.paddles,
+                scores: game.scores
+            }));
+        }
+    }, 1000 / 60);
+    
+    game.interval = interval;
+};
 
 // Prédiction simple avec réflexion et un léger bruit (pas de spin/overshoot)
 function predictBallYAtX(game, targetX) {
@@ -1321,99 +1410,7 @@ function simulateAIKey(game, direction) {
 
 // Remplacement de start_ai_game_loop 
 
-const start_ai_game_loop = (game, fastify = null) => {
-    const interval = setInterval(() => {
-        // Physique balle classique A CHANGER UN PEU PTET
-        game.ball.x += game.ball.vx;
-        game.ball.y += game.ball.vy;
 
-        // rebonds
-        if (game.ball.y <= 0 || game.ball.y >= game.height) {
-            game.ball.vy *= -1;
-        }
-
-        // Score ai
-        if (game.ball.x <= 0){
-            game.scores.p2 += 1;
-        } 
-        //score joueur
-        else if (game.ball.x >= game.width){
-            game.scores.p1 += 1;
-        }
-
-        if (game.ball.x <= 0 || game.ball.x >= game.width) {
-            if (game.scores.p1 >= game.max_score || game.scores.p2 >= game.max_score) {
-                handle_ai_game_end(game, "victory", fastify);
-                return;
-            }
-            if (Math.abs(game.ball.vx) < 3.5)
-                game.ball.vx *= -1.15;
-            else
-                game.ball.vx *= -1;
-        }
-
-        // Collisions paddles
-        // Gauche
-        if (
-            game.ball.x <= 20 + game.paddleWidth &&
-            game.ball.x >= 20 - game.paddleWidth &&
-            game.ball.y >= game.paddles.p1 &&
-            game.ball.y <= game.paddles.p1 + game.paddleHeight
-        ) {
-            game.ball.vx = Math.abs(game.ball.vx);
-        }
-        // Droite
-        if (
-            game.ball.x >= (game.width - 30) - game.paddleWidth &&
-            game.ball.x <= (game.width - 30) + game.paddleWidth &&
-            game.ball.y >= game.paddles.p2 &&
-            game.ball.y <= game.paddles.p2 + game.paddleHeight
-        ) {
-            game.ball.vx = -Math.abs(game.ball.vx);
-        }
-
-        // 1hz
-        const now = Date.now();
-        if (now >= game.ai_state.nextRefreshTs) {
-            const predictedY = predictBallYAtX(game, game.width - 30);
-            const targetY = Math.max(0, Math.min(predictedY - game.paddleHeight / 2, game.height - game.paddleHeight));
-            game.ai_state.targetY = targetY;
-
-            const center = game.paddles.p2 + game.paddleHeight / 2;
-            game.ai_state.currentDirection =
-                center > targetY + 6 ? 'up' :
-                center < targetY - 6 ? 'down' :
-                null;
-
-            game.ai_state.nextRefreshTs = now + game.ai_state.viewRefreshMs;
-        }
-
-        if (game.ai_state.currentDirection) {
-            const center = game.paddles.p2 + game.paddleHeight / 2;
-            if (
-                (game.ai_state.currentDirection === 'up' && center <= game.ai_state.targetY + 6) ||
-                (game.ai_state.currentDirection === 'down' && center >= game.ai_state.targetY - 6)
-            ) {
-                game.ai_state.currentDirection = null;
-            } 
-            else{
-                simulateAIKey(game, game.ai_state.currentDirection);
-            }
-        }
-
-        // Broadcast
-        const socket = game.sockets[0];
-        if (socket?.readyState === 1) {
-            socket.send(JSON.stringify({
-                type: 'game_state',
-                ball: game.ball,
-                paddles: game.paddles,
-                scores: game.scores
-            }));
-        }
-    }, 1000 / 60);
-    game.interval = interval;
-};
 
 
 
@@ -1425,7 +1422,11 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     {
         return;
     }
-    clearInterval(game.interval);
+    game.ended = true;
+    if (game.interval) {
+        clearInterval(game.interval);
+        game.interval = null;
+    }
     const { scores, max_score, players, sockets, player_names } = game;
     let winner = null;
     if(reason == 'victory')
@@ -1438,11 +1439,15 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     {
         if(user_id)
         {
-            // which player gave up
-            if (players[0] === user_id) winner = 'p2';
-            else if (players[1] === user_id) winner = 'p1';
-        }else
+            if (players[0] === user_id)
+                winner = 'p2';
+            else if (players[1] === user_id)
+                winner = 'p1';
+        }
+        else
+        {
             winner = "null";
+        }
     }
 
     // safety ahhhh
@@ -1450,7 +1455,21 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
         console.error("errd: sockets missing or invalid for game", game?.id);
         return;
     }
-    //write to DB ---
+    sockets.forEach((socket, i) => {
+        if (socket.readyState === 1) {
+            const d = {
+                type: 'game_end',
+                reason,
+                scores,
+                winner: winner === 'p1' ? (player_names[0]) : player_names[1],
+                looser: (winner === 'p1' || winner == 'null') ? (player_names[1]) : player_names[0],
+                player_names: (player_names),
+                you_are_winner: (i === 0 && winner === 'p1') || (i === 1 && winner === 'p2')
+            };
+            socket.send(JSON.stringify(d));
+        }
+    });
+
     const W_id = (winner === 'p1') ?  
         players[0] 
         :
@@ -1479,21 +1498,9 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     } catch (err) {
         console.error("❌ Error saving game:", err);
     }
-    game.ended = (true);
-    sockets.forEach((socket, i) => {
-        if (socket.readyState === 1) {
-            const d = {
-                type: 'game_end',
-                reason,
-                scores,
-                winner: winner === 'p1' ? (player_names[0]) : player_names[1],
-                looser: (winner === 'p1' || winner == 'null') ? (player_names[1]) : player_names[0],
-                player_names: (player_names),
-                you_are_winner: (i === 0 && winner === 'p1') || (i === 1 && winner === 'p2')
-            };
-            socket.send(JSON.stringify(d));
-        }
-    });
+
+    sockets.forEach(socket => safeCloseSocket(socket));
+
     if(fastify){
         fastify?.p_rooms.delete(game.id);
     }
@@ -1506,34 +1513,37 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
     console.log('🔵 [AI_GAME_END] Function called with:', {
         game_id: game?.id,
         reason,
-        user_id,
-        has_fastify: !!fastify
+        user_id
     });
 
     if (!game || game?.ended)
         return;
-
-    clearInterval(game.interval);
+    
+    game.ended = true;
+    
+    if (game.interval) {
+        clearInterval(game.interval);
+        game.interval = null;
+    }
 
     const { scores, players, sockets, player_names } = game;
 
     let winner = null;
-
-    if (reason === 'victory') {
-        if (scores.p1 > scores.p2) winner = 'p1';
-        else if (scores.p2 > scores.p1) winner = 'p2';
-    } else if (reason === 'give-up') {
+    if(reason == 'victory') {
+        if (scores.p1 > scores.p2) 
+            winner = 'p1';
+        else if (scores.p2 > scores.p1) 
+            winner = 'p2';
+    } else if (reason == "give-up") {
         winner = 'p2';
     }
-
+    
     if (!sockets || !Array.isArray(sockets))
         return;
 
     const player_id = players[0];
-
-    console.log("SOCKETWZZZZ:", game.sockets[0], " 2:", game.sockets[1]);
+    
     const socket = game.sockets[0];
-
     if (socket && socket.readyState === 1) {
         const d = {
             type: 'game_end',
@@ -1541,90 +1551,54 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
             scores,
             winner: winner === 'p1' ? player_names[0] : player_names[1],
             looser: winner === 'p1' ? player_names[1] : player_names[0],
-            player_names,
-            you_are_winner: winner === 'p1'
+            player_names: player_names,
+            you_are_winner: (winner === 'p1')
         };
-
         socket.send(JSON.stringify(d));
-        console.log("successfully sent");
-    } else {
-        console.error('❌ [AI_GAME_END] Cannot send message - socket not ready (state:', socket?.readyState, ')');
     }
-
+    
     try {
-        console.log('💾 [AI_GAME_END] Starting DB operations...');
-
-        let winner_id = null;
-
+        let AI_USER_ID = -1;
         try {
-            let aiUser = await fastify.db.get(
-                'SELECT id FROM users WHERE username = ?',
-                ['AI_BOT']
-            );
-
-            if (!aiUser) {
-                await fastify.db.run(
+            const aiUser = await fastify.db.get('SELECT id FROM users WHERE username = ?', ['AI_BOT']);
+            if (aiUser) {
+                AI_USER_ID = aiUser.id;
+            } else {
+                const result = await fastify.db.run(
                     'INSERT INTO users (username, password) VALUES (?, ?)',
                     ['AI_BOT', 'no_password']
                 );
-
-                aiUser = await fastify.db.get(
-                    'SELECT id FROM users WHERE username = ?',
-                    ['AI_BOT']
-                );
-
-                AI_USER_ID = aiUser.id;
-
-                if (!AI_USER_ID)
-                    throw new Error('AI_USER_ID could not be retrieved.');
-
-                console.log('✅ [AI_GAME_END] AI user ID:', AI_USER_ID);
-            } else {
-                AI_USER_ID = aiUser.id;
+                AI_USER_ID = result?.lastID;
             }
-
         } catch (err) {
             console.error('❌ [AI_GAME_END] Error creating/finding AI user:', err);
             AI_USER_ID = -1;
         }
 
-		winner_id = (winner === 'p1') ? players[0] : AI_USER_ID;
         await fastify.db.run(
             `INSERT INTO games (
                 player1_id, player2_id, winner_id,
                 player1_score, player2_score,
                 p1_name, p2_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-                players[0],
-                AI_USER_ID,
-                winner_id,
-                scores.p1,
-                scores.p2,
-                player_names[0],
-                player_names[1]
-            ]
+            [players[0], AI_USER_ID, (winner === 'p1') ? 1 : 2,
+             scores.p1, scores.p2,
+             player_names[0], player_names[1]]
         );
-        if (winner === 'p1') {
-            await fastify.db.run(
-                `UPDATE users SET wins = wins + 1 WHERE id = ?`,
-                [player_id]
-            );
-        } else {
-            await fastify.db.run(
-                `UPDATE users SET losses = losses + 1 WHERE id = ?`,
-                [player_id]
-            );
-        }
-
-        game.ended = true;
-
+        
+        if (winner === 'p1')
+            await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [player_id]);
+        else
+            await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [player_id]);
     } catch (err) {
-        console.error("❌ [AI_GAME_END] DB error:", err);
+        console.error("❌ [AI_GAME_END] Database error:", err);
     }
-    if (fastify) {
-        fastify.p_rooms.delete(game.id);
+    
+    safeCloseSocket(socket);
+    
+    if(fastify) {
+        fastify?.p_rooms.delete(game.id);
     }
-
-    console.log(`✅ [AI_GAME_END] AI Game ${game.id} ended (${reason}) — Winner: ${winner}`);
+    
+    console.log(`✅ [AI_GAME_END] AI Game ${game.id} ended (${reason}) — Winner: ${winner} — Socket closed`);
 };
