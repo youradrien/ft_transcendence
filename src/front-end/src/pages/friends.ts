@@ -419,14 +419,17 @@ async render(): Promise<HTMLElement> {
     const ctx = bgCanvas.getContext('2d')!;
     const NUM_PARTICLES = 85;
 
+	bgCanvas.width = window.innerWidth;
+	bgCanvas.height = window.innerHeight;
+
     type Particle = { x:number, y:number, vx:number, vy:number, r:number, color:string, halo:string };
     const particles: Particle[] = [];
 
     for (let i=0; i<NUM_PARTICLES; i++) {
         const isGreen = Math.random() > 0.5;
         particles.push({
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
+            x: Math.random() * bgCanvas.width,
+            y: Math.random() * bgCanvas.height,
             vx: (Math.random() - 0.5) * 1.5,
             vy: (Math.random() - 0.5) * 1.5,
             r: Math.random() * 4 + 2,
@@ -436,8 +439,19 @@ async render(): Promise<HTMLElement> {
     }
 
     function resizeCanvas() {
+        const oldWidth = bgCanvas.width;
+        const oldHeight = bgCanvas.height;
+
         bgCanvas.width = window.innerWidth;
         bgCanvas.height = window.innerHeight;
+
+        const w = bgCanvas.width;
+        const h = bgCanvas.height;
+
+       for (const p of particles) {
+           p.x = p.x * (w / oldWidth);
+           p.y = p.y * (h / oldHeight);
+       }
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();

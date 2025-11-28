@@ -46,12 +46,21 @@ export default class MainPage extends Page {
 	const NUM_BALLS = 80;
 
 	function resizeCanvas() {
+		const oldWidth = bgCanvas.width;
+		const oldHeight = bgCanvas.height;
 
-		bgCanvas.width = window.innerWidth || 800;
-		bgCanvas.height = window.innerHeight || 600;
+		bgCanvas.width = window.innerWidth;
+		bgCanvas.height = window.innerHeight;
+
+		const w = bgCanvas.width;
+		const h = bgCanvas.height;
+
+		for (let b of balls) {
+			b.x = b.x * (w / oldWidth);
+			b.y = b.y * (h / oldHeight);
+		}
 	}
 	window.addEventListener('resize', resizeCanvas);
-	resizeCanvas();
 
 	function initBalls() {
 
@@ -70,6 +79,7 @@ export default class MainPage extends Page {
 		}
 	}
 	initBalls();
+	resizeCanvas();
 
 	function animate() {
 
