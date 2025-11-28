@@ -2,7 +2,7 @@
 
 ## quick setup
 
-1. **Open Kibana**: http://localhost:5601
+1. **Open Kibana**: https://localhost:5601
 2. **Create Index Pattern**: In Kibana, go to "Management" > "Index Patterns" > "Create Index Pattern". Enter `ft_transcendence-*` and follow the prompts.
 3. **Explore Logs**: Navigate to "Discover" to explore logs.
 4. **Import Dashboards**: Import our pre configured dashboards from a `.ndjson` file.
