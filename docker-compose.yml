@@ -54,6 +54,8 @@ services:
       - ./src/back-end/vault_handler/secrets/vault_certs/vault.crt:/app/vault_certs/vault.crt:ro
       - ./src/back-end/vault_handler/secrets/ssl_certs:/app/ssl_certs:ro
       - ./src/back-end/vault_handler/secrets:/app/vault_handler/secrets:rw
+      - ./src/back-end/database_sql.db:/app/database_sql.db:rw
+      - ./src/back-end/uploads:/app/uploads:rw
     entrypoint: ["node", "server.js"]
     depends_on:
       - vault

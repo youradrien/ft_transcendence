@@ -424,100 +424,90 @@ export default class UserProfilePage extends Page {
       };
     }
 
-//  
+	// Logic for edit profile picture
+	if (isMyProfile) {
 
-// Logic for edit profile picture
-if (isMyProfile) {
-  const avatarContainer = container.querySelector('#avatar-container') as HTMLElement;
-  const avatarEditOverlay = container.querySelector('#avatar-edit-overlay') as HTMLElement;
+		const avatarContainer = container.querySelector('#avatar-container') as HTMLElement;
+		const avatarEditOverlay = container.querySelector('#avatar-edit-overlay') as HTMLElement;
   
-  if (avatarContainer && avatarEditOverlay) {
-    avatarEditOverlay.onclick = async () => {
-      // Create a file input element
-      const fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.accept = 'image/*';
-      fileInput.style.display = 'none';
-      
-      fileInput.onchange = async (e) => {
-        const target = e.target as HTMLInputElement;
-        if (!target) return;
+		if (avatarContainer && avatarEditOverlay) {
+			avatarEditOverlay.onclick = async () => {
 
-        const file = target.files?.[0];
-        
-        if (!file) return;
+				// Create a file input element
+				const fileInput = document.createElement('input');
+				fileInput.type = 'file';
+				fileInput.accept = 'image/*';
+				fileInput.style.display = 'none';
 
-        // Validate file size (3MB max)
-        if (file.size > 3 * 1024 * 1024) {
-          alert('File too large. Maximum size is 3MB.');
-          return;
-        }
+				fileInput.onchange = async (e) => {
+					const target = e.target as HTMLInputElement;
+					if (!target)
+						return;
 
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-          alert('Please select an image file.');
-          return;
-        }
+					const file = target.files?.[0];
+					if (!file)
+						return;
 
-        // Save reference to avatar and original source BEFORE try block
-        const avatarImg = container.querySelector('#profile-avatar') as HTMLImageElement;
-        const originalSrc = avatarImg?.src;
+					if (file.size > 3 * 1024 * 1024) {
+						alert('File too large. Maximum size is 3MB.');
+						return;
+					}
 
-        try {
-          // Create FormData object
-          const formData = new FormData();
-          formData.append('avatar', file);
+					if (!file.type.startsWith('image/')) {
+						alert('Please select an image file.');
+						return;
+					}
 
-          // Upload with FormData
-          const res = await fetch(`${API_URL}/api/user/avatar`, {
-            method: 'POST',
-            credentials: 'include',
-            body: formData
-            // Note: Don't set Content-Type header, browser handles it automatically
-          });
-          
-          const data = await res.json();
-          
-          if (res.ok && data.success) {
-            // Update avatar immediately
-            if (avatarImg) {
-              // Option 1: Use returned URL from server
-              if (data.avatar_url) {
-                avatarImg.src = data.avatar_url;
-              }
-              // Option 2: Use local object URL for instant preview
-              else {
-                avatarImg.src = URL.createObjectURL(file);
-              }
-            }
-            alert('Avatar updated successfully!');
-          } else {
-            console.error('Avatar update failed:', data);
-            alert('Failed to update avatar: ' + (data.error || data.message || 'Unknown error'));
-            
-            // Restore original avatar on failure
-            if (avatarImg && originalSrc) {
-              avatarImg.src = originalSrc;
-            }
-          }
-        } catch (error) {
-          console.error('Network error:', error);
-          alert('Failed to upload image. Please check your connection and try again.');
-          
-          // Restore original avatar on error
-          if (avatarImg && originalSrc) {
-            avatarImg.src = originalSrc;
-          }
-        }
-      };
-      
-      // Trigger file selection
-      document.body.appendChild(fileInput);
-      fileInput.click();
-      document.body.removeChild(fileInput);
-    };
-  }
-}
+					const avatarImg = container.querySelector('#profile-avatar') as HTMLImageElement;
+					const originalSrc = avatarImg?.src;
+					try {
+						const formData = new FormData();
+						formData.append('avatar', file);
+
+
+						const res = await fetch(`${API_URL}/api/user/avatar`, {
+							method: 'POST',
+							credentials: 'include',
+							body: formData
+						});
+
+						const data = await res.json();
+ 						if (res.ok && data.success) {
+
+							if (avatarImg) {
+
+								if (data.avatar_url) {
+									avatarImg.src = data.avatar_url;
+								} else {
+									avatarImg.src = URL.createObjectURL(file);
+								}
+							}
+							alert('Avatar updated successfully!');
+						} else {
+							console.error('Avatar update failed:', data);
+							alert('Failed to update avatar: ' + (data.error || data.message || 'Unknown error'));
+
+							// Restore original avatar on failure
+							if (avatarImg && originalSrc) {
+								avatarImg.src = originalSrc;
+							}
+						}
+					} catch (error) {
+						console.error('Network error:', error);
+						alert('Failed to upload image. Please check your connection and try again.');
+
+					if (avatarImg && originalSrc) {
+						avatarImg.src = originalSrc;
+					}
+				}
+		};
+
+				document.body.appendChild(fileInput);
+				fileInput.click();
+				document.body.removeChild(fileInput);
+			};
+		}
+	}
 
 	// Button for adding the current user as a friend :
 	const addFriendBtn = container.querySelector('#add-friend-btn') as HTMLButtonElement;
