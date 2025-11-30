@@ -503,7 +503,7 @@ const handle_tournament_registration = async (USER_ID, fastify, bot_registration
 
     if(bot_registration)
     {
-        let p = ["GUNDILL", "KENNY", "CARTMAN", "ABOUDA", "THOMAS", "ENZO", "JULES", "GAUTHIER", "HUGO", "kingVon", "lil_kirk"];
+        let p = ["GUNDILL", "KENNY", "CARTMAN", "ABOUDA", "THOMAS", "ENZO", "JULES", "GAUTHIER", "HUGO", "kingVon", "lil_kirk", "LE MINOTAURE", "Asterion", "Faker", "Kirby54", "125/125 stp"];
         let pfps = [
             'https://api.dicebear.com/9.x/bottts/svg?seed=Sara',
             'https://api.dicebear.com/9.x/bottts/svg?seed=Nolan',
@@ -1352,8 +1352,56 @@ async function pong_routes(fastify, options)
             connection.socket.send(JSON.stringify({ type: 'error', msg: 'Unauthorized' }));
             return connection.socket.close();
         }
-
-
+        let b = false;
+        for (const [r, _g] of fastify.p_rooms.entries()) {
+            if (Array.isArray(_g.players)
+                && _g.players.includes(USER_ID)
+                && _g.TOURNAMENT_GAME) 
+                {        
+                    const safe_game_data = {
+                        scores: _g.scores,
+                        countdown: _g.countdown,
+                        width: _g.width,
+                        height: _g.height,
+                        paddleWidth: _g.paddleWidth,
+                        paddleHeight: _g.paddleHeight,
+                        max_score: _g.max_score,
+                        player_names: _g.player_names,
+                        player_pfps: _g.player_pfps
+                    };
+                    const p_index = _g.players.indexOf(USER_ID);
+                    if (p_index !== -1) {
+                        _g.sockets[p_index] = connection.socket;
+                    }
+                    // attach socket handler
+                    attach_socket_handler(connection.socket, USER_ID, fastify, _g.isAI);
+                    b = true;
+                    // [store/update] socket reference
+                    t.player_sockets.set(USER_ID, connection.socket);
+                    connection.socket.send(JSON.stringify({ 
+                        type: 'tournament_match_start', 
+                        ehh: safe_game_data
+                    }));
+                }
+        }
+        // if (t.player_sockets.has(USER_ID)) {
+        //     console.log("TPLAYER HAS SOCKET USERID CUH");
+        //     let ix = t.players.findIndex((e) => e.userId == USER_ID)
+        //     if(ix !== -1 && t.players_status[ix] !== "in_match"){
+        //         console.log("MF IS IN MATCH");
+        //         let p_socket = t.player_sockets.get(USER_ID);
+        //         let safe_game = null;
+        //         for (const [r, _g] of fastify.p_rooms.entries()) {
+        //             if (Array.isArray(_g.players) && _g.players.includes(USER_ID)) {
+        //                 safe_game = _g;
+        //                 break;
+        //             }
+        //         }
+        //         if(safe_game !== null){
+        
+        //         }   
+        //     }
+        // }
         // [store/update] socket reference
         t.player_sockets.set(USER_ID, connection.socket);
 
@@ -1373,8 +1421,11 @@ async function pong_routes(fastify, options)
         // }
         // CLOSE OLD SOCKET IF EXISTS
         const old = t.player_sockets.get(USER_ID);
-        if (old && old !== connection.socket) {
-            try { old.close(); } catch {}
+        if(!b)
+        {
+            if (old && old !== connection.socket) {
+                try { old.close(); } catch {}
+            }
         }
 
         // store new socket
@@ -1509,7 +1560,7 @@ const start_game_loop = (game, fastify = null) => {
         }
 
         if(game.ball.x <= 0 || game.ball.x >= game.width) {
-            if(game.scores.p1 >= game.max_score || game.scores.p2 >= game.max_score) {
+            if (game.scores.p1 >= game.max_score || game.scores.p2 >= game.max_score) {
                 if (game.isLocal) {
                     handle_local_game_end(game, "victory", fastify);
                 } else {
@@ -1771,13 +1822,17 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
             await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [W_id]);
             const L_id = (W_id === players[0]) ? players[1] : players[0];
             await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [L_id]);
+            
+            // 🎉 AJOUTER 100 ELO AU GAGNANT
+            await fastify.db.run(`UPDATE users SET elo = elo + 100 WHERE id = ?`, [W_id]);
+            console.log(`✅ Added 100 ELO to winner ${W_id}`);
         }
     } catch (err) {
         console.error("❌ Error saving game:", err);
     }
-    game.ended = (true);
-    sockets.forEach((socket, i) => {
-        if (socket.readyState === 1) {
+    // Notifier les clients
+    sockets.forEach((socket) => {
+        if (socket && socket.readyState === 1) {
             const d = {
                 type: 'game_end',
                 reason,
@@ -1912,10 +1967,14 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
              player_names[0], player_names[1]]
         );
         
-        if (winner === 'p1')
+        if (winner === 'p1') {
             await fastify.db.run(`UPDATE users SET wins = wins + 1 WHERE id = ?`, [player_id]);
-        else
+            // 🎉 AJOUTER 100 ELO AU GAGNANT
+            await fastify.db.run(`UPDATE users SET elo = elo + 100 WHERE id = ?`, [player_id]);
+            console.log(`✅ Added 100 ELO to AI game winner ${player_id}`);
+        } else {
             await fastify.db.run(`UPDATE users SET losses = losses + 1 WHERE id = ?`, [player_id]);
+        }
     } catch (err) {
         console.error("❌ [AI_GAME_END] Database error:", err);
     }
