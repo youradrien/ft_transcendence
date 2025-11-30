@@ -6,11 +6,16 @@
 all: elk-up up
 
 # Build without cache and start the containers
-build: generate-secret generate-ip
+build: generate-secret generate-ip create-db
 	docker compose build --no-cache
 
 up: build
 	docker compose up -d
+	@if [ -f ./src/back-end/.env ]; then \
+        : > ./src/back-end/.env && chmod 600 ./src/back-end/.env && echo "Cleared src/back-end/.env"; \
+    else \
+        echo "No src/back-end/.env to clear"; \
+    fi
 
 elk-up:
 	@bash monitoring/scripts/master_script.sh up
@@ -21,6 +26,16 @@ elk-down:
 elk-status:
 	@bash monitoring/scripts/master_script.sh status
 
+create-db:
+	@test -f ./src/back-end/database_sql.db || touch ./src/back-end/database_sql.db
+	chmod 664 ./src/back-end/database_sql.db
+	@echo "database_sql.db créé et permissions définies"
+
+reset-db:
+	@rm -f ./src/back-end/database_sql.db
+	@touch ./src/back-end/database_sql.db
+	chmod 664 ./src/back-end/database_sql.db
+	@echo "database_sql.db réinitialisé"
 
 
 generate-ip:
@@ -84,7 +99,15 @@ re: generate-secret
 	docker compose up -d
 	@echo "✅ Rebuild complete! Index template and ILM policy are configured."
 
-fclean:
+offline:
+	docker compose down
+	docker compose -f monitoring/docker-compose.yml down
+
+online:
+	docker compose -f monitoring/docker-compose.yml up -d
+	docker compose up -d
+
+fclean: reset-db
 	docker compose down -v
 	@bash monitoring/scripts/master_script.sh clean
 	docker image prune -f

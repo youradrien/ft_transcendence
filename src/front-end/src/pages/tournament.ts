@@ -156,6 +156,13 @@ export default class TournamentPage extends Page {
             align-items: center;
             justify-content: center;
             font-size: 14px;
+            overflow: hidden;
+        }
+
+         #tournament-wrapper .pfp img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         #tournament-wrapper .winner {
@@ -267,6 +274,13 @@ export default class TournamentPage extends Page {
               justify-content: center;
               align-items: center;
               font-size: 18px;
+              overflow: hidden;
+            }
+
+            #tournament-wrapper .player-card .pfp img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
             }
 
             /* Username + ELO stacked */
@@ -292,8 +306,8 @@ export default class TournamentPage extends Page {
     </style>
 
     <div id="tournament-wrapper">
-      <h1>🏆 Tournament Mode</h1>
-      <h3 style= "margin-top: 0px;">8-PLAYERS 1v1 Competitive GAME-MODE</h3>
+      <h1>${i18n.t('tournament_wrapper_title')}</h1>
+      <h3 style= "margin-top: 0px;">${i18n.t('tournament_subtitle')}</h3>
       <div
           style="display: flex; align-items: center; gap: 8px; margin-left:auto; justify-content: center;">
           <span 
@@ -331,10 +345,10 @@ export default class TournamentPage extends Page {
       </div>
 
       <div id="registration-box">
-        <h2>Player Registration</h2>
-        <input id="player-name" placeholder="Enter alias..." maxlength="12" />
-        <button id="add-player-btn">Join Tournament</button>
-        <p id="player-count">0 / 8 players registered</p>
+        <h2>${i18n.t('player_registration')}</h2>
+        <input id="player-name" placeholder="${i18n.t('enter_alias')}" maxlength="12" />
+        <button id="add-player-btn">${i18n.t('join_tournament')}</button>
+        <p id="player-count">${i18n.t('players_joined', { count: 0 })}</p>
         <div 
             id="lobby-status"
             style="display: flex; align-items: center; gap: 8px; margin-left:auto; justify-content: center;"
@@ -353,12 +367,12 @@ export default class TournamentPage extends Page {
               color: #888888ff;
               text-shadow: 0 0 4px #888888ff;
             ">
-              Inactive: empty Tournament
+              ${i18n.t('inactive_empty')}
             </span>
         </div>
         <button
         style= "border: 2px solid #ffffff2e;"
-        id="force-start-btn">FORCE-START Tournament </button>
+        id="force-start-btn">${i18n.t('force_start_tournament')}</button>
         <span style="
               font-size: 12px;
               color: #ffffffff;
@@ -366,17 +380,17 @@ export default class TournamentPage extends Page {
             " id="t-cost"> </span>
       </div>
 
-    <h2>Players</h2>
+    <h2>${i18n.t('players_title')}</h2>
     <div id="players-display">  </div>
       
-    <h2 style="font-size: 36px; ">Bracket</h2>
+    <h2 style="font-size: 36px; ">${i18n.t('bracket_title')}</h2>
     <h3 style="font-size: 16px; text-shadow: 0 0 20px #d9d9d9; animation: fadeInUp 0.85s ease-out" id="curr_bracket"> </h3>
     <div id="bracket">
 
         <!-- Quarterfinals -->
         <div class="round-box" id="rb-1">
-            <h3>Quarterfinals</h3>
-            <h4 id="qf-count">0/4</h4>
+            <h3>${i18n.t('quarterfinals')}</h3>
+            <h4 id="qf-count">${i18n.t('matches_count_qf', { count: 0 })}</h4>
 
             <!-- Score (absoutepositions) -->
             <div id="score-qf-1" style="font-size: 12px; z-index: 10; margin-top: 59px; margin-left: 80px; position: absolute; animation: fadeInUp 0.85s ease-out;">
@@ -392,37 +406,37 @@ export default class TournamentPage extends Page {
             <div class="round qf">
             <div class="match">
                 <div id="qf-1" class="player"><div class="pfp">A</div>
-                    <div style="display: flex; flex-direction: column;"> <span>Alice</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_1</p> </div>
+                    <div style="display: flex; flex-direction: column;"> <span>Alice</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('player_label_generic', { number: 1 })}</p> </div>
                   </div>
                 <div id="qf-2" class="player"><div class="pfp">B</div>
-                    <div style="display: flex; flex-direction: column;"> <span>Bob</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_2</p> </div>
+                    <div style="display: flex; flex-direction: column;"> <span>Bob</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('player_label_generic', { number: 2 })}</p> </div>
                 </div>
             </div>
 
             <div class="match">
                 <div id="qf-3" class="player"><div class="pfp">C</div>
-                    <div style="display: flex; flex-direction: column;"> <span>Charlie</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_3</p> </div>
+                    <div style="display: flex; flex-direction: column;"> <span>Charlie</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('player_label_generic', { number: 3 })}</p> </div>
                 </div>
                 <div id="qf-4" class="player"><div class="pfp">D</div>
-                    <div style="display: flex; flex-direction: column;"> <span>David</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_4</p>  </div>
+                    <div style="display: flex; flex-direction: column;"> <span>David</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('player_label_generic', { number: 4 })}</p>  </div>
                 </div>
             </div>
 
             <div class="match" >
                 <div id="qf-5" class="player"><div class="pfp">E</div>
-                    <div style="display: flex; flex-direction: column;">  <span>Eva</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_5</p> </div>
+                    <div style="display: flex; flex-direction: column;">  <span>Eva</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('player_label_generic', { number: 5 })}</p> </div>
                 </div>
                 <div id="qf-6" class="player"><div class="pfp">F</div>
-                    <div style="display: flex; flex-direction: column;">  <span>Ferdy</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_6</p> </div>
+                    <div style="display: flex; flex-direction: column;">  <span>Ferdy</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('player_label_generic', { number: 6 })}</p> </div>
                 </div>
             </div>
 
             <div class="match">
                 <div id="qf-7" class="player"><div class="pfp">G</div>
-                    <div style="display: flex; flex-direction: column;">  <span>Gino</span> <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_7</p></div> 
+                    <div style="display: flex; flex-direction: column;">  <span>Gino</span> <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('player_label_generic', { number: 7 })}</p></div> 
                 </div>
                 <div id="qf-8" class="player"><div class="pfp">H</div>
-                    <div style="display: flex; flex-direction: column;">  <span>Helena</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_8</p> </div>
+                    <div style="display: flex; flex-direction: column;">  <span>Helena</span>  <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('player_label_generic', { number: 8 })}</p> </div>
                 </div> 
             </div>
             </div>
@@ -433,8 +447,8 @@ export default class TournamentPage extends Page {
 
         <!-- Semifinals -->
         <div class="round-box"  id="rb-2">
-            <h3>Semifinals</h3>
-            <h4 id="sf-count">0/2</h4>
+            <h3>${i18n.t('semifinals')}</h3>
+            <h4 id="sf-count">${i18n.t('matches_count_sf', { count: 0 })}</h4>
 
 
             <!-- Score (absoutepositions) -->
@@ -448,18 +462,18 @@ export default class TournamentPage extends Page {
                 <div class="match mid">
                     <div id="sf-1" class="player winner"> <div class="pfp">W1</div>
                        
-                      <div style="display: flex; flex-direction: column;">  <span>PEDRO</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> Winner 1</p> </div>
+                      <div style="display: flex; flex-direction: column;">  <span>PEDRO</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('winner')} 1</p> </div>
                     </div>
                     <div id="sf-2"class="player winner"> <div class="pfp">W2</div>
-                      <div style="display: flex; flex-direction: column;">  <span>KEKW</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> Winner 2</p> </div>
+                      <div style="display: flex; flex-direction: column;">  <span>KEKW</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('winner')} 2</p> </div>
                     </div>
                 </div>
                 <div class="match mid">
                     <div id="sf-3" class="player winner"> <div class="pfp">W3</div>
-                        <div style="display: flex; flex-direction: column;">  <span>LUCAS</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> Winner 3</p> </div>
+                        <div style="display: flex; flex-direction: column;">  <span>LUCAS</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('winner')} 3</p> </div>
                     </div>
                     <div id="sf-4" class="player winner"> <div class="pfp">W4</div>
-                        <div style="display: flex; flex-direction: column;">  <span>SARAH</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> Winner </p> </div>
+                        <div style="display: flex; flex-direction: column;">  <span>SARAH</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('winner')}</p> </div>
                     </div>
                 </div>
             </div>
@@ -468,15 +482,15 @@ export default class TournamentPage extends Page {
 
         <!-- Final -->
         <div class="round-box"  id="rb-3">
-            <h3>FINAL 🏁</h3>
-            <h4 id="f-count">0/1</h4>
+            <h3>${i18n.t('final')}</h3>
+            <h4 id="f-count">${i18n.t('matches_count_f', { count: 0 })}</h4>
             <div class="round final">
             <div class="match final-match">
                    <div id="f-1" class="player champion"> <div class="pfp">F1</div>
-                        <div style="display: flex; flex-direction: column;">  <span>LUCAS</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> CHAMPION </p> </div>
+                        <div style="display: flex; flex-direction: column;">  <span>LUCAS</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('champion').toUpperCase()}</p> </div>
                     </div>
                     <div id="f-2" class="player champion"> <div class="pfp">F2</div>
-                        <div style="display: flex; flex-direction: column;">  <span>SARAH</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> FINALIST </p> </div>
+                        <div style="display: flex; flex-direction: column;">  <span>SARAH</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">${i18n.t('finalist').toUpperCase()}</p> </div>
                     </div>
             </div>
             </div>
@@ -497,8 +511,6 @@ export default class TournamentPage extends Page {
 
     // update tournament, fill. everythn
     const update_tournament_state = async (tournament_data: any, self_registered: boolean) => {
-        // console.log("e");
-        // console.log(tournament_data);
         try {
               // online
               const on = container.querySelector("#onln") as HTMLButtonElement;
@@ -510,16 +522,16 @@ export default class TournamentPage extends Page {
                 on.style.backgroundColor = "#7bff00ff";
                 on2.style.color = "#7bff00ff";
                 on2.style.textShadow = "0 0 4px #7bff00ff";
-                on2.innerHTML = "ONLINE";
+                on2.innerHTML = i18n.t('online_caps');
               }
 
               // plyr count
               const c = document.getElementById("player-count") as HTMLElement;
-              c.innerHTML = `${tournament_data.players.length} / 8 players joined.`;
+              c.innerHTML = i18n.t('players_joined', { count: tournament_data.players.length });
               // prize
               const tp = document.getElementById("t-prize") as HTMLElement;
               if(tournament_data?.tournament_prize){
-                tp.innerHTML = `TOURNAMENT PRIZE:  +${tournament_data?.tournament_prize}elo 🥇`;
+                tp.innerHTML = i18n.t('tournament_prize_label', { prize: tournament_data?.tournament_prize });
               }
               // cost 
               const tc = document.getElementById("t-cost") as HTMLElement;
@@ -537,15 +549,15 @@ export default class TournamentPage extends Page {
                 let t:string = "rr";
                 if(player?.status == "waiting"){
                   C = "#fff200ff";
-                  t = "Waiting..."
+                  t = i18n.t('waiting_status');
                 }
                 if(player?.status == "in_match"){
                   C = "#00e5ffff";
-                  t = "Playing (IN-MATCH!)";
+                  t = i18n.t('playing_status');
                 }
                 if(player?.status == "eliminated"){
                   C = "#ff3434ff";
-                  t = "Eliminated ❌";
+                  t = i18n.t('eliminated_status');
                 }
                 card.innerHTML = `
                   <div class="pfp">
@@ -568,21 +580,21 @@ export default class TournamentPage extends Page {
               const lb2 = document.getElementById("lobby-status-2") as HTMLElement;
               let color: string = "#ffffffff";
               if(tournament_data?.tournament_status == "inactive"){
-                  lb2.innerHTML = `Inactive: Empty Tournament`;
+                  lb2.innerHTML = i18n.t('inactive_empty');
                   color  = "#888888ff";
                   
-                  f_startBtn.innerHTML = "FORCE-START Tournament";
+                  f_startBtn.innerHTML = i18n.t('force_start_tournament');
                   f_startBtn.style.backgroundColor = "#1a1a1a";
               }
               if(tournament_data?.tournament_status == "preparing"){
-                  lb2.innerHTML = `Registration Open: (waiting for players...)`;
+                  lb2.innerHTML = i18n.t('registration_open');
                   color  = "#09b9ffff";
               }
               if(tournament_data?.tournament_status == "in-progress"){
-                  lb2.innerHTML = `Registration closed: Tournament in-progress`;
+                  lb2.innerHTML = i18n.t('registration_closed');
                   color  = "#7bff00ff";
 
-                  f_startBtn.innerHTML = "STARTED !";
+                  f_startBtn.innerHTML = i18n.t('started');
                   f_startBtn.style.backgroundColor = "#7bff00ff";
               }
               lb1.style.backgroundColor = (color);
@@ -591,11 +603,11 @@ export default class TournamentPage extends Page {
               lb2.style.textShadow = `0 0 4px ${color}`;
               // btn-status
               if(self_registered) {
-                addBtn.innerHTML = 'JOINED';
+                addBtn.innerHTML = i18n.t('joined');
                 addBtn.style.backgroundColor = '#00b7ffff';
                 _registered = (true);
               }else{
-                addBtn.innerHTML = 'Join Tournament';
+                addBtn.innerHTML = i18n.t('join_tournament');
                 addBtn.style.backgroundColor = '#1a1a1a';
                 _registered = (false);
               }
@@ -649,17 +661,17 @@ export default class TournamentPage extends Page {
               const cc = container.querySelector("#f-count") as HTMLInputElement;
               if(tournament_data?.matches_done)
               {
-                a.innerHTML = `${tournament_data?.matches_done[0]} / 4`;
-                b.innerHTML = `${tournament_data?.matches_done[1]} / 2`;
-                cc.innerHTML = `${tournament_data?.matches_done[2]} / 1`;
+                a.innerHTML = i18n.t('matches_count_qf', { count: tournament_data?.matches_done[0] });
+                b.innerHTML = i18n.t('matches_count_sf', { count: tournament_data?.matches_done[1] });
+                cc.innerHTML = i18n.t('matches_count_f', { count: tournament_data?.matches_done[2] });
               }
               // current round
               const d = container.querySelector("#curr_bracket") as HTMLInputElement;
-              let vs:string [] = ["QUARTER-FINAL", "SEMI-FINAL", "FINAL"];
+              let vs:string [] = [i18n.t('quarterfinal'), i18n.t('semifinal'), i18n.t('final_caps')];
               if(tournament_data?.tournament_status === "in-progress"){
-                d.innerHTML = `CURRENT ROUND: ${vs[tournament_data?.current_bracket] || '...'}`;
+                d.innerHTML = i18n.t('current_round', { round: vs[tournament_data?.current_bracket] || '...' });
               }else{
-                d.innerHTML = `CURRENT ROUND: - - -`;
+                d.innerHTML = i18n.t('current_round_none');
               }
               for(let i = 0; i < 3; i++){
                 const rb = document.getElementById("rb-" + (i + 1) ) as HTMLElement;
@@ -699,10 +711,10 @@ export default class TournamentPage extends Page {
                 update_tournament_state(data?.tournament, data?.self_registered);
             }
             if(data?.type === 'too_poor'){
-                alert("COULDNT AFFORD THE START..(poor af)");
+                alert(i18n.t('cant_afford'));
             }
             if(data?.type === 'cant_join'){
-                alert("Can't register to tournament now.");
+                alert(i18n.t('cant_join_now'));
             }
             if(data?.type === 'tournament_match_start'){
               const game_data = data?.ehh;
@@ -723,6 +735,12 @@ export default class TournamentPage extends Page {
                   game_area.innerHTML = '';
                   game_area.appendChild(pong_container);   
               }
+            }
+            if(data?.type === 'tournament-finished' && window.location.pathname.includes('tournament')){
+              alert(i18n.t('tournament_ended'));
+              setTimeout(() => {
+                window.location.reload();
+              }, 750);
             }
         }
         ws_tournament.onerror = (err) => {

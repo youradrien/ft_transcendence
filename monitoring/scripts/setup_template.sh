@@ -8,14 +8,14 @@ echo -e "${YELLOW}📋 Creating Elasticsearch index template...${NC}"
 
 # Wait for Elasticsearch (with or without security)
 for i in {1..30}; do
-  if curl -s -u elastic:${ELASTIC_PASSWORD:-elastic_password} "http://localhost:9200/_cluster/health" > /dev/null 2>&1; then
+  if curl -k -s -u elastic:${ELASTIC_PASSWORD:-elastic_password} "https://localhost:9200/_cluster/health" > /dev/null 2>&1; then
     break
   fi
   sleep 1
 done
 
 # Create index template
-curl -u elastic:${ELASTIC_PASSWORD:-elastic_password} -X PUT "http://localhost:9200/_index_template/ft_transcendence_template" \
+curl -k -u elastic:${ELASTIC_PASSWORD:-elastic_password} -X PUT "https://localhost:9200/_index_template/ft_transcendence_template" \
   -H 'Content-Type: application/json' \
   -d '{
   "index_patterns": ["ft_transcendence-*"],
