@@ -112,5 +112,15 @@
   "friends_page_title" : "AMIGOS",
   "unfriend_button" : "Borrar",
   "accept_button" : "aceptar",
-  "decline_button" : "rechazar"
+  "decline_button" : "rechazar",
+  "removing" : "Eliminando...",
+  "failed_remove_friend" : "Error al eliminar amigo.",
+  "failed_accept_request" : "Error al aceptar solicitud de amistad",
+  "failed_decline_request" : "Error al rechazar solicitud de amistad",
+  "join_tournament" : "Unirse al Torneo",
+  "force_start_tournament" : "FORZAR INICIO Torneo",
+  "inactive_empty" : "Inactivo: Torneo vacío",
+  "players_joined" : "{{count}} / 8 jugadores unidos.",
+  "tournament_wrapper_title" : "🏆 Modo Torneo",
+  "tournament_subtitle" : "MODO COMPETITIVO 1v1 8 JUGADORES"
 }

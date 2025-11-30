@@ -112,5 +112,15 @@
    "friends_page_title" : "AMIS",
    "unfriend_button" : "Supprimer",
    "accept_button" : "accepter",
-   "decline_button" : "refuser"
+   "decline_button" : "refuser",
+   "removing" : "Suppression...",
+   "failed_remove_friend" : "Échec de la suppression de l'ami.",
+   "failed_accept_request" : "Échec de l'acceptation de la demande",
+   "failed_decline_request" : "Échec du refus de la demande",
+   "join_tournament" : "Rejoindre le Tournoi",
+   "force_start_tournament" : "FORCER DÉMARRAGE Tournoi",
+   "inactive_empty" : "Inactif : Tournoi vide",
+   "players_joined" : "{{count}} / 8 joueurs inscrits.",
+   "tournament_wrapper_title" : "🏆 Mode Tournoi",
+   "tournament_subtitle" : "MODE COMPÉTITIF 1v1 8 JOUEURS"
 }

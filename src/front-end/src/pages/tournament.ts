@@ -292,8 +292,8 @@ export default class TournamentPage extends Page {
     </style>
 
     <div id="tournament-wrapper">
-      <h1>🏆 Tournament Mode</h1>
-      <h3 style= "margin-top: 0px;">8-PLAYERS 1v1 Competitive GAME-MODE</h3>
+      <h1>${i18n.t('tournament_wrapper_title')}</h1>
+      <h3 style= "margin-top: 0px;">${i18n.t('tournament_subtitle')}</h3>
       <div
           style="display: flex; align-items: center; gap: 8px; margin-left:auto; justify-content: center;">
           <span 
@@ -331,9 +331,9 @@ export default class TournamentPage extends Page {
       </div>
 
       <div id="registration-box">
-        <h2>Player Registration</h2>
-        <input id="player-name" placeholder="Enter alias..." maxlength="12" />
-        <button id="add-player-btn">Join Tournament</button>
+        <h2>${i18n.t('player_registration')}</h2>
+        <input id="player-name" placeholder="${i18n.t('enter_alias')}" maxlength="12" />
+        <button id="add-player-btn">${i18n.t('join_tournament')}</button>
         <p id="player-count">0 / 8 players registered</p>
         <div 
             id="lobby-status"
@@ -353,12 +353,12 @@ export default class TournamentPage extends Page {
               color: #888888ff;
               text-shadow: 0 0 4px #888888ff;
             ">
-              Inactive: empty Tournament
+              ${i18n.t('inactive_empty')}
             </span>
         </div>
         <button
         style= "border: 2px solid #ffffff2e;"
-        id="force-start-btn">FORCE-START Tournament </button>
+        id="force-start-btn">${i18n.t('force_start_tournament')}</button>
         <span style="
               font-size: 12px;
               color: #ffffffff;
@@ -515,7 +515,7 @@ export default class TournamentPage extends Page {
 
               // plyr count
               const c = document.getElementById("player-count") as HTMLElement;
-              c.innerHTML = `${tournament_data.players.length} / 8 players joined.`;
+              c.innerHTML = i18n.t('players_joined', { count: tournament_data.players.length });
               // prize
               const tp = document.getElementById("t-prize") as HTMLElement;
               if(tournament_data?.tournament_prize){
