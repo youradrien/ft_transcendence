@@ -5,10 +5,10 @@ const util = require('util');
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const path = require('path');
-const fs = require('fs');
-const { pipeline } = require ('stream/promises');
-const { db, _add_friend, _remove_friend, _delete_friend_request } = require('../db.js'); // chemin relatif
-
+const fs = require('fs').promises;
+const { pipeline } = require('stream/promises');
+const { db, _add_friend, _remove_friend, _delete_friend_request } = require('../db.js');
+const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const FRONTEND_URL = `https://localhost:5173/auth`;
 
@@ -132,6 +132,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
         } catch (err) {
             request.log.error({
                 event_type: 'registration_error',
+
                 error: err.message,
                 username
             });
@@ -174,8 +175,6 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
         }
     });
 
-
-    
 
     // LOGIN
     fastify.post('/api/login', async (request, reply) => {
@@ -333,56 +332,163 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
         }
 });
 
-    //change pfp
-    fastify.post('/api/user/avatar', { preValidation: [fastify.authenticate] }, async (request, reply) => {
-        const { avatar_url } = request.body;
-        const userId = request.user.id;
+// Ajouter ces imports en haut de routes/users.js si pas déjà présents
+const fs = require('fs').promises;
+const path = require('path');
+const crypto = require('crypto');
 
-        if (!avatar_url || typeof avatar_url !== 'string') {
-            return reply.status(400).send({ success: false, error: 'invalid_avatar_url' });
-        }
+// Change pfp - Version avec multipart/form-data
+fastify.post('/api/user/avatar', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+  const userId = request.user.id;
 
-        // Check if it's a base64 image or a URL
-        const isBase64 = avatar_url.startsWith('data:image/');
-        const isURL = avatar_url.startsWith('http://') || avatar_url.startsWith('https://');
+  try {
+    // Récupérer le fichier uploadé
+    const data = await request.file();
+    
+    if (!data) {
+      return reply.status(400).send({ 
+        success: false, 
+        error: 'no_file_uploaded' 
+      });
+    }
 
-        if (!isBase64 && !isURL) {
-            return reply.status(400).send({ success: false, error: 'invalid_avatar_format' });
-        }
+    // Vérifier le type MIME
+    if (!data.mimetype.startsWith('image/')) {
+      return reply.status(400).send({ 
+        success: false, 
+        error: 'invalid_file_type' 
+      });
+    }
 
-        // If it's base64, validate size (max ~7MB base64 = ~5MB file)
-        if (isBase64 && avatar_url.length > 7 * 1024 * 1024) {
-            return reply.status(400).send({ success: false, error: 'avatar_too_large' });
-        }
+    // Convertir en buffer et vérifier la taille
+    const buffer = await data.toBuffer();
+    const fileSize = buffer.length;
+    const MAX_SIZE = 3 * 1024 * 1024; // 3MB
 
-        // If it's a URL, validate format
-        if (isURL) {
-            try {
-                new URL(avatar_url);
-            } catch (e) {
-                return reply.status(400).send({ success: false, error: 'invalid_url_format' });
-            }
-        }
+    if (fileSize > MAX_SIZE) {
+      return reply.status(400).send({ 
+        success: false, 
+        error: 'file_too_large' 
+      });
+    }
 
-        try {
-            await db.run("UPDATE users SET avatar_url = ? WHERE id = ?", [avatar_url, userId]);
+    // Générer un nom de fichier unique
+    const fileExtension = path.extname(data.filename) || '.jpg';
+    const uniqueFilename = `avatar_${userId}_${crypto.randomBytes(8).toString('hex')}${fileExtension}`;
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'avatars');
+    const filePath = path.join(uploadDir, uniqueFilename);
 
-            request.log.info({
-                event_type: 'avatar_updated',
-                user_id: userId,
-                avatar_type: isBase64 ? 'base64' : 'url'
-            });
+    // Créer le dossier s'il n'existe pas
+    await fs.mkdir(uploadDir, { recursive: true });
 
-            return reply.send({ success: true, avatar_url });
-        } catch (err) {
-            request.log.error({
-                event_type: 'avatar_update_error',
-                error: err.message,
-                user_id: userId
-            });
-            return reply.status(500).send({ success: false, error: 'db_error' });
-        }
+    // Sauvegarder le fichier
+    await fs.writeFile(filePath, buffer);
+
+    // Construire l'URL de l'avatar
+    const avatarUrl = `/uploads/avatars/${uniqueFilename}`;
+
+    // Supprimer l'ancien avatar si c'est un fichier local
+    try {
+      const oldAvatar = await db.get(
+        "SELECT avatar_url FROM users WHERE id = ?", 
+        [userId]
+      );
+      
+      if (oldAvatar?.avatar_url && oldAvatar.avatar_url.startsWith('/uploads/')) {
+        const oldFilePath = path.join(__dirname, '..', oldAvatar.avatar_url);
+        await fs.unlink(oldFilePath).catch(() => {}); // Ignore si le fichier n'existe pas
+      }
+    } catch (err) {
+      // Continuer même si la suppression échoue
+      request.log.warn({ 
+        event_type: 'old_avatar_deletion_failed',
+        error: err.message,
+        user_id: userId
+      });
+    }
+
+    // Mettre à jour la base de données
+    await db.run(
+      "UPDATE users SET avatar_url = ? WHERE id = ?", 
+      [avatarUrl, userId]
+    );
+
+    request.log.info({
+      event_type: 'avatar_updated',
+      user_id: userId,
+      file_size: fileSize,
+      mime_type: data.mimetype
     });
+
+    return reply.send({ 
+      success: true, 
+      avatar_url: avatarUrl 
+    });
+
+  } catch (err) {
+    request.log.error({
+      event_type: 'avatar_upload_error',
+      error: err.message,
+      user_id: userId
+    });
+
+    return reply.status(500).send({ 
+      success: false, 
+      error: 'upload_failed' 
+    });
+  }
+});
+
+    // //change pfp
+    // fastify.post('/api/user/avatar', { preValidation: [fastify.authenticate] }, async (request, reply) => {
+    //     const { avatar_url } = request.body;
+    //     const userId = request.user.id;
+
+    //     if (!avatar_url || typeof avatar_url !== 'string') {
+    //         return reply.status(400).send({ success: false, error: 'invalid_avatar_url' });
+    //     }
+
+    //     // Check if it's a base64 image or a URL
+    //     const isBase64 = avatar_url.startsWith('data:image/');
+    //     const isURL = avatar_url.startsWith('http://') || avatar_url.startsWith('https://');
+
+    //     if (!isBase64 && !isURL) {
+    //         return reply.status(400).send({ success: false, error: 'invalid_avatar_format' });
+    //     }
+
+    //     // If it's base64, validate size (max ~7MB base64 = ~5MB file)
+    //     if (isBase64 && avatar_url.length > 7 * 1024 * 1024) {
+    //         return reply.status(400).send({ success: false, error: 'avatar_too_large' });
+    //     }
+
+    //     // If it's a URL, validate format
+    //     if (isURL) {
+    //         try {
+    //             new URL(avatar_url);
+    //         } catch (e) {
+    //             return reply.status(400).send({ success: false, error: 'invalid_url_format' });
+    //         }
+    //     }
+
+    //     try {
+    //         await db.run("UPDATE users SET avatar_url = ? WHERE id = ?", [avatar_url, userId]);
+
+    //         request.log.info({
+    //             event_type: 'avatar_updated',
+    //             user_id: userId,
+    //             avatar_type: isBase64 ? 'base64' : 'url'
+    //         });
+
+    //         return reply.send({ success: true, avatar_url });
+    //     } catch (err) {
+    //         request.log.error({
+    //             event_type: 'avatar_update_error',
+    //             error: err.message,
+    //             user_id: userId
+    //         });
+    //         return reply.status(500).send({ success: false, error: 'db_error' });
+    //     }
+    // });
 
     // Permet d'activer le 2FA sur le compte et renvoie le qr code (ainsi que la clé secrete). Nécessite d'être connecté
     fastify.get('/api/2fa/setup', {preValidation: [fastify.authenticate]}, async (request, reply) => {

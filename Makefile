@@ -6,7 +6,7 @@
 all: elk-up up
 
 # Build without cache and start the containers
-build: generate-secret generate-ip
+build: generate-secret generate-ip create-db
 	docker compose build --no-cache
 
 up: build
@@ -21,6 +21,16 @@ elk-down:
 elk-status:
 	@bash monitoring/scripts/master_script.sh status
 
+create-db:
+	@test -f ./src/back-end/database_sql.db || touch ./src/back-end/database_sql.db
+	chmod 664 ./src/back-end/database_sql.db
+	@echo "database_sql.db créé et permissions définies"
+
+reset-db:
+	@rm -f ./src/back-end/database_sql.db
+	@touch ./src/back-end/database_sql.db
+	chmod 664 ./src/back-end/database_sql.db
+	@echo "database_sql.db réinitialisé"
 
 
 generate-ip:
@@ -92,7 +102,7 @@ online:
 	docker compose -f monitoring/docker-compose.yml up -d
 	docker compose up -d
 
-fclean:
+fclean: reset-db
 	docker compose down -v
 	@bash monitoring/scripts/master_script.sh clean
 	docker image prune -f

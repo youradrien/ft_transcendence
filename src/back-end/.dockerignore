@@ -1,3 +1,4 @@
 node_modules
 vault_handler/secrets/*
 vault_handler/vault_keys.json
+database_sql.db

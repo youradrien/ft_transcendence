@@ -7,6 +7,7 @@ const websocket = require('@fastify/websocket');
 const path = require('path');
 const i18n = require('fastify-i18n');
 const fs = require('fs');
+const fastifyStatic = require('@fastify/static');
 
 // Configure Pino logger for better structured logging
 const isDevelopment = process.env.NODE_ENV !== 'production';
@@ -236,7 +237,18 @@ const start = async () => {
       fastify.decorate('oauth', oauthSecrets);
       // ----------------------------------------
 
-      fastify.register(multipart);
+	fastify.register(multipart, {
+		limits: {
+			fileSize: 3 * 1024 * 1024, // 3MB max
+			files: 1
+		}
+	});
+
+	fastify.register(fastifyStatic, {
+		root: path.join(__dirname, 'uploads'),
+		prefix: '/uploads/',
+		constraints: {}
+	});
       // -- moved into VAULT()  <---
       fastify.register(jwt, {
               secret: jwtSecret?.value || 'laclesecrete_a_mettre_dans_fichier_env', // !!!!! ENV !!!
