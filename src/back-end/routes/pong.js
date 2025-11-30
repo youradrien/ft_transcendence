@@ -464,6 +464,9 @@ const handle_tournament_registration = async (USER_ID, fastify, bot_registration
         if (Array.isArray(_g.players) && _g.players.includes(USER_ID)) {        
             b = true;
     }}
+    if (fastify.p_waitingPlayers.has(USER_ID)) {
+        b = true;
+    }
     if ( !t || !(t.status == "preparing" || t.status == "inactive") 
         || t.players.length == 8
         || b    )
@@ -689,14 +692,14 @@ const attach_socket_handler = async (socket, USER_ID, fastify, ai_game = false) 
 
                     // clamp 
                     if (_game.paddles[r] < 0) _game.paddles[r] = 0;
-                    if (_game.paddles[r] > _game.height) _game.paddles[r] = _game.height;
+                    if (_game.paddles[r] > _game.height -50) _game.paddles[r] = _game.height - 50;
                 }else // AI game
                 {
                     _game.paddles.p1 += data.direction == "up" ? -4: 4;
 
                     // clamp 
                     if (_game.paddles.p1 < 0) _game.paddles.p1 = 0;
-                    if (_game.paddles.p1 > _game.height) _game.paddles.p1 = _game.height;
+                    if (_game.paddles.p1 > _game.height-50) _game.paddles.p1 = _game.height -50;
                 }
             }
             if(data?.type == "player_giveup")
