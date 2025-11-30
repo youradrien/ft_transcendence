@@ -21,6 +21,20 @@ const vault = require('node-vault')({
 let rootToken = 'initResult.root_token';
 let keys = 'initResult.keys';
 
+
+async function clearSensitiveFiles() {
+  try {
+    const envPath = path.resolve(__dirname, '..', '.env'); // src/back-end/.env
+    const keysPath = path.resolve(__dirname, 'secrets', 'vault_keys.json'); // src/back-end/vault_handler/secrets/vault_keys.json
+
+    if (fs.existsSync(envPath)) fs.writeFileSync(envPath, '', { mode: 0o600 });
+    if (fs.existsSync(keysPath)) fs.writeFileSync(keysPath, '', { mode: 0o600 });
+  } catch (err) {
+    console.error('clearSensitiveFiles error:', err);
+  }
+}
+
+
 async function vaultstart() {
 
 	/**
@@ -39,7 +53,7 @@ async function vaultstart() {
 	const isiInit = await vault.initialized();
 	console.log('Initialized? ', isiInit.initialized );
 	//premiere initialisation
-	if (!isiInit.initialized) 
+	if (!isiInit.initialized)
 	{
 		console.log('Initializing Vault...');
 		const initResult = await vault.init({ secret_shares: 1, secret_threshold: 1 });
@@ -47,7 +61,7 @@ async function vaultstart() {
 		 keys = initResult.keys;
 
 		vault.token = rootToken;
-	
+
 		console.log('Unsealing Vault...');
 		await vault.unseal({ key: keys[0] });
 		console.log('Vault initialized and unsealed.');
@@ -73,11 +87,12 @@ async function vaultstart() {
 		//need delete le .env containing jwt secret after writing to vault
 		const jwtSecret =  process.env.JWT_SECRET;
 		await writeSecret('jwt', { value: jwtSecret});
+		await clearSensitiveFiles();
 
-		
+
 		//delete env containing jwt secret
 		//NEED
-	
+
 		console.log('Creating backend token...');
 		const backendToken = await createBackendToken(rootToken);
 		console.log('Backend token created1.', backendToken);
@@ -94,7 +109,7 @@ async function vaultstart() {
 			//récupérer les clés
 			const savepath = path.resolve(__dirname, 'secrets', 'vault_keys.json');
 			console.log('savepath2: ', savepath);
-			
+
 			if (!fs.existsSync(savepath)) {
 				// Fallback for CI/Dev: if keys are missing but we are in dev mode with root token
 				if (process.env.VAULT_TOKEN === 'root') {
@@ -143,8 +158,11 @@ async function vaultstart() {
 		vault.token = backToken;
 		const jwtSecret =  process.env.JWT_SECRET;
 		if (jwtSecret)
+		{
 			await writeSecret('jwt', { value: jwtSecret});
-		
+			await clearSensitiveFiles();
+		}
+
 		return backToken;
 	}
 }

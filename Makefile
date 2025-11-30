@@ -11,6 +11,11 @@ build: generate-secret generate-ip create-db
 
 up: build
 	docker compose up -d
+	@if [ -f ./src/back-end/.env ]; then \
+        : > ./src/back-end/.env && chmod 600 ./src/back-end/.env && echo "Cleared src/back-end/.env"; \
+    else \
+        echo "No src/back-end/.env to clear"; \
+    fi
 
 elk-up:
 	@bash monitoring/scripts/master_script.sh up
