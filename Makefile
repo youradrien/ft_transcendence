@@ -94,6 +94,14 @@ re: generate-secret
 	docker compose up -d
 	@echo "✅ Rebuild complete! Index template and ILM policy are configured."
 
+offline:
+	docker compose down
+	docker compose -f monitoring/docker-compose.yml down
+
+online:
+	docker compose -f monitoring/docker-compose.yml up -d
+	docker compose up -d
+
 fclean: reset-db
 	docker compose down -v
 	@bash monitoring/scripts/master_script.sh clean

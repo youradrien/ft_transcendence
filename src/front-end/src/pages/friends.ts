@@ -207,10 +207,10 @@ export default class Friends extends Page {
 	statusEl.style.marginTop = "4px";
 
 	if (friend.online) {
-		statusEl.textContent = "Online";
+		statusEl.textContent = i18n.t('online');
 		statusEl.style.color = "lime";
 	} else {
-		statusEl.textContent = `Last seen: ${formatLastSeen(friend.last_seen)}`;
+		statusEl.textContent = `${i18n.t('last_seen')} ${formatLastSeen(friend.last_seen)}`;
 		statusEl.style.color = "#fc2929ff";
 	}
 
@@ -242,12 +242,12 @@ export default class Friends extends Page {
 	unfBtn.onclick = async (e) => {
 		e.stopPropagation();
 		unfBtn.disabled = true;
-		unfBtn.textContent = "Removing...";
+		unfBtn.textContent = i18n.t('removing');
 
 		const success = await this.REMOVE_FRIEND(friend.username);
 		if (!success) {
 			unfBtn.disabled = false;
-			alert("Failed to remove friend.");
+			alert(i18n.t('failed_remove_friend'));
 			return ;
 		}
 		removeCallBack(friend.username);
@@ -310,7 +310,7 @@ export default class Friends extends Page {
     usernameEl.style.fontSize = "16px";
 
     const statusEl = document.createElement("div");
-    statusEl.textContent = friend.online ? "Online" : `Last seen: ${formatLastSeen(friend.last_seen)}`;
+    statusEl.textContent = friend.online ? i18n.t('online') : `${i18n.t('last_seen')} ${formatLastSeen(friend.last_seen)}`;
     statusEl.style.fontSize = "12px";
     statusEl.style.color = friend.online ? "lime" : "#fc2929ff";
 
@@ -340,8 +340,8 @@ export default class Friends extends Page {
         if (success) acceptCallback(friend.username);
         else {
             acceptBtn.disabled = false;
-            acceptBtn.textContent = "Accept";
-            alert("Failed to accept friend request");
+            acceptBtn.textContent = i18n.t('accept_button');
+            alert(i18n.t('failed_accept_request'));
         }
     };
 
@@ -362,8 +362,8 @@ export default class Friends extends Page {
         if (success) declineCallback(friend.username);
         else {
             declineBtn.disabled = false;
-            declineBtn.textContent = "Decline";
-            alert("Failed to decline friend request");
+            declineBtn.textContent = i18n.t('decline_button');
+            alert(i18n.t('failed_decline_request'));
         }
     };
 
