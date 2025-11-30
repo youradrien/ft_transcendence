@@ -1676,9 +1676,9 @@ function predictBallYAtX(game, targetX) {
 
 function simulateAIKey(game, direction) {
     if (direction === 'up')
-        game.paddles.p2 -= 0;
+        game.paddles.p2 -= 4;
     else if (direction === 'down')
-        game.paddles.p2 += 0;
+        game.paddles.p2 += 4;
     if (game.paddles.p2 < 0)
         game.paddles.p2 = 0;
     if (game.paddles.p2 > game.height - game.paddleHeight)
@@ -1814,8 +1814,8 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     fastify?.p_rooms.delete(game.id);
     console.log(`✅ Game ${game.id} ended - Winner: ${winner}`);
 
-
-    // sockets.forEach(socket => safeCloseSocket(socket));
+    if(!game?.TOURNAMENT_GAME || game?.TOURNAMENT_GAME && game?.current_bracket == 2)
+        sockets.forEach(socket => safeCloseSocket(socket));
 
     if(fastify){
         fastify?.p_rooms.delete(game.id);
@@ -1823,7 +1823,15 @@ const handle_game_end = async (game, reason = 'victory', fastify = null, user_id
     console.log(`Game ${game.id} ended (${reason}) — Winner: ${winner}`);
 }
 
-
+const safeCloseSocket = (socket) => {
+    if (socket && socket.readyState === 1) { // WebSocket.OPEN
+        try {
+            socket.close();
+        } catch (err) {
+            console.error('Error closing socket:', err);
+        }
+    }
+}
 
 const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user_id = null) => {
     console.log('🔵 [AI_GAME_END] Function called with:', {
@@ -1932,7 +1940,8 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
         broadcast_tournament(fastify, { event: 'match-completed' });
         t_detect_next_bracket(fastify);
     }
-
+    if(!game?.TOURNAMENT_GAME || game?.TOURNAMENT_GAME && game?.current_bracket == 2)
+        safeCloseSocket(socket);
     fastify?.p_rooms.delete(game.id);
     console.log(`✅ AI Game ${game.id} ended - Winner: ${winner}`);
 };
