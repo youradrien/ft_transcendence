@@ -80,6 +80,7 @@ const t_ending = async (fastify) => {
 
     t.current_bracket = 0;
     t.currentMatch = 0;
+    t.player_sockets = new Map(); // {userId → socket} map
 
     // t.bracket = [
     //     [null, null, null, null,    null, null, null, null], // quarterfinals 
@@ -93,6 +94,7 @@ const t_ending = async (fastify) => {
     // };
     // t.prize =  Math.floor(Math.random() * (2500 - 800 + 100)) + 800; // rand int between 8 and 2
     t.status = "inactive";
+    t.force_starting = false;
     // player_sockets: new Map(), // {userId → socket} map
     broadcast_tournament(fastify, {
         event: './'
@@ -125,7 +127,7 @@ const t_run_next_match = async (fastify) => {
     if(t.current_bracket == 1)
     {
         if(t.currentMatch > 0){
-            ix = 2;
+            ix = 1;
         }
     }
     const [p1, p2] = [ 
@@ -198,8 +200,8 @@ const t_run_next_match = async (fastify) => {
                     console.log("PVE GAME:   P1:" + t.players[p1_index].username + "    P2: " + t.players[p2_index].username);
                     t.players[p1_index].status = "in_match";
                     t.players[p2_index].status  = "in_match";
-                    const user_player = [p1, p2].find((e) => e.is_bot == false);
-                    const bot_player = [p1, p2].find((e) => e.is_bot == true);
+                    const user_player = [p1, p2].find((e) => e.is_bot == false),
+                          bot_player = [p1, p2].find((e) => e.is_bot == true);
 
                     console.log(user_player?.username);
                     ///GET THE PLAYER NAME FROM THE DB
@@ -255,17 +257,23 @@ const t_run_next_match = async (fastify) => {
                             // for (const row of p_names) map[row.id] = row;
                             if(p1.pfp || p2.pfp){
                                 game.player_pfps = [
-                                    p1.pfp,
-                                    "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Aidan",
+                                    user_player.pfp,
+                                    bot_player.pfp,
                                 ];
                             }
                         
                             if(p1.username || p2.username)
                             {
                                 game.player_names = [
-                                        p1.username,
-                                        p2.username,
+                                        user_player.username,
+                                        bot_player.username,
                                 ];
+                            }
+                            if(p1?.tournament_pseudo || p2?.tournament_pseudo){
+                                // game.player_names = [
+                                //         user_player.username,
+                                //         bot_player.username,
+                                // ];
                             }
                     
                     } catch (error) {
@@ -501,39 +509,42 @@ const handle_tournament_start = async (fastify) => {
         console.log("COULDNT START !!!");
         return ;
     }
-    // change player orders
-    // separate
-    const   humans = t.players.filter(p => !p.is_bot),
-            bots   = t.players.filter(p => p.is_bot);
-    // shuffle
-    const r = arr => arr.sort(() => Math.random() - 0.5);
-    r(humans);
-    r(bots);
-    let pairs = [];
-    // human vs human
-    while (humans.length >= 2) {
-        pairs.push([humans.pop(), humans.pop()]);
+    if (t.players.filter(p => !p.is_bot).length < 2)
+    {
+        const shuffled = [...t.players].sort(() => Math.random() - 0.5);
+        t.bracket[0] = [
+            shuffled[0], shuffled[1],    shuffled[2], shuffled[3],
+            shuffled[4], shuffled[5],    shuffled[6], shuffled[7]
+        ];
+    }else{
+        // change player orders
+        // separate
+        const   humans = t.players.filter(p => !p.is_bot),
+                bots   = t.players.filter(p => p.is_bot);
+        // shuffle
+        const r = arr => arr.sort(() => Math.random() - 0.5);
+        r(humans);
+        r(bots);
+        let pairs = [];
+        // human vs human
+        while (humans.length >= 2) {
+            pairs.push([humans.pop(), humans.pop()]);
+        }
+        // bot vs bot
+        while (bots.length >= 2) {
+            pairs.push([bots.pop(), bots.pop()]);
+        }
+        // leftovers (mixed unavoidable)
+        const l = [...humans, ...bots];
+        while (l.length >= 2) {
+            pairs.push([l.pop(), l.pop()]);
+        }
+        //  fill bracket
+        t.bracket[0] = pairs.flat();
     }
-    // bot vs bot
-    while (bots.length >= 2) {
-        pairs.push([bots.pop(), bots.pop()]);
-    }
-    // leftovers (mixed unavoidable)
-    const l = [...humans, ...bots];
-    while (l.length >= 2) {
-        pairs.push([l.pop(), l.pop()]);
-    }
-    //  fill bracket
-    t.bracket[0] = pairs.flat();
+
     // // fill qf-bracket
     // t.players = (shuffled); 
-    /*
-    const shuffled = [...t.players].sort(() => Math.random() - 0.5);
-    t.bracket[0] = [
-        shuffled[0], shuffled[1],    shuffled[2], shuffled[3],
-        shuffled[4], shuffled[5],    shuffled[6], shuffled[7]
-    ];
-    */
     t.status = "in-progress";
     t.current_bracket = 0;
     broadcast_tournament(fastify, {
