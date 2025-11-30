@@ -1987,12 +1987,14 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
                     'INSERT INTO users (username, password) VALUES (?, ?)',
                     ['AI_BOT', 'no_password']
                 );
-                AI_USER_ID = result?.lastID;
+                AI_USER_ID = result.lastID;
             }
         } catch (err) {
             console.error('❌ [AI_GAME_END] Error creating/finding AI user:', err);
             AI_USER_ID = -1;
         }
+
+        const winner_id = (winner === 'p1') ? player_id : AI_USER_ID;
 
         await fastify.db.run(
             `INSERT INTO games (
@@ -2000,7 +2002,7 @@ const handle_ai_game_end = async (game, reason = 'victory', fastify = null, user
                 player1_score, player2_score,
                 p1_name, p2_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [players[0], AI_USER_ID, (winner === 'p1') ? 1 : 2,
+            [players[0], AI_USER_ID, winner_id,
              scores.p1, scores.p2,
              player_names[0], player_names[1]]
         );
