@@ -132,6 +132,7 @@ async function userRoutes(fastify, options) // Options permet de passer des vari
         } catch (err) {
             request.log.error({
                 event_type: 'registration_error',
+
                 error: err.message,
                 username
             });

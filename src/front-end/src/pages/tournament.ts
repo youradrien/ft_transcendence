@@ -156,6 +156,13 @@ export default class TournamentPage extends Page {
             align-items: center;
             justify-content: center;
             font-size: 14px;
+            overflow: hidden;
+        }
+
+         #tournament-wrapper .pfp img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         #tournament-wrapper .winner {
@@ -267,6 +274,13 @@ export default class TournamentPage extends Page {
               justify-content: center;
               align-items: center;
               font-size: 18px;
+              overflow: hidden;
+            }
+
+            #tournament-wrapper .player-card .pfp img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
             }
 
             /* Username + ELO stacked */
@@ -497,8 +511,6 @@ export default class TournamentPage extends Page {
 
     // update tournament, fill. everythn
     const update_tournament_state = async (tournament_data: any, self_registered: boolean) => {
-        // console.log("e");
-        // console.log(tournament_data);
         try {
               // online
               const on = container.querySelector("#onln") as HTMLButtonElement;
