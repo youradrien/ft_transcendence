@@ -1464,33 +1464,7 @@ const handle_local_game_end = async (game, reason = 'victory', fastify = null, u
             is_local: true
         };
         socket.send(JSON.stringify(d));
-    }
-    
-    try {
-        const LOCAL_PLAYER_ID = -2;
-        
-        await fastify.db.run(
-            `INSERT INTO games (
-                player1_id, player2_id, winner_id,
-                player1_score, player2_score,
-                p1_name, p2_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [player_id, LOCAL_PLAYER_ID, 
-             winner === 'p1' ? 1 : winner === 'p2' ? 2 : null,
-             scores.p1, scores.p2,
-             player_names[0], player_names[1]]
-        );
-
-        if (winner && reason === 'victory') {
-            await fastify.db.run(
-                `UPDATE users SET wins = wins + 1 WHERE id = ?`, 
-                [player_id]
-            );
-        }
-    } catch (err) {
-        console.error("❌ [LOCAL_GAME_END] Error saving local game:", err);
-    }
-    
+    }    
     safeCloseSocket(socket);
     
     if (fastify) {

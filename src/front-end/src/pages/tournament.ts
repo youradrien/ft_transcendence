@@ -736,7 +736,7 @@ export default class TournamentPage extends Page {
                   game_area.appendChild(pong_container);   
               }
             }
-            if(data?.type === 'tournament-finished'){
+            if(data?.type === 'tournament-finished' && window.location.pathname.includes('tournament')){
               alert('🏆 Tournament has ended!');
               setTimeout(() => {
                 window.location.reload();
