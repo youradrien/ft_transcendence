@@ -74,10 +74,13 @@ const broadcast_tournament = async (fastify, payload = {} /*peut etre <USER_ID> 
 const t_ending = async (fastify) => {
     const t = fastify.p_tournament;
     
-    // Fermer tous les sockets
+    // Notifier tous les joueurs que le tournoi est terminé
     for (const [userId, socket] of t.player_sockets.entries()) {
         try {
-            if (socket.readyState === 1) socket.close();
+            if (socket.readyState === 1) {
+                socket.send(JSON.stringify({ type: 'tournament-finished' }));
+                socket.close();
+            }
         } catch (err) {}
     }
     
@@ -159,8 +162,8 @@ const t_run_next_match = async (fastify) => {
         setTimeout(() => {
             const winner = Math.random() < 0.5 ? p1 : p2;
             const loser = winner === p1 ? p2 : p1;
-            const W_score = 45;
-            const L_score = Math.floor(Math.random() * 42) + 3;
+            const W_score = 3;
+            const L_score = Math.floor(Math.random() * 3);
 
             const br = t.current_bracket;
             const bucket_names = ["quarter", "semi_finals", "final"];
@@ -909,7 +912,7 @@ async function pong_routes(fastify, options)
                 height: 600,
                 paddleWidth: 10,
                 paddleHeight: 80,
-                max_score: Math.floor(Math.random() * (75 - 10 + 1)) + 10, // score [10- 75]
+                max_score: 3,
                 player_names: ["player_1", "player_2"],
                 player_pfps: [
                     "https://avatars.githubusercontent.com/u/9919?s=200&v=4", 

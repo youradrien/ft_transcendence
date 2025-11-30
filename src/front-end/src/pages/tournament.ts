@@ -736,6 +736,12 @@ export default class TournamentPage extends Page {
                   game_area.appendChild(pong_container);   
               }
             }
+            if(data?.type === 'tournament-finished'){
+              alert('🏆 Tournament has ended!');
+              setTimeout(() => {
+                window.location.reload();
+              }, 750);
+            }
         }
         ws_tournament.onerror = (err) => {
             console.error('ws_tournament error:', err);
