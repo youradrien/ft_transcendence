@@ -11,25 +11,25 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-ES_URL="http://localhost:9200"
+ES_URL="https://localhost:9200"
 POLICY_NAME="30-days-default"
 ES_AUTH="-u elastic:${ELASTIC_PASSWORD:-elastic_password}"
 
 echo -e "${YELLOW}📋 Waiting for Elasticsearch...${NC}"
 for i in {1..30}; do
-  if curl -s ${ES_AUTH} "${ES_URL}/_cluster/health" > /dev/null 2>&1; then
+  if curl -k -s ${ES_AUTH} "${ES_URL}/_cluster/health" > /dev/null 2>&1; then
     break
   fi
   sleep 1
 done
 
-if ! curl -s ${ES_AUTH} "${ES_URL}/_cluster/health" > /dev/null 2>&1; then
+if ! curl -k -s ${ES_AUTH} "${ES_URL}/_cluster/health" > /dev/null 2>&1; then
   echo -e "${RED}Elasticsearch not responding at ${ES_URL}${NC}"
   exit 1
 fi
 
 echo -e "${YELLOW}🛠️  Creating/Updating ILM policy: ${POLICY_NAME}${NC}"
-curl -s ${ES_AUTH} -X PUT "${ES_URL}/_ilm/policy/${POLICY_NAME}" \
+curl -k -s ${ES_AUTH} -X PUT "${ES_URL}/_ilm/policy/${POLICY_NAME}" \
   -H 'Content-Type: application/json' \
   -d '{
   "policy": {
@@ -65,17 +65,17 @@ echo -e "${GREEN}ILM policy ensured.${NC}"
 
 # Best-effort: attach policy to any existing ft_transcendence-* indices that don't have it yet
 echo -e "${YELLOW}🔎 Checking existing indices for ILM attachment...${NC}"
-INDICES=$(curl -s ${ES_AUTH} "${ES_URL}/_cat/indices/ft_transcendence-*?h=index" | tr -d '\r')
+INDICES=$(curl -k -s ${ES_AUTH} "${ES_URL}/_cat/indices/ft_transcendence-*?h=index" | tr -d '\r')
 
 if [ -z "${INDICES}" ]; then
   echo -e "${YELLOW}ℹ️  No existing ft_transcendence-* indices found. New indices will inherit the policy from the template.${NC}"
 else
   while IFS= read -r index; do
     [ -z "$index" ] && continue
-  CURRENT=$(curl -s ${ES_AUTH} "${ES_URL}/${index}/_settings?flat_settings=true" | grep -o 'index\.lifecycle\.name":"[^"]*' | awk -F'":"' '{print $2}' || true)
+  CURRENT=$(curl -k -s ${ES_AUTH} "${ES_URL}/${index}/_settings?flat_settings=true" | grep -o 'index\.lifecycle\.name":"[^"]*' | awk -F'":"' '{print $2}' || true)
     if [ "${CURRENT}" != "${POLICY_NAME}" ]; then
       echo -e "👉 Attaching ILM policy to ${index}"
-      curl -s ${ES_AUTH} -X PUT "${ES_URL}/${index}/_settings" \
+      curl -k -s ${ES_AUTH} -X PUT "${ES_URL}/${index}/_settings" \
         -H 'Content-Type: application/json' \
         -d "{ \"index.lifecycle.name\": \"${POLICY_NAME}\" }" > /dev/null
     fi

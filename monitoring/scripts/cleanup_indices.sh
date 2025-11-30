@@ -9,7 +9,7 @@ NC='\033[0m'
 echo -e "${YELLOW}  Cleaning up Elasticsearch indices...${NC}"
 
 # Check if Elasticsearch is ready
-if ! curl -s -u elastic:elastic_password "http://localhost:9200/_cluster/health" > /dev/null 2>&1; then
+if ! curl -k -s -u elastic:elastic_password "https://localhost:9200/_cluster/health" > /dev/null 2>&1; then
     echo -e "${RED}  Elasticsearch not responding${NC}"
     exit 1
 fi

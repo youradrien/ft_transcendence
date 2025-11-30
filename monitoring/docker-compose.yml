@@ -5,9 +5,12 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=true
-      - xpack.security.http.ssl.enabled=false
-      - ELASTIC_PASSWORD=elastic_password
-      - KIBANA_PASSWORD=kibana_password
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/kibana.key
+      - xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/kibana.crt
+      - xpack.security.http.ssl.verification_mode=none
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - bootstrap.memory_lock=true
     # ulimits:      # peu pas a cause de 42 mais sinon ca aide pour la memoire
@@ -18,10 +21,11 @@ services:
       - "9200:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
+      - ./certs:/usr/share/elasticsearch/config/certs:ro
     networks:
       - ft_transcendence_net
     healthcheck:
-      test: ["CMD-SHELL", "curl -u elastic:$${ELASTIC_PASSWORD} -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -k -u elastic:$${ELASTIC_PASSWORD} -f https://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -30,18 +34,24 @@ services:
     image: docker.elastic.co/kibana/kibana:8.15.0
     container_name: kibana
     environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ELASTICSEARCH_USERNAME=kibana_system
-      - ELASTICSEARCH_PASSWORD=kibana_password
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=${KIBANA_USER}
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+      - ELASTICSEARCH_SSL_VERIFICATIONMODE=none
+      - SERVER_SSL_ENABLED=true
+      - SERVER_SSL_KEY=/usr/share/kibana/config/certs/kibana.key
+      - SERVER_SSL_CERTIFICATE=/usr/share/kibana/config/certs/kibana.crt
     ports:
       - "5601:5601"
+    volumes:
+      - ./certs:/usr/share/kibana/config/certs:ro
     depends_on:
       elasticsearch:
         condition: service_healthy
     networks:
       - ft_transcendence_net
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      test: ["CMD-SHELL", "curl -k -f https://localhost:5601/api/status || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -57,8 +67,8 @@ services:
       - ./logstash/config/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
     environment:
       - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
-      - LOGSTASH_ES_USER=elastic
-      - LOGSTASH_ES_PASSWORD=elastic_password
+      - LOGSTASH_ES_USER=${ELASTIC_USER}
+      - LOGSTASH_ES_PASSWORD=${ELASTIC_PASSWORD}
     depends_on:
       elasticsearch:
         condition: service_healthy
