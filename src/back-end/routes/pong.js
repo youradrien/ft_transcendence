@@ -459,16 +459,21 @@ const handle_tournament_start = async (fastify) => {
 // [TOURNAMENT - REGISTRATION]
 const handle_tournament_registration = async (USER_ID, fastify, bot_registration = false, p_username = null)  => {
     const t = fastify.p_tournament;
-
+    let b = false;
+    for (const [roomId, _g] of fastify.p_rooms.entries()) {
+        if (Array.isArray(_g.players) && _g.players.includes(USER_ID)) {        
+            b = true;
+    }}
     if ( !t || !(t.status == "preparing" || t.status == "inactive") 
         || t.players.length == 8
-    )
+        || b    )
     {
         // socket.send(JSON.stringify({
         //     type: "cant_join"
         // }));
         return ; 
     }
+
     // start new tournament if noneactive
     // reset bracket & results
     if (!t.active) {
