@@ -19,6 +19,7 @@ services:
       driver: "syslog"
       options:
         syslog-address: "tcp://localhost:5000"
+        # syslog-address: "udp://127.0.0.1:5000" #mac os workaround
         tag: "frontend"
         syslog-format: "rfc5424"
     labels:
@@ -44,6 +45,7 @@ services:
       driver: "syslog"
       options:
         syslog-address: "tcp://localhost:5000"
+        #syslog-address: "udp://127.0.0.1:5000" #mac os workaround
         tag: "backend"
         syslog-format: "rfc5424"
     labels:

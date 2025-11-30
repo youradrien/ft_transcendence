@@ -408,7 +408,7 @@ export default class TournamentPage extends Page {
                 </div>
             </div>
 
-            <div class="match" id="rb-2">
+            <div class="match" >
                 <div id="qf-5" class="player"><div class="pfp">E</div>
                     <div style="display: flex; flex-direction: column;">  <span>Eva</span>   <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px"> PLAYER_5</p> </div>
                 </div>
@@ -417,7 +417,7 @@ export default class TournamentPage extends Page {
                 </div>
             </div>
 
-            <div class="match" id="rb-3">
+            <div class="match">
                 <div id="qf-7" class="player"><div class="pfp">G</div>
                     <div style="display: flex; flex-direction: column;">  <span>Gino</span> <p style="font-size: 10px; color: grey; margin: 0 auto; margin-left: 0px">PLAYER_7</p></div> 
                 </div>
@@ -498,7 +498,7 @@ export default class TournamentPage extends Page {
     // update tournament, fill. everythn
     const update_tournament_state = async (tournament_data: any, self_registered: boolean) => {
         // console.log("e");
-        console.log(tournament_data);
+        // console.log(tournament_data);
         try {
               // online
               const on = container.querySelector("#onln") as HTMLButtonElement;
@@ -570,6 +570,9 @@ export default class TournamentPage extends Page {
               if(tournament_data?.tournament_status == "inactive"){
                   lb2.innerHTML = `Inactive: Empty Tournament`;
                   color  = "#888888ff";
+                  
+                  f_startBtn.innerHTML = "FORCE-START Tournament";
+                  f_startBtn.style.backgroundColor = "#1a1a1a";
               }
               if(tournament_data?.tournament_status == "preparing"){
                   lb2.innerHTML = `Registration Open: (waiting for players...)`;
@@ -591,6 +594,10 @@ export default class TournamentPage extends Page {
                 addBtn.innerHTML = 'JOINED';
                 addBtn.style.backgroundColor = '#00b7ffff';
                 _registered = (true);
+              }else{
+                addBtn.innerHTML = 'Join Tournament';
+                addBtn.style.backgroundColor = '#1a1a1a';
+                _registered = (false);
               }
               // brackets
               for(let i = 0; i < 3; i++)
@@ -615,10 +622,13 @@ export default class TournamentPage extends Page {
                           if(br_result?.winner == player.userId){
                             match.style.border = "2px solid #00ff28";
                           }else{
-                            match.style.border = "2px solid #a63c3c";
+                            match.style.border = "2px solid rgb(22 22 22)";
                           }
                           if(m_score && br_result){
                               m_score.innerHTML = `${br_result.scores[0]} vs ${br_result.scores[1]}`;
+                          }else{
+                            if(m_score)
+                              m_score.innerHTML = '';
                           }
                         }
                         const d = match.querySelector("div") as HTMLElement;  // returns first span OR div
@@ -646,17 +656,23 @@ export default class TournamentPage extends Page {
               // current round
               const d = container.querySelector("#curr_bracket") as HTMLInputElement;
               let vs:string [] = ["QUARTER-FINAL", "SEMI-FINAL", "FINAL"];
-              d.innerHTML = `CURRENT ROUND: ${vs[tournament_data?.current_bracket] || '...'}`;
+              if(tournament_data?.tournament_status === "in-progress"){
+                d.innerHTML = `CURRENT ROUND: ${vs[tournament_data?.current_bracket] || '...'}`;
+              }else{
+                d.innerHTML = `CURRENT ROUND: - - -`;
+              }
               for(let i = 0; i < 3; i++){
-                // const rb = document.getElementById("rb-" + i) as HTMLElement;
+                const rb = document.getElementById("rb-" + (i + 1) ) as HTMLElement;
                 // console.log(rb);
-                // if(tournament_data?.current_bracket == i){
-                //   rb.style.border = "1px solid #ffffffff";
-                //   rb.style.boxShadow = "0 0 20px rgba(255, 255, 255, 0.72)";
-                // }else{
-                //   rb.style.border = "1px solid #333";
-                //   rb.style.boxShadow = "0 0 20px rgba(0, 0, 0, 0.39)";
-                // }
+                if(tournament_data?.current_bracket == i
+                    && tournament_data?.tournament_status === "in-progress"
+                ){
+                  rb.style.border = "1px solid #ffffffff";
+                  rb.style.boxShadow = "0 0 20px rgba(255, 255, 255, 0.72)";
+                }else{
+                  rb.style.border = "1px solid #333";
+                  rb.style.boxShadow = "0 0 20px rgba(0, 0, 0, 0.39)";
+                }
               }   
           if(tournament_data?.current_bracket !== l_bracket){
               if (game_area) {
