@@ -329,6 +329,26 @@ const t_detect_next_bracket = async (fastify) => {
     if(t.matches_done[br] >= f[t.current_bracket]) {
         if(t.current_bracket == 2) {
             console.log("🏆 TOURNAMENT ENDING!");
+            
+            // Trouver le gagnant du tournoi et lui ajouter le prize en ELO
+            try {
+                const finalResult = t.bracket_results.final[0];
+                if (finalResult && finalResult.winner && t.prize) {
+                    const winnerPlayer = t.players.find(p => p.userId === finalResult.winner);
+                    
+                    // Seulement si c'est un vrai joueur (pas un bot)
+                    if (winnerPlayer && !winnerPlayer.is_bot) {
+                        await fastify.db.run(
+                            `UPDATE users SET elo = elo + ? WHERE id = ?`,
+                            [t.prize, finalResult.winner]
+                        );
+                        console.log(`✅ Added ${t.prize} ELO to tournament winner ${winnerPlayer.username} (ID: ${finalResult.winner})`);
+                    }
+                }
+            } catch (err) {
+                console.error('❌ Failed to add ELO to tournament winner:', err);
+            }
+            
             t_ending(fastify);
             return;
         }
@@ -582,6 +602,19 @@ const tournament_force_start = async (USER_ID, fastify, socket) => {
     let i = t.players.length;
     const delay = ms => new Promise(r => setTimeout(r, ms));
     t.force_starting = (true);
+    
+    // Déduire l'ELO du joueur qui force le start
+    try {
+        const eloDeduction = Math.floor(t.prize / 4);
+        await fastify.db.run(
+            `UPDATE users SET elo = elo - ? WHERE id = ?`,
+            [eloDeduction, USER_ID]
+        );
+        console.log(`✅ Deducted ${eloDeduction} ELO from user ${USER_ID} for force-starting tournament`);
+    } catch (err) {
+        console.error('❌ Failed to deduct ELO for force start:', err);
+    }
+    
     while(i < 8){
         // register bots
         handle_tournament_registration(USER_ID, fastify, true);
